@@ -102,7 +102,7 @@ export default function PackagesController() {
               Email Verification Credits
             </p>
             <p className={styles.price}>Only {price} USD</p>
-            <button className={styles.buyBtn}>Buy Credits</button>
+            <a className={styles.buyBtn} href="#">Buy Credits</a>
           </div>
         ))}
       </div>
