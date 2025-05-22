@@ -191,6 +191,7 @@
 }
 
 .packagesButtonBottom {
+  font-family: "Sohne", sans-serif;
   background-color: var(--main-hl);
   color: var(--white);
   border: none;
