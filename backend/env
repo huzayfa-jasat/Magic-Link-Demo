@@ -1,6 +1,0 @@
-NODE_ENV=development
-CACHE_SERVER_PORT=18747
-CACHE_SERVER_HOSTNAME=cacheserver
-FRONTEND_URL_PREFIX=https://app.omniverifier.com
-BACKEND_URL_PREFIX=https://api.omniverifier.com/v1
-HASH_ITERATIONS=28732
