@@ -7,6 +7,8 @@ const {
 	// db_purchaseCredits,
 	db_getReferralInviteCode,
 	db_getReferralInviteList,
+	db_getCreditBalance,
+	db_getCreditBalanceHistory,
 } = require("./funs_db.js");
 
 
@@ -70,6 +72,34 @@ async function getReferralInviteList(req, res) {
 	}
 }
 
+/**
+ * Get current credit balance (new table)
+ */
+async function getCreditBalance(req, res) {
+	try {
+		const [ok, resp] = await db_getCreditBalance(req.user.id);
+		if (ok) return res.status(HttpStatus.SUCCESS_STATUS).json({'data': resp});
+		return res.status(HttpStatus.FAILED_STATUS).send("Failed to get credit balance");
+	} catch (err) {
+		console.log("MTE = ", err);
+		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+	}
+}
+
+/**
+ * Get credit balance history (new table)
+ */
+async function getCreditBalanceHistory(req, res) {
+	try {
+		const [ok, resp] = await db_getCreditBalanceHistory(req.user.id);
+		if (ok) return res.status(HttpStatus.SUCCESS_STATUS).json({'data': resp});
+		return res.status(HttpStatus.FAILED_STATUS).send("Failed to get credit balance history");
+	} catch (err) {
+		console.log("MTE = ", err);
+		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+	}
+}
+
 
 // Export
 module.exports = {
@@ -77,4 +107,6 @@ module.exports = {
     purchaseCredits,
     getReferralInviteCode,
     getReferralInviteList,
+	getCreditBalance,
+	getCreditBalanceHistory,
 };
