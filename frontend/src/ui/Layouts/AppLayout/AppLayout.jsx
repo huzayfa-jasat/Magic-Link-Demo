@@ -56,7 +56,6 @@ export default function AppLayout({ title, children }) {
                 Upload
               </NavLink>
               {
-                // TODO: packages
               }
               <NavLink to="/packages" className={s.packagesButton}>
                 Buy Credits
