@@ -1,7 +1,7 @@
 .main {
   height: 100vh;
   padding: 0;
-  overflow: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   /* background-color: #fafafa; */
@@ -10,10 +10,16 @@
 .content {
   flex: 1;
   padding: 20px 60px;
-  margin-top: 90px; /* Space for the top bar */
+  margin-top: 0px;
+  padding-top: 0px;
+  /* margin-top: 90px; Space for the top bar */
+  overflow-y: auto;
+  margin-left: 220px;
+  width: calc(100%-220px);
+  height: 100%;
 }
 
-.topBar {
+/* .topBar {
   position: fixed;
   top: 0;
   left: 0;
@@ -25,17 +31,26 @@
   align-items: center;
   justify-content: space-between;
   padding: 30px 60px;
-}
+} */
 
 .logo {
   width: 24px;
   height: 24px;
 }
 
-.navItems {
+.navItem {
+  color: var(--black);
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.5rem 0;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 20px;
+}
+
+.navItem.active {
+  color: var(--main-hl);
+  font-weight: bold;
 }
 
 .uploadButton {
@@ -63,14 +78,41 @@
   margin: auto 6px auto 0;
 }
 
-.settingsButton {
+.packagesButton {
+  font-family: "Sohne", sans-serif;
   color: var(--text-primary);
-  padding: 8px;
-  border-radius: 50%;
+  text-decoration: none;
+  /* padding: 8px;
+  border-radius: 50%; */
+  border: none;
   cursor: pointer;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  /* align-items: center; */
+  /* justify-content: center; */
+  font-size: 15px;
+  font-weight: 400;
+  padding: 8px 16px;
+  border-radius: 20px;
+  color: var(--black);
+  transition: background-color 0.2s;
+}
+
+.settingsButton {
+  font-family: "Sohne", sans-serif;
+  color: var(--text-primary);
+  text-decoration: none;
+  /* padding: 8px;
+  border-radius: 50%; */
+  border: none;
+  cursor: pointer;
+  display: flex;
+  /* align-items: center; */
+  /* justify-content: center; */
+  font-size: 15px;
+  font-weight: 400;
+  padding: 8px 16px;
+  border-radius: 20px;
+  color: var(--black);
   transition: background-color 0.2s;
 }
 
@@ -79,22 +121,23 @@
 }
 
 .settingsIcon {
-  width: 20px;
-  height: 20px;
+  height: 18px;
+  width: auto;
+  margin: auto 6px auto 0;
 }
 
 .creditsPill {
   font-family: "Sohne", sans-serif;
   display: flex;
   gap: 6px;
-  border: 1px solid #BBE8FF60;
+  /* border: 1px solid #bbe8ff60; */
   color: #fff;
   padding: 6px 12px;
   border-radius: 30px;
   font-size: 15px;
   font-weight: 400;
   display: flex;
-  align-items: center;
+  /* align-items: center; */
   white-space: nowrap;
 }
 .creditsPill svg {
@@ -106,14 +149,57 @@
   fill: var(--main-hl);
 }
 
-.sidebar {
+/* .sidebar {
   position: fixed;
   top: 0;
   left: 0;
   height: 100%;
   width: 50px;
-  background-color: #000;
+  background-color: transparent;
   display: flex;
   flex-direction: column;
   gap: 10px;
+} */
+
+.sidebar {
+  width: 220px;
+  height: 100%;
+  background-color: transparent;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  /* box-shadow: 2px 0 6px rgba(0, 0, 0, 0.05); */
+  gap: 50px;
+  position: fixed;
+  z-index: 1000;
+  /* padding-bottom: -30px; */
+}
+
+.topSection {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.bottomSection {
+  /* border-top: 1px solid #ddd;
+  padding-top: 1rem; */
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.packagesButtonBottom {
+  background-color: var(--main-hl);
+  color: var(--white);
+  border: none;
+  padding: 0.6rem;
+  /* margin-top: 8px; */
+  border-radius: 8px;
+  width: 100%;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 400;
 }
