@@ -53,6 +53,9 @@ async function updateProfileDetails(req, res) {
  */
 async function updateProfileName(req, res) {
 	try {
+		if (!req.body.name || typeof req.body.name !== 'string' || req.body.name.trim().length === 0) {
+			return res.status(HttpStatus.FAILED_STATUS).send("Invalid or missing 'name' in request body");
+		}
 		const ok = await db_updateProfileName(req.user.id, req.body.name);
 		if (ok) return res.sendStatus(HttpStatus.SUCCESS_STATUS);
 		return res.status(HttpStatus.FAILED_STATUS).send("Failed to update profile name");
@@ -67,6 +70,9 @@ async function updateProfileName(req, res) {
  */
 async function updateProfilePicture(req, res) {
 	try {
+		if (!req.body.profile_picture) {
+			return res.status(HttpStatus.FAILED_STATUS).send("Missing 'profile_picture' in request body");
+		}
 		const ok = await db_updateProfilePicture(req.user.id, req.body.profile_picture);
 		if (ok) return res.sendStatus(HttpStatus.SUCCESS_STATUS);
 		return res.status(HttpStatus.FAILED_STATUS).send("Failed to update profile picture");

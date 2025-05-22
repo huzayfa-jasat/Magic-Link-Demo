@@ -1,5 +1,6 @@
 // Dependencies
 const knex = require('knex')(require('../../knexfile.js').development);
+const { encodeImage } = require('../../utils/convertEncodedImage.js');
 
 
 // -------------------
@@ -52,8 +53,10 @@ async function db_updateProfileName(user_id, new_name) {
 
 async function db_updateProfilePicture(user_id, new_profile_picture) {
 	let err_code;
+	const encoded = encodeImage(new_profile_picture);
+	if (!encoded) return false;
 	await knex('Users').where('id',user_id).update({
-		'profile_picture': new_profile_picture,
+		'profile_picture': encoded,
 	}).catch((err)=>{if (err) err_code = err.code});
 	if (err_code) return false;
 	return true;
