@@ -8,8 +8,10 @@ const {
 	db_getVerifyRequestDetails,
 	db_getPaginatedVerifyRequestResults,
 	db_getPaginatedEmailResults,
+	db_exportBatchResultsCsv,
 } = require("./funs_db.js");
 
+const { Parser } = require('json2csv');
 
 /**
  * Verify a single email
@@ -164,6 +166,24 @@ async function getPaginatedEmailResults(req, res) {
 	}
 }
 
+async function exportBatchResultsCsv(req, res) {
+	try {
+		const request_id = req.query.request_id;
+		const filter = req.query.filter || 'all';
+		const page = parseInt(req.query.page) || 1;
+		const per_page = parseInt(req.query.per_page) || 500;
+		if (!request_id) return res.status(400).send('Missing request_id');
+
+		const [ok, results] = await db_exportBatchResultsCsv(req.user.id, request_id, filter, page, per_page);
+		if (!ok) return res.status(500).send('Failed to fetch results');
+
+		const hasMore = results.length === per_page;
+		return res.json({ data: results, hasMore });
+	} catch (err) {
+		console.log('MTE = ', err);
+		return res.status(500).send('Error exporting results');
+	}
+}
 
 // Export
 module.exports = {
@@ -174,4 +194,5 @@ module.exports = {
 	getVerifyRequestDetails,
 	getPaginatedVerifyRequestResults,
 	getPaginatedEmailResults,
+	exportBatchResultsCsv,
 };
