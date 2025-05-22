@@ -58,24 +58,36 @@ async function verifyBulkEmails(req, res) {
  * Verify an import of emails
  */
 async function verifyImportEmails(req, res) {
-	try {
-		// Validate request body
-		const { emails, request_id } = req.body;
-		if (!emails || !Array.isArray(emails) || emails.length === 0) {
-			return res.status(HttpStatus.BAD_REQUEST_STATUS).send("Emails array is required");
-		}
+  try {
+    // Validate request body
+    const { emails, request_id, file_name } = req.body;
+    if (!emails || !Array.isArray(emails) || emails.length === 0) {
+      return res
+        .status(HttpStatus.BAD_REQUEST_STATUS)
+        .send("Emails array is required");
+    }
 
-		// Verify emails
-		const [ok, verify_request_id] = await db_createVerifyRequest(req.user.id, emails, request_id || null);
-		if (ok) return res.status(HttpStatus.SUCCESS_STATUS).json({'data': verify_request_id});
-		return res.status(HttpStatus.FAILED_STATUS).send("Failed to create verify request");
-
-	} catch (err) {
-		console.log("MTE = ", err);
-		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
-	}
+    // Verify emails
+    const [ok, verify_request_id] = await db_createVerifyRequest(
+      req.user.id,
+      emails,
+      request_id,
+      file_name || null
+    );
+    if (ok)
+      return res
+        .status(HttpStatus.SUCCESS_STATUS)
+        .json({ data: verify_request_id });
+    return res
+      .status(HttpStatus.FAILED_STATUS)
+      .send("Failed to create verify request");
+  } catch (err) {
+    console.log("MTE = ", err);
+    return res
+      .status(HttpStatus.MISC_ERROR_STATUS)
+      .send(HttpStatus.MISC_ERROR_MSG);
+  }
 }
-
 
 /**
  * List verify requests

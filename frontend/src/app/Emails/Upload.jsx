@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { verifyBulkEmails } from '../../api/emails';
+import { verifyImportEmails } from '../../api/emails';
 import styles from './Emails.module.css';
 
 export default function EmailsUploadController() {
@@ -93,13 +93,13 @@ export default function EmailsUploadController() {
   }, [handleFileChange]);
 
   const handleUpload = async () => {
-    if (!emails.length) return;
+    if (!emails.length || !file) return;
 
     setIsUploading(true);
     setError(null);
 
     try {
-      const response = await verifyBulkEmails(emails);
+      const response = await verifyImportEmails(emails, null, file.name);
       const requestId = response.data.data;
       navigate(`/${requestId}/details`);
     } catch (err) {

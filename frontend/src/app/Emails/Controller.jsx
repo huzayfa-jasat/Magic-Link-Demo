@@ -71,7 +71,7 @@ export default function HomeController() {
             <div className={styles.card}>
               <div className={styles.cardHeader}>
                 <div className={styles.subtitle}>
-                  {request.request_type === 'single' ? 'Single Email' : `${request.num_contacts} Emails`}
+                  {request.request_type === 'single' ? 'Single Email' : `${request.file_name}` || `${request.num_contacts} Emails`}
                 </div>
                 <div className={`${styles.statusBadge} ${
                   request.num_processed === request.num_contacts
