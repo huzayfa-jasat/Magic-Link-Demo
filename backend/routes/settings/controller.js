@@ -5,6 +5,8 @@ const HttpStatus = require('../../types/HttpStatus.js');
 const {
 	db_getProfileDetails,
 	db_updateProfileEmail,
+	db_updateProfileName,
+	db_updateProfilePicture,
 } = require("./funs_db.js");
 
 
@@ -14,6 +16,7 @@ const {
 async function getProfileDetails(req, res) {
 	try {
 		const [ok, resp] = await db_getProfileDetails(req.user.id);
+		
 		if (ok) return res.status(HttpStatus.SUCCESS_STATUS).json({'data': resp});
 		return res.status(HttpStatus.FAILED_STATUS).send("Failed to load profile details");
 
@@ -45,9 +48,39 @@ async function updateProfileDetails(req, res) {
 	}
 }
 
+/**
+ * Update profile name
+ */
+async function updateProfileName(req, res) {
+	try {
+		const ok = await db_updateProfileName(req.user.id, req.body.name);
+		if (ok) return res.sendStatus(HttpStatus.SUCCESS_STATUS);
+		return res.status(HttpStatus.FAILED_STATUS).send("Failed to update profile name");
+	} catch (err) {
+		console.log("MTE = ", err);
+		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+	}
+}
+
+/**
+ * Update profile picture
+ */
+async function updateProfilePicture(req, res) {
+	try {
+		const ok = await db_updateProfilePicture(req.user.id, req.body.profile_picture);
+		if (ok) return res.sendStatus(HttpStatus.SUCCESS_STATUS);
+		return res.status(HttpStatus.FAILED_STATUS).send("Failed to update profile picture");
+	} catch (err) {
+		console.log("MTE = ", err);
+		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+	}
+}
+
 
 // Export
 module.exports = {
 	getProfileDetails,
 	updateProfileDetails,
+	updateProfileName,
+	updateProfilePicture,
 };
