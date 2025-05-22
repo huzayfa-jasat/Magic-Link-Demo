@@ -70,7 +70,7 @@ async function updateProfileName(req, res) {
  */
 async function updateProfilePicture(req, res) {
 	try {
-		if (!req.body.profile_picture) {
+		if (!('profile_picture' in req.body)) {
 			return res.status(HttpStatus.FAILED_STATUS).send("Missing 'profile_picture' in request body");
 		}
 		const ok = await db_updateProfilePicture(req.user.id, req.body.profile_picture);
