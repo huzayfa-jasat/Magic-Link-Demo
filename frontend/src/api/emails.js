@@ -33,12 +33,21 @@ export const verifyBulkEmails = async (emails) => {
  * Verify emails from an import
  * @param {string[]} emails - Array of email addresses to verify
  * @param {string} [requestId] - Optional request ID to associate with the import
+ * @param {string} [fileName] - Optional file name
  * @returns {Promise} The verify request ID
  */
-export const verifyImportEmails = async (emails, requestId = null) => {
-  return await http.post("/emails/verify/import", { emails, request_id: requestId }, {
-    withCredentials: true,
-  });
+export const verifyImportEmails = async (
+  emails,
+  requestId = null,
+  fileName = null
+) => {
+  return await http.post(
+    "/emails/verify/import",
+    { emails, request_id: requestId, file_name: fileName },
+    {
+      withCredentials: true,
+    }
+  );
 };
 
 /**
