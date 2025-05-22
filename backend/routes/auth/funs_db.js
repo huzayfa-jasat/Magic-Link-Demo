@@ -22,9 +22,17 @@ async function db_createUser(email, pass) {
 	}).catch((err)=>{if (err) err_code = err});
 	if (err_code) return false;
 
+	// Insert zero balance for new user
+	const user_id = db_resp[0];
+	await knex('Users_Credit_Balance').insert({
+		'user_id': user_id,
+		'current_balance': 0
+	}).catch((err)=>{if (err) err_code = err});
+	if (err_code) return false;
+
 	// Create password
     const create_pass = await new Promise((resolve, _) => {
-        db_createPassword(db_resp[0], pass, function(pw_ok) {
+        db_createPassword(user_id, pass, function(pw_ok) {
             if (!pw_ok.ok) return resolve(false);
             return resolve(true);
         });
