@@ -1,0 +1,14 @@
+/* Auth */
+export { default as Login } from "../app/Auth/Login.jsx";
+export { default as Register } from "../app/Auth/Register.jsx";
+
+/* Emails */
+export { default as EmailsHome } from "../app/Emails/Controller.jsx";
+export { default as EmailsUpload } from "../app/Emails/Upload.jsx";
+export { default as EmailsBatchDetails } from "../app/Emails/BatchDetails.jsx";
+
+/* Credits */
+export { default as Credits } from "../app/Credits/Controller.jsx";
+
+/* Settings */
+export { default as Settings } from "../app/Settings/Controller.jsx";

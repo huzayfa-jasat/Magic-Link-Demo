@@ -1,0 +1,103 @@
+version: '3.8'
+
+x-common-variables: &common-variables
+  MYSQL_DATABASE: $MYSQL_DATABASE
+  MYSQL_USER: $MYSQL_USER
+  MYSQL_PASSWORD: $MYSQL_PASSWORD
+
+services:
+  dbserver:
+    image: mysql
+    restart: always
+    cap_add:
+      - SYS_NICE
+    volumes:
+      - omniverifier_db_volume:/var/lib/mysql
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/setup.sql
+    ports:
+      - "3306:9906"
+    environment:
+      <<: *common-variables
+      MYSQL_ROOT_PASSWORD: $MYSQL_ROOT_PASSWORD
+      MYSQL_HOST: $MYSQL_HOST
+    networks:
+      - omniverifier_internal
+
+  cacheserver:
+    image: redis:alpine
+    volumes:
+      - omniverifier_redis_volume:/data
+    command: ["redis-server", "--appendonly", "yes", "--bind", "cacheserver", "--port", "18747"]
+    expose:
+      - "18747"
+    networks:
+      - omniverifier_internal
+      
+  apiserver:
+    build:
+      context: ./backend
+      target: production
+    depends_on:
+      - dbserver
+      - cacheserver
+    volumes:
+      - ./backend:/src
+      - /src/node_modules
+    environment:
+      <<: *common-variables
+      PORT: $API_V1_PORT
+    ports:
+      - $API_V1_PORT:$API_V1_PORT
+    networks:
+      - omniverifier_internal
+
+  api-proxy:
+    depends_on:
+      - apiserver
+    restart: always
+    build:
+      context: ./nginx/backend
+      dockerfile: Dockerfile
+    ports:
+      - "5050:5050"
+    networks:
+      - omniverifier_internal
+
+  webserver:
+    stdin_open: true
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - REACT_APP_ENV_MODE=production
+      - REACT_APP_API_URL_DEV=${API_DEV_URL}
+      - REACT_APP_API_URL_PROD=${API_PROD_URL}
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    volumes:
+      - ./frontend:/src
+      - ./frontend/nginx/prod_proxy.conf:/etc/nginx/conf.d/default.conf
+      - /src/node_modules
+    ports:
+      - 80:80
+    networks:
+      - omniverifier_internal
+
+  adminerserver:
+    image: adminer:latest
+    restart: unless-stopped
+    ports:
+      - 8080:8080
+    depends_on:
+      - dbserver
+    environment:
+      ADMINER_DEFAULT_SERVER: dbserver
+    networks:
+      - omniverifier_internal
+
+volumes:
+  omniverifier_db_volume:
+  omniverifier_redis_volume:
+
+networks:
+  omniverifier_internal:
+    driver: bridge

@@ -1,0 +1,180 @@
+/* Fonts */
+@font-face {
+  font-family: 'Geist';
+  src: url('./assets/fonts/geist/Geist_Thin.woff2') format('woff2'),
+      url('./assets/fonts/geist/Geist_Thin.woff') format('woff');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geist';
+  src: url('./assets/fonts/geist/Geist_UltraLight.woff2') format('woff2'),
+      url('./assets/fonts/geist/Geist_UltraLight.woff') format('woff');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geist';
+  src: url('./assets/fonts/geist/Geist_Light.woff2') format('woff2'),
+      url('./assets/fonts/geist/Geist_Light.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geist';
+  src: url('./assets/fonts/geist/Geist_Regular.woff2') format('woff2'),
+      url('./assets/fonts/geist/Geist_Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geist';
+  src: url('./assets/fonts/geist/Geist_Medium.woff2') format('woff2'),
+      url('./assets/fonts/geist/Geist_Medium.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geist';
+  src: url('./assets/fonts/geist/Geist_SemiBold.woff2') format('woff2'),
+      url('./assets/fonts/geist/Geist_SemiBold.woff') format('woff');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geist';
+  src: url('./assets/fonts/geist/Geist_Bold.woff2') format('woff2'),
+      url('./assets/fonts/geist/Geist_Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geist';
+  src: url('./assets/fonts/geist/Geist_Black.woff2') format('woff2'),
+      url('./assets/fonts/geist/Geist_Black.woff') format('woff');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geist UltraBlack';
+  src: url('./assets/fonts/geist/Geist_UltraBlack.woff2') format('woff2'),
+      url('./assets/fonts/geist/Geist_UltraBlack.woff') format('woff');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Sohne';
+  src: url('./assets/fonts/sohne/sohne_regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Sohne';
+  src: url('./assets/fonts/sohne/sohne_bold.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Sohne';
+  src: url('./assets/fonts/sohne/sohne_black.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Sohne';
+  src: url('./assets/fonts/sohne/sohne_light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Sohne Mono';
+  src: url('./assets/fonts/sohne_mono/sohnemono_regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Variables */
+:root {
+  --black: #fff;
+  --white: #222530;
+  --body: #0E121A;
+  --main-hl: #BBE8FF;
+  --brd-light: #242b38;
+}
+
+
+/* Reset -- https://piccalil.li/blog/a-more-modern-css-reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  -moz-text-size-adjust: none;
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
+  background-color: var(--body);
+}
+body, h1, h2, h3, h4, p,
+figure, blockquote, dl, dd {
+  margin-block-end: 0;
+}
+ul[role='list'],
+ol[role='list'] {
+  list-style: none;
+}
+body {
+  min-height: 100vh;
+  line-height: 1.5;
+}
+h1, h2, h3, h4,
+button, input, label {
+  line-height: 1.1;
+}
+h1, h2,
+h3, h4 {
+  text-wrap: balance;
+}
+a:not([class]) {
+  text-decoration-skip-ink: auto;
+  color: currentColor;
+}
+img,
+picture {
+  max-width: 100%;
+  display: block;
+}
+input, button,
+textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+}
+textarea:not([rows]) {
+  min-height: 10em;
+}
+:target {
+  scroll-margin-block: 5ex;
+}
+button, a {
+  font-family: 'Sohne Mono', monospace;
+  font-weight: 400;
+}
+* {
+  font-family: 'Sohne', sans-serif;
+  font-weight: 400;
+}
