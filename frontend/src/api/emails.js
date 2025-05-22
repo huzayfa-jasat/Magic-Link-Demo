@@ -13,9 +13,13 @@ import { http } from "./http";
  * @returns {Promise} The verify request ID
  */
 export const verifySingleEmail = async (email) => {
-  return await http.post("/emails/verify/single", { email }, {
-    withCredentials: true,
-  });
+  return await http.post(
+    "/emails/verify/single",
+    { email },
+    {
+      withCredentials: true,
+    }
+  );
 };
 
 /**
@@ -24,9 +28,13 @@ export const verifySingleEmail = async (email) => {
  * @returns {Promise} The verify request ID
  */
 export const verifyBulkEmails = async (emails) => {
-  return await http.post("/emails/verify/bulk", { emails }, {
-    withCredentials: true,
-  });
+  return await http.post(
+    "/emails/verify/bulk",
+    { emails },
+    {
+      withCredentials: true,
+    }
+  );
 };
 
 /**
@@ -76,11 +84,22 @@ export const listVerifyRequests = async () => {
  * @param {string} requestId - The ID of the verify request
  * @param {number} page - The page number (1-based)
  * @param {number} [perPage=50] - Number of results per page
+ * @param {string} [search] - Optional search query to filter emails
  * @returns {Promise} Paginated verify request results
  */
-export const getPaginatedVerifyRequestResults = async (requestId, page, perPage = 50) => {
+export const getPaginatedVerifyRequestResults = async (
+  requestId,
+  page,
+  perPage = 50,
+  search = null
+) => {
+  const params = { page, per_page: perPage };
+  if (search && search.trim()) {
+    params.search = search.trim();
+  }
+
   return await http.get(`/emails/requests/${requestId}/results`, {
-    params: { page, per_page: perPage },
+    params,
     withCredentials: true,
   });
 };

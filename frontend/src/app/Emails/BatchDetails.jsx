@@ -1,7 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { getVerifyRequestDetails, getPaginatedVerifyRequestResults } from '../../api/emails';
-import styles from './Emails.module.css';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useParams, Link } from "react-router-dom";
+import {
+  getVerifyRequestDetails,
+  getPaginatedVerifyRequestResults,
+} from "../../api/emails";
+import styles from "./Emails.module.css";
 
 const ITEMS_PER_PAGE = 50;
 
@@ -78,10 +81,12 @@ function getMailServerDisplay(mail_server) {
         iCloud
       </span>);
     default:
-      return (<span>
-        <svg />
-        Other
-      </span>);
+      return (
+        <span>
+          <svg />
+          Other
+        </span>
+      );
   }
 }
 
@@ -94,6 +99,9 @@ export default function EmailsBatchDetailsController() {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const debounceTimeoutRef = useRef(null);
 
   // Fetch batch details
   const fetchDetails = useCallback(async () => {
@@ -102,30 +110,60 @@ export default function EmailsBatchDetailsController() {
       setDetails(response.data.data);
       return true; // Return success status
     } catch (err) {
-      setError('Failed to load batch details');
-      console.error('Error fetching details:', err);
+      setError("Failed to load batch details");
+      console.error("Error fetching details:", err);
       return false; // Return failure status
     }
   }, [id]);
 
-  // Fetch paginated results
-  const fetchResults = useCallback(async (page) => {
-    if (!details) return; // Don't fetch if we don't have details
-
-    try {
-      const response = await getPaginatedVerifyRequestResults(id, page, ITEMS_PER_PAGE);
-      setResults(response.data.data || []);
-      setTotalPages(Math.ceil(details.num_contacts / ITEMS_PER_PAGE));
-      return true; // Return success status
-    } catch (err) {
-      setError('Failed to load results');
-      console.error('Error fetching results:', err);
-      setResults([]);
-      return false; // Return failure status
-    } finally {
-      setLoading(false);
+  // Debounce search query
+  useEffect(() => {
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
     }
-  }, [id, details]);
+
+    debounceTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500);
+
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, [searchQuery]);
+
+  // Reset page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchQuery]);
+
+  // Fetch paginated results
+  const fetchResults = useCallback(
+    async (page, search = "") => {
+      if (!details) return; // Don't fetch if we don't have details
+
+      try {
+        const response = await getPaginatedVerifyRequestResults(
+          id,
+          page,
+          ITEMS_PER_PAGE,
+          search
+        );
+        setResults(response.data.data || []);
+        setTotalPages(Math.ceil(details.num_contacts / ITEMS_PER_PAGE));
+        return true; // Return success status
+      } catch (err) {
+        setError("Failed to load results");
+        console.error("Error fetching results:", err);
+        setResults([]);
+        return false; // Return failure status
+      } finally {
+        setLoading(false);
+      }
+    },
+    [id, details]
+  );
 
   // Separate effects for details and results
   useEffect(() => {
@@ -140,44 +178,49 @@ export default function EmailsBatchDetailsController() {
     loadDetails();
   }, [fetchDetails]);
 
-  // Only fetch results when details are loaded and page changes
+  // Only fetch results when details are loaded and page or search changes
   useEffect(() => {
     if (details && !error) {
-      fetchResults(currentPage);
+      fetchResults(currentPage, debouncedSearchQuery);
     }
-  }, [details, currentPage, fetchResults, error]);
+  }, [details, currentPage, debouncedSearchQuery, fetchResults, error]);
 
   // Calculate result statistics
-  const stats = (results || []).reduce((acc, item) => {
-    const result = item?.result?.toLowerCase() || 'pending';
-    acc[result] = (acc[result] || 0) + 1;
-    return acc;
-  }, {
-    valid: 0,
-    invalid: 0,
-    catchall: 0,
-    pending: 0
-  });
+  const stats = (results || []).reduce(
+    (acc, item) => {
+      const result = item?.result?.toLowerCase() || "pending";
+      acc[result] = (acc[result] || 0) + 1;
+      return acc;
+    },
+    {
+      valid: 0,
+      invalid: 0,
+      catchall: 0,
+      pending: 0,
+    }
+  );
 
   // Export results to CSV
   const handleExport = useCallback(() => {
     if (!results.length) return;
 
-    const headers = ['Email', 'Result', 'Mail Server'];
+    const headers = ["Email", "Result", "Mail Server"];
     const csvContent = [
-      headers.join(','),
-      ...results.map(item => [
-        item.global_id,
-        item.result || 'pending',
-        item.processed_ts || ''
-      ].join(','))
-    ].join('\n');
+      headers.join(","),
+      ...results.map((item) =>
+        [
+          item.email || item.global_id,
+          item.result || "pending",
+          getMailServerDisplay(item.mail_server) || "",
+        ].join(",")
+      ),
+    ].join("\n");
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `email-verification-results-${id}.csv`);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `email-verification-results-${id}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -237,6 +280,32 @@ export default function EmailsBatchDetailsController() {
         </button>
       </div>
 
+      <div className={styles.searchContainer}>
+        <input
+          type="text"
+          placeholder="Search emails..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className={styles.searchInput}
+        />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          fill="none"
+          viewBox="0 0 24 24"
+          className={styles.searchIcon}
+        >
+          <path
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="1.5"
+            d="m21 21-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"
+          />
+        </svg>
+      </div>
+
       <div className={styles.detailsMeta}>
         <div className={styles.metaCard}>
           <div className={styles.metaLabel}>Total Emails</div>
@@ -247,19 +316,41 @@ export default function EmailsBatchDetailsController() {
             Valid
           </div>
           <div className={`${styles.metaValue} ${styles.resultValid}`}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-              <path stroke="#000" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="m15.75 9.5-5 5-2.5-2.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke="#000"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="1.5"
+                d="m15.75 9.5-5 5-2.5-2.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+              />
             </svg>
             {stats.valid}
           </div>
         </div>
         <div className={styles.metaCard}>
-          <div className={styles.metaLabel}>
-            Invalid
-          </div>
+          <div className={styles.metaLabel}>Invalid</div>
           <div className={`${styles.metaValue} ${styles.resultInvalid}`}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-              <path stroke="#000" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9.172 14.828 12 12m0 0 2.828-2.828M12 12 9.172 9.172M12 12l2.828 2.828M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke="#000"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="1.5"
+                d="M9.172 14.828 12 12m0 0 2.828-2.828M12 12 9.172 9.172M12 12l2.828 2.828M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+              />
             </svg>
             {stats.invalid}
           </div>
@@ -269,8 +360,20 @@ export default function EmailsBatchDetailsController() {
             Catch-All
           </div>
           <div className={`${styles.metaValue} ${styles.resultCatchAll}`}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-              <path stroke="#000" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 12h8m5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke="#000"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="1.5"
+                d="M8 12h8m5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+              />
             </svg>
             {stats.catchall}
           </div>
@@ -289,7 +392,9 @@ export default function EmailsBatchDetailsController() {
           <tbody>
             {results.map((item, index) => (
               <tr key={index} className={styles.tableRow}>
-                <td className={styles.tableCell}>{item.global_id}</td>
+                <td className={styles.tableCell}>
+                  {item.email || item.global_id}
+                </td>
                 <td className={`${styles.tableCell} ${styles.tableCellResult}`}>
                   {item.result || 'Pending'}
                 </td>
