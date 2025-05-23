@@ -200,9 +200,7 @@ async function db_exportBatchResultsCsv(user_id, request_id, filter, page, per_p
 		.orderBy('rc.processed_ts', 'asc');
 
 	if (filter && filter !== 'all') {
-		if (['valid', 'invalid', 'catch-all'].includes(filter)) {
-			query = query.andWhere('cg.latest_result', filter);
-		}
+		query = query.andWhere('cg.latest_result', filter);
 	}
 
 	const db_resp = await query.catch((err)=>{if (err) err_code = err.code});

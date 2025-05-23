@@ -13,6 +13,12 @@ const {
 
 const { Parser } = require('json2csv');
 
+// Default constants
+const DEFAULT_BATCH_RESULT_FILTER = 'all';
+const DEFAULT_BATCH_RESULT_PAGE = 1;
+const DEFAULT_BATCH_RESULT_PER_PAGE = 500;
+const ALLOWED_FILTERS = ['all', 'valid', 'invalid', 'catch-all'];
+
 /**
  * Verify a single email
  */
@@ -169,19 +175,24 @@ async function getPaginatedEmailResults(req, res) {
 async function exportBatchResultsCsv(req, res) {
 	try {
 		const request_id = req.query.request_id;
-		const filter = req.query.filter || 'all';
-		const page = parseInt(req.query.page) || 1;
-		const per_page = parseInt(req.query.per_page) || 500;
-		if (!request_id) return res.status(400).send('Missing request_id');
+		const filter = req.query.filter || DEFAULT_BATCH_RESULT_FILTER;
+		const page = parseInt(req.query.page) || DEFAULT_BATCH_RESULT_PAGE;
+		const per_page = parseInt(req.query.per_page) || DEFAULT_BATCH_RESULT_PER_PAGE;
+		if (!request_id) return res.status(HttpStatus.BAD_REQUEST_STATUS).send('Missing request_id');
+
+		// Validate filter
+		if (!ALLOWED_FILTERS.includes(filter)) {
+			return res.status(HttpStatus.BAD_REQUEST_STATUS).send('Invalid filter');
+		}
 
 		const [ok, results] = await db_exportBatchResultsCsv(req.user.id, request_id, filter, page, per_page);
-		if (!ok) return res.status(500).send('Failed to fetch results');
+		if (!ok) return res.status(HttpStatus.FAILED_STATUS).send('Failed to fetch results');
 
 		const hasMore = results.length === per_page;
-		return res.json({ data: results, hasMore });
+		return res.status(HttpStatus.SUCCESS_STATUS).json({ data: results, hasMore });
 	} catch (err) {
 		console.log('MTE = ', err);
-		return res.status(500).send('Error exporting results');
+		return res.status(HttpStatus.MISC_ERROR_STATUS).send('Error exporting results');
 	}
 }
 
