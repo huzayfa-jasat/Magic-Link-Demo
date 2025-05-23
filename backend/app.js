@@ -12,6 +12,12 @@ var cors = require('cors');
 
 // App Config
 const app = express();
+
+// Webhook route needs raw body
+const webhookRoute = require('./routes/webhooks/routes.js');
+app.use('/webhooks/', webhookRoute);
+
+// Body parser middleware
 app.use(bodyParser.json());
 
 // CORS Middleware
@@ -75,6 +81,7 @@ const authRoute = require('./routes/auth/routes.js');
 const settingsRoute = require('./routes/settings/routes.js');
 const emailsRoute = require('./routes/emails/routes.js');
 const creditsRoute = require('./routes/credits/routes.js');
+const paymentRoute = require('./routes/payment.js');
 
 const route_prefix = (process.env.NODE_ENV === "development") ? "/api" : "";
 
@@ -83,6 +90,7 @@ app.use(route_prefix+'/auth/', authRoute);
 app.use(route_prefix+'/settings/', settingsRoute);
 app.use(route_prefix+'/emails/', emailsRoute);
 app.use(route_prefix+'/credits/', creditsRoute);
+app.use(route_prefix+'/payment/', paymentRoute);
 
 // Catch unhandled requests
 app.all('/*', (_, res) => { res.sendStatus(404); });

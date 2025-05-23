@@ -1,6 +1,7 @@
 // Dependencies
 const crypto = require('crypto');
 const knex = require('knex')(require('../../knexfile.js').development);
+const { createStripeCustomer } = require('../../utils/stripe');
 
 // Constants
 const HASH_ITERATIONS = parseInt(process.env.HASH_ITERATIONS);
@@ -38,6 +39,16 @@ async function db_createUser(email, pass) {
         });
     });
     if (!create_pass) return false;
+
+    // Create Stripe customer
+    try {
+        await createStripeCustomer(user_id, email);
+    } catch (error) {
+        console.error('Error creating Stripe customer:', error);
+        // Don't fail registration if Stripe customer creation fails
+        // The customer can be created later when they make their first purchase
+    }
+
     return true;
 }
 
