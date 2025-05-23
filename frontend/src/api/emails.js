@@ -13,9 +13,13 @@ import { http } from "./http";
  * @returns {Promise} The verify request ID
  */
 export const verifySingleEmail = async (email) => {
-  return await http.post("/emails/verify/single", { email }, {
-    withCredentials: true,
-  });
+  return await http.post(
+    "/emails/verify/single",
+    { email },
+    {
+      withCredentials: true,
+    }
+  );
 };
 
 /**
@@ -24,9 +28,13 @@ export const verifySingleEmail = async (email) => {
  * @returns {Promise} The verify request ID
  */
 export const verifyBulkEmails = async (emails) => {
-  return await http.post("/emails/verify/bulk", { emails }, {
-    withCredentials: true,
-  });
+  return await http.post(
+    "/emails/verify/bulk",
+    { emails },
+    {
+      withCredentials: true,
+    }
+  );
 };
 
 /**
@@ -36,9 +44,13 @@ export const verifyBulkEmails = async (emails) => {
  * @returns {Promise} The verify request ID
  */
 export const verifyImportEmails = async (emails, requestId = null) => {
-  return await http.post("/emails/verify/import", { emails, request_id: requestId }, {
-    withCredentials: true,
-  });
+  return await http.post(
+    "/emails/verify/import",
+    { emails, request_id: requestId },
+    {
+      withCredentials: true,
+    }
+  );
 };
 
 /**
@@ -69,7 +81,11 @@ export const listVerifyRequests = async () => {
  * @param {number} [perPage=50] - Number of results per page
  * @returns {Promise} Paginated verify request results
  */
-export const getPaginatedVerifyRequestResults = async (requestId, page, perPage = 50) => {
+export const getPaginatedVerifyRequestResults = async (
+  requestId,
+  page,
+  perPage = 50
+) => {
   return await http.get(`/emails/requests/${requestId}/results`, {
     params: { page, per_page: perPage },
     withCredentials: true,
@@ -85,6 +101,27 @@ export const getPaginatedVerifyRequestResults = async (requestId, page, perPage 
 export const getPaginatedEmailResults = async (page, perPage = 50) => {
   return await http.get("/emails/emails/results", {
     params: { page, per_page: perPage },
+    withCredentials: true,
+  });
+};
+
+/**
+ * Get paginated results for a specific verify request
+ * @param {string} requestId - The ID of the verify request
+ * @param {number} page - The page number (1-based)
+ * @param {number} [perPage=50] - Number of results per page
+ * @param {string} filter
+ * @returns {Promise} Paginated verify request results
+ */
+
+export const exportBatchResultsCsv = async (
+  requestId,
+  page,
+  perPage = 50,
+  filter
+) => {
+  return await http.get("/emails/export-batch-results", {
+    query: { requestId, filter, page, perPage },
     withCredentials: true,
   });
 };
