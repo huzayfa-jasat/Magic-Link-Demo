@@ -1,12 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { NavLink } from "react-router-dom";
-import { listVerifyRequests } from "../../api/emails";
+import { listVerifyRequests, exportBatchResultsCsv } from "../../api/emails";
 import styles from "./Emails.module.css";
+import { useParams, Link } from "react-router-dom";
+import Popup from "reactjs-popup";
+
+const ITEMS_PER_PAGE = 50;
 
 export default function HomeController() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const { id } = useParams();
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -24,6 +30,50 @@ export default function HomeController() {
 
     fetchRequests();
   }, []);
+
+  const handleExportFiltered = useCallback(
+    async (filter) => {
+      let allResults = [];
+      let page = 1;
+      let done = false;
+
+      while (!done) {
+        const response = await exportBatchResultsCsv(
+          id,
+          page,
+          ITEMS_PER_PAGE,
+          filter
+        );
+        const pageResults = response.data.data || [];
+        allResults = [...allResults, ...pageResults];
+        if (pageResults.length < ITEMS_PER_PAGE) done = true;
+        else page++;
+      }
+
+      // Build and download CSV
+      const headers = ["Email", "Result", "Mail Server"];
+      const csvContent = [
+        headers.join(","),
+        ...allResults.map((item) =>
+          [
+            item.global_id,
+            item.result || "pending",
+            item.mail_server || "",
+          ].join(",")
+        ),
+      ].join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `email-results-${filter}-${id}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    },
+    [id]
+  );
 
   if (loading) {
     return (
@@ -173,6 +223,35 @@ export default function HomeController() {
                       : 0}%
                   </span>
                 </div> */}
+              </div>
+              <div>
+                <Popup
+                  trigger={
+                    <button
+                      className={`${styles.button} ${styles.buttonPrimary}`}
+                    >
+                      Export ▼
+                    </button>
+                  }
+                  position="bottom left"
+                  on={["click"]}
+                  closeOnDocumentClick
+                >
+                  <div className={styles.exportMenu}>
+                    <button onClick={() => handleExportFiltered("valid")}>
+                      Only Valid
+                    </button>
+                    <button onClick={() => handleExportFiltered("invalid")}>
+                      Only Invalid
+                    </button>
+                    <button onClick={() => handleExportFiltered("catch-all")}>
+                      Only Catch-All
+                    </button>
+                    <button onClick={() => handleExportFiltered("all")}>
+                      All Emails
+                    </button>
+                  </div>
+                </Popup>
               </div>
             </div>
           </NavLink>
