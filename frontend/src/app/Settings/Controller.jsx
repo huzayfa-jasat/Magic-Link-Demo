@@ -62,7 +62,7 @@ export default function SettingsController() {
 
   const handleLogout = async () => {
     await logoutUser();
-    navigate("/login");
+    window.location.reload();
   };
 
   if (loading) return <div>Loading...</div>;
