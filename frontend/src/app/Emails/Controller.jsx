@@ -56,7 +56,7 @@ export default function HomeController() {
         headers.join(","),
         ...allResults.map((item) =>
           [
-            item.global_id,
+            item.email,
             item.result || "pending",
             item.mail_server || "",
           ].join(",")
@@ -113,7 +113,6 @@ export default function HomeController() {
       <h1 className={styles.title}>Welcome back!</h1>
       <br />
       <div className={styles.grid}>
-        {console.log(requests)}
         {requests.map((request, idx) => (
           <NavLink
             key={request.request_id}
