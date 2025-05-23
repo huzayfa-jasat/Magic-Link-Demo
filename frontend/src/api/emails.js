@@ -83,7 +83,7 @@ export const listVerifyRequests = async () => {
  */
 export const getPaginatedVerifyRequestResults = async (
   requestId,
-  page,
+  page = 1,
   perPage = 50
 ) => {
   return await http.get(`/emails/requests/${requestId}/results`, {
@@ -116,7 +116,7 @@ export const getPaginatedEmailResults = async (page, perPage = 50) => {
 
 export const exportBatchResultsCsv = async (
   requestId,
-  page,
+  page = 1,
   perPage = 50,
   filter
 ) => {
