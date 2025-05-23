@@ -64,6 +64,7 @@ export const getVerifyRequestDetails = async (requestId) => {
 /**
  * List all verify requests for the current user
  * @returns {Promise} List of verify requests
+ * Response: num_contacts, num_processed, num_invalid, num_catch_all, request_id, request_type
  */
 export const listVerifyRequests = async () => {
   return await http.get("/emails/requests/list", {

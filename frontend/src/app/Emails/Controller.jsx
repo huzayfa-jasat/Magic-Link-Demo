@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { NavLink } from 'react-router-dom';
-import { listVerifyRequests } from '../../api/emails';
-import styles from './Emails.module.css';
+import { useEffect, useState } from "react";
+import { NavLink } from "react-router-dom";
+import { listVerifyRequests } from "../../api/emails";
+import styles from "./Emails.module.css";
 
 export default function HomeController() {
   const [requests, setRequests] = useState([]);
@@ -13,9 +13,10 @@ export default function HomeController() {
       try {
         const response = await listVerifyRequests();
         setRequests(response.data.data);
+        // console.log(requests);
       } catch (err) {
-        setError('Failed to load verify requests');
-        console.error('Error fetching requests:', err);
+        setError("Failed to load verify requests");
+        console.error("Error fetching requests:", err);
       } finally {
         setLoading(false);
       }
@@ -60,8 +61,9 @@ export default function HomeController() {
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Welcome back!</h1>
-      <br/>
+      <br />
       <div className={styles.grid}>
+        {console.log(requests)}
         {requests.map((request, idx) => (
           <NavLink
             key={request.request_id}
@@ -71,31 +73,93 @@ export default function HomeController() {
             <div className={styles.card}>
               <div className={styles.cardHeader}>
                 <div className={styles.subtitle}>
-                  {request.request_type === 'single' ? 'Single Email' : `${request.file_name}` || `${request.num_contacts} Emails`}
+                  {request.request_type === "single"
+                    ? "Single Email"
+                    : `${request.num_contacts} Emails`}
                 </div>
-                <div className={`${styles.statusBadge} ${
-                  request.num_processed === request.num_contacts
-                    ? styles.statusComplete
-                    : request.num_processed > 0
-                    ? styles.statusProcessing
-                    : styles.statusPending
-                }`}>
+                <div
+                  className={`${styles.statusBadge} ${
+                    request.num_processed === request.num_contacts
+                      ? styles.statusComplete
+                      : request.num_processed > 0
+                      ? styles.statusProcessing
+                      : styles.statusPending
+                  }`}
+                >
                   {request.num_processed === request.num_contacts
-                    ? 'Complete'
+                    ? "Complete"
                     : request.num_processed > 0
-                    ? 'Processing'
-                    : 'Pending'}
+                    ? "Processing"
+                    : "Pending"}
                 </div>
               </div>
               <div className={styles.stats}>
                 <div className={styles.stat}>
                   <span className={styles.statLabel}>Valid</span>
                   <span className={styles.statValue}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <path stroke="#000" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="m15.75 9.5-5 5-2.5-2.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke="#000"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="1.5"
+                        d="m15.75 9.5-5 5-2.5-2.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                      />
                     </svg>
                     {request.num_processed}
                   </span>
+                </div>
+                <div className={styles.stat}>
+                  <span className={styles.statLabel}>Invalid</span>
+                  <div
+                    className={`${styles.metaValue} ${styles.resultInvalid}`}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke="#000"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="1.5"
+                        d="M9.172 14.828 12 12m0 0 2.828-2.828M12 12 9.172 9.172M12 12l2.828 2.828M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                      />
+                    </svg>
+                    {request.num_invalid}
+                  </div>
+                </div>
+                <div className={styles.stat}>
+                  <span className={styles.statLabel}>Catch-All</span>
+                  <div
+                    className={`${styles.metaValue} ${styles.resultCatchAll}`}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke="#000"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="1.5"
+                        d="M8 12h8m5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                      />
+                    </svg>
+                    {request.num_catch_all}
+                  </div>
                 </div>
                 {/* <div className={styles.stat}>
                   <span className={styles.statLabel}>Processed</span>
