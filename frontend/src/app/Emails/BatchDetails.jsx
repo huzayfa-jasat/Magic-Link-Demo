@@ -1,123 +1,26 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
-import {
-  getVerifyRequestDetails,
-  getPaginatedVerifyRequestResults,
-} from "../../api/emails";
 import styles from "./Emails.module.css";
 import getMailServerDisplay from "./getMailServerDisplay";
-
-const ITEMS_PER_PAGE = 50;
+import  useBatchData  from "./hooks/useBatchData";
 
 // Main Component
 export default function EmailsBatchDetailsController() {
   const { id } = useParams();
-  const [details, setDetails] = useState(null);
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
-  const debounceTimeoutRef = useRef(null);
 
-  // Fetch batch details
-  const fetchDetails = useCallback(async () => {
-    try {
-      const response = await getVerifyRequestDetails(id);
-      setDetails(response.data.data);
-      return true; // Return success status
-    } catch (err) {
-      setError("Failed to load batch details");
-      console.error("Error fetching details:", err);
-      return false; // Return failure status
-    }
-  }, [id]);
-
-  // Debounce search query
-  useEffect(() => {
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
-    }
-
-    debounceTimeoutRef.current = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-    }, 500);
-
-    return () => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-    };
-  }, [searchQuery]);
-
-  // Reset page when search changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [debouncedSearchQuery]);
-
-  // Fetch paginated results
-  const fetchResults = useCallback(
-    async (page, search = "") => {
-      if (!details) return; // Don't fetch if we don't have details
-
-      try {
-        const response = await getPaginatedVerifyRequestResults(
-          id,
-          page,
-          ITEMS_PER_PAGE,
-          search
-        );
-        setResults(response.data.data || []);
-        setTotalPages(Math.ceil(details.num_contacts / ITEMS_PER_PAGE));
-        return true; // Return success status
-      } catch (err) {
-        setError("Failed to load results");
-        console.error("Error fetching results:", err);
-        setResults([]);
-        return false; // Return failure status
-      } finally {
-        setLoading(false);
-      }
-    },
-    [id, details]
-  );
-
-  // Separate effects for details and results
-  useEffect(() => {
-    const loadDetails = async () => {
-      setLoading(true);
-      setError(null);
-      const success = await fetchDetails();
-      if (!success) {
-        setLoading(false);
-      }
-    };
-    loadDetails();
-  }, [fetchDetails]);
-
-  // Only fetch results when details are loaded and page or search changes
-  useEffect(() => {
-    if (details && !error) {
-      fetchResults(currentPage, debouncedSearchQuery);
-    }
-  }, [details, currentPage, debouncedSearchQuery, fetchResults, error]);
-
-  // Calculate result statistics
-  const stats = (results || []).reduce(
-    (acc, item) => {
-      const result = item?.result?.toLowerCase() || "pending";
-      acc[result] = (acc[result] || 0) + 1;
-      return acc;
-    },
-    {
-      valid: 0,
-      invalid: 0,
-      catchall: 0,
-      pending: 0,
-    }
-  );
+  // Use custom hook for all batch data management
+  const {
+    details,
+    results,
+    loading,
+    error,
+    currentPage,
+    totalPages,
+    searchQuery,
+    stats,
+    setCurrentPage,
+    setSearchQuery,
+  } = useBatchData(id);
 
   // Export results to CSV
   const handleExport = useCallback(() => {
