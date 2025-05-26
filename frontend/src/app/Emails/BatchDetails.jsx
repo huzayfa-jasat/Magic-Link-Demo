@@ -224,9 +224,7 @@ export default function EmailsBatchDetailsController() {
       </Link>
 
       <div className={styles.detailsHeader}>
-        <h1 className={styles.detailsTitle}>
-          {details.file_name || 'Details'}
-        </h1>
+        <h1 className={styles.detailsTitle}>Details</h1>
         <button
           className={`${styles.button} ${styles.buttonPrimary}`}
           onClick={handleExport}
