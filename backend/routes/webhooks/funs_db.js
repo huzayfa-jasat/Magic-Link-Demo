@@ -1,3 +1,4 @@
+// Dependencies
 const db = require('../../utils/db');
 
 /**
@@ -37,6 +38,49 @@ async function handleSuccessfulPayment(userId, credits, sessionId) {
     }
 }
 
+/**
+ * 
+ * @param {number} id 
+ * @param {string} email 
+ * @param {string} result 
+ * @param {string} server 
+ */
+
+async function handleIncomingResults(id, email, result, server) {
+    let err;
+
+    try {
+
+        await db('Requests')
+            .where('request_id', id)
+            .increment('num_processed', 1)
+            .update({
+                'request_status': db.raw('IF(num_processed = num_contacts, "completed", request_status)')
+            })
+            .catch((error) => { err = error; });
+
+        if (err) throw err;
+
+        // Update global contact
+        await db('Contacts_Global')
+            .where('email', email)
+            .update({
+                'latest_result': result,
+                'last_mail_server': server
+            })
+            .catch((error) => { err = error; });
+
+        if (err) throw err;
+    }
+
+    catch (error) {
+        console.error('Error handling incoming results:', error);
+        throw error;
+    }
+
+}
+
 module.exports = {
-    handleSuccessfulPayment
+    handleSuccessfulPayment,
+    handleIncomingResults
 }; 

@@ -1,6 +1,9 @@
+// Dependencies
 const HttpStatus = require('../../types/HttpStatus');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const { handleSuccessfulPayment } = require('./funs_db');
+const { handleSuccessfulPayment, handleIncomingResults } = require('./funs_db');
+
+const result_map = ["invalid", "catchall", "valid"];
 
 /**
  * Handle Stripe webhook events
@@ -96,6 +99,31 @@ async function handleWebhook(req, res) {
     }
 }
 
+async function handleResults(req, res) {
+    
+    try {
+        // Parse request body
+        const { id, email, result, server } = req.body;
+
+        // Validate request body
+        if (!id || typeof id !== 'number') return res.status(HttpStatus.BAD_REQUEST_STATUS)
+        if (!email || typeof email !== 'string') return res.status(HttpStatus.BAD_REQUEST_STATUS)
+        if (!result || typeof result !== 'number') return res.status(HttpStatus.BAD_REQUEST_STATUS)
+        if (!server || typeof server !== 'string') return res.status(HttpStatus.BAD_REQUEST_STATUS)
+
+        // Handle incoming results
+        await handleIncomingResults(id, email, result_map[result], server);
+
+        return res.status(HttpStatus.SUCCESS_STATUS);
+
+    } catch (err) {
+        console.log("MTE = ", err);
+        return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+    }
+}
+
+
 module.exports = {
-    handleWebhook
+    handleWebhook,
+    handleResults
 }; 
