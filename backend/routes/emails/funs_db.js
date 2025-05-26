@@ -104,6 +104,8 @@ async function db_listVerifyRequests(user_id) {
       "request_type",
       "num_contacts",
       "num_processed",
+      "num_invalid",
+      "num_catch_all",
       "file_name"
     )
     .catch((err) => {
@@ -122,7 +124,7 @@ async function db_getVerifyRequestDetails(user_id, request_id) {
 		'user_id': user_id,
 		'request_id': request_id,
 		'request_status': 'pending'
-	}).select('request_id', 'request_type', 'num_contacts', 'num_processed', 'file_name').catch(err => { if (err) err_code = err.code });
+	}).select('request_id', 'request_type', 'num_contacts', 'num_processed', 'num_invalid', 'num_catch_all', 'file_name').catch(err => { if (err) err_code = err.code });
 
 	if (err_code) return [false, null];
 	return [true, db_resp[0]];
