@@ -11,10 +11,16 @@ const knex = require('knex')(require('../../knexfile.js').development);
  * @param {number} user_id - The user ID
  * @param {string[]} emails - Array of emails to verify
  * @param {number|null} request_id - Optional existing request ID to update
+ * @param {string|null} file_name - Optional file name
  * @returns {Promise<[boolean, number]>} - [success, request_id]
  */
-async function db_createVerifyRequest(user_id, emails, request_id = null) {
-	let err_code;
+async function db_createVerifyRequest(
+  user_id,
+  emails,
+  request_id = null,
+  file_name = null
+) {
+  let err_code;
 
 	// If request_id is provided, verify it exists and belongs to user
 	if (request_id !== null) {
@@ -32,27 +38,32 @@ async function db_createVerifyRequest(user_id, emails, request_id = null) {
 			return [false, null];
 		}
 
-		// Update existing request with new contacts
-		const new_total = existing[0].num_contacts + emails.length;
+    // Update existing request with new contacts
+    const new_total = existing[0].num_contacts + emails.length;
 		await knex('Requests')
-			.where('request_id', request_id)
-			.update({
+		.where('request_id', request_id)
+      	.update({
 				'num_contacts': new_total
-			})
-			.catch(err => { if (err) err_code = err.code });
+      })
+		.catch(err => { if (err) err_code = err.code });
 
-		if (err_code) return [false, null];
-		return [true, request_id];
-	}
+    if (err_code) return [false, null];
+    return [true, request_id];
+  }
 
-	// Create new request
-	const db_resp = await knex('Requests').insert({
-		'user_id': user_id,
-		'request_type': emails.length === 1 ? 'single' : 'bulk',
-		'request_status': 'pending',
-		'num_contacts': emails.length,
-		'num_processed': 0
-	}).catch(err => { if (err) err_code = err.code });
+  // Create new request
+  const db_resp = await knex("Requests")
+    .insert({
+      user_id: user_id,
+      request_type: emails.length === 1 ? "single" : "bulk",
+      request_status: "pending",
+      num_contacts: emails.length,
+      num_processed: 0,
+      file_name: file_name,
+    })
+    .catch((err) => {
+      if (err) err_code = err.code;
+    });
 
 	// Insert into global table
 	await knex('Contacts_Global').insert(emails.map(email => ({
@@ -82,14 +93,25 @@ async function db_createVerifyRequest(user_id, emails, request_id = null) {
 // READ Functions
 // -------------------
 async function db_listVerifyRequests(user_id) {
-	let err_code;
-	const db_resp = await knex('Requests').where({
-		'user_id': user_id,
-		'request_status': 'pending'
-	}).select('request_id', 'request_type', 'num_contacts', 'num_processed').catch(err => { if (err) err_code = err.code });
-	
-	if (err_code) return [false, null];
-	return [true, db_resp];
+  let err_code;
+  const db_resp = await knex("Requests")
+    .where({
+      user_id: user_id,
+      request_status: "pending",
+    })
+    .select(
+      "request_id",
+      "request_type",
+      "num_contacts",
+      "num_processed",
+      "file_name"
+    )
+    .catch((err) => {
+      if (err) err_code = err.code;
+    });
+
+  if (err_code) return [false, null];
+  return [true, db_resp];
 }
 
 async function db_getVerifyRequestDetails(user_id, request_id) {
@@ -100,7 +122,7 @@ async function db_getVerifyRequestDetails(user_id, request_id) {
 		'user_id': user_id,
 		'request_id': request_id,
 		'request_status': 'pending'
-	}).select('request_id', 'request_type', 'num_contacts', 'num_processed').catch(err => { if (err) err_code = err.code });
+	}).select('request_id', 'request_type', 'num_contacts', 'num_processed', 'file_name').catch(err => { if (err) err_code = err.code });
 
 	if (err_code) return [false, null];
 	return [true, db_resp[0]];
@@ -159,6 +181,33 @@ async function db_getPaginatedEmailResults(user_id, page, per_page) {
 	return [true, db_resp];
 }
 
+async function db_exportBatchResultsCsv(user_id, request_id, filter, page, per_page) {
+	let err_code;
+	const offset = (page - 1) * per_page;
+	let query = knex('Requests_Contacts as rc')
+		.join('Contacts_Global as cg', 'rc.global_id', 'cg.global_id')
+		.join('Requests as r', 'rc.request_id', 'r.request_id')
+		.where('rc.request_id', request_id)
+		.andWhere('r.user_id', user_id)
+		.select(
+			'cg.email',
+			'cg.latest_result as result',
+			'cg.last_mail_server as mail_server',
+			'rc.processed_ts'
+		)
+		.offset(offset)
+		.limit(per_page)
+		.orderBy('rc.processed_ts', 'asc');
+
+	if (filter && filter !== 'all') {
+		query = query.andWhere('cg.latest_result', filter);
+	}
+
+	const db_resp = await query.catch((err)=>{if (err) err_code = err.code});
+	if (err_code) return [false, null];
+	return [true, db_resp];
+}
+
 
 // -------------------
 // UPDATE Functions
@@ -179,4 +228,5 @@ module.exports = {
 	db_getVerifyRequestDetails,
 	db_getPaginatedVerifyRequestResults,
 	db_getPaginatedEmailResults,
+	db_exportBatchResultsCsv,
 };

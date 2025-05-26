@@ -66,6 +66,28 @@ async function db_getReferralInviteList(user_id) {
 	return [true, result];
 }
 
+async function db_getCreditBalance(user_id) {
+	let err_code;
+	const db_resp = await knex('Users_Credit_Balance')
+		.select('current_balance')
+		.where('user_id', user_id)
+		.first()
+		.catch((err)=>{if (err) err_code = err.code});
+	if (err_code) return [false, null];
+	return [true, db_resp?.current_balance || 0];
+}
+
+async function db_getCreditBalanceHistory(user_id) {
+	let err_code;
+	const db_resp = await knex('Users_Credit_Balance_History')
+		.select('user_id', 'credits_used', 'usage_ts')
+		.where('user_id', user_id)
+		.orderBy('usage_ts', 'desc')
+		.catch((err)=>{if (err) err_code = err.code});
+	if (err_code) return [false, null];
+	return [true, db_resp];
+}
+
 
 // -------------------
 // UPDATE Functions
@@ -83,4 +105,6 @@ module.exports = {
 	db_getCreditsBalance,
 	db_getReferralInviteCode,
 	db_getReferralInviteList,
+	db_getCreditBalance,
+	db_getCreditBalanceHistory,
 };
