@@ -51,7 +51,7 @@
 
 .numCredits {
   font-size: 2rem;
-  color: #007c7c;
+  color: var(--main-hl);
   font-weight: 450;
   margin-top: 10px;
   margin-bottom: 5px;
@@ -66,7 +66,7 @@
 
 .extraCredits {
   font-size: 1.2rem;
-  color: #007c7c;
+  color: var(--main-hl);
   font-weight: 450;
   /* margin-bottom: 5px; */
 }
