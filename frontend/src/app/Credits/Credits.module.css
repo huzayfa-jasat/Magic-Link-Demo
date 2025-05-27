@@ -53,3 +53,22 @@
   width: fit-content;
   display: inline-block;
 }
+
+.history_list {
+  font-family: "Sohne", sans-serif;
+  display: grid;
+  grid-template-columns: 1fr;
+  color: var(--black);
+  gap: 20px;
+  font-size: 1rem;
+}
+
+.history_card {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  border-radius: 16px;
+  border: 1.5px solid var(--white);
+  padding: 0.5rem;
+  cursor: pointer;
+}

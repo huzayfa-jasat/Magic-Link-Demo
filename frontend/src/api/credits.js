@@ -40,3 +40,9 @@ export const getReferralInviteList = async () => {
     // TODO
   });
 };
+
+export const listAllTransactions = async () => {
+  return await http.get("/purchase/history", {
+    withCredentials: true,
+  });
+};
