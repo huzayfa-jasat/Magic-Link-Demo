@@ -85,15 +85,21 @@ export const listVerifyRequests = async () => {
  * @param {string} requestId - The ID of the verify request
  * @param {number} page - The page number (1-based)
  * @param {number} [perPage=50] - Number of results per page
+ * @param {string} [search] - Optional search query to filter emails
  * @returns {Promise} Paginated verify request results
  */
 export const getPaginatedVerifyRequestResults = async (
   requestId,
-  page = 1,
-  perPage = 50
+  page,
+  perPage = 50,
+  search = null
 ) => {
+  const params = { page, per_page: perPage };
+  if (search && search.trim()) {
+    params.search = search.trim();
+  }
   return await http.get(`/emails/requests/${requestId}/results`, {
-    params: { page, per_page: perPage },
+    params,
     withCredentials: true,
   });
 };

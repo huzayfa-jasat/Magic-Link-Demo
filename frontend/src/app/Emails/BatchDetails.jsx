@@ -1,172 +1,52 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
-import {
-  getVerifyRequestDetails,
-  getPaginatedVerifyRequestResults,
-  exportBatchResultsCsv,
-} from "../../api/emails";
 import styles from "./Emails.module.css";
-
-import { getMailServerDisplay } from "./Components/MailServerDisplay";
-
-import Popup from "reactjs-popup";
-
-const ITEMS_PER_PAGE = 50;
+import getMailServerDisplay from "./getMailServerDisplay";
+import  useBatchData  from "./hooks/useBatchData";
 
 // Main Component
 export default function EmailsBatchDetailsController() {
   const { id } = useParams();
-  const [details, setDetails] = useState(null);
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
 
-  // Fetch batch details
-  const fetchDetails = useCallback(async () => {
-    try {
-      const response = await getVerifyRequestDetails(id);
-      setDetails(response.data.data);
-      return true; // Return success status
-    } catch (err) {
-      setError("Failed to load batch details");
-      console.error("Error fetching details:", err);
-      return false; // Return failure status
-    }
-  }, [id]);
-
-  // Fetch paginated results
-  const fetchResults = useCallback(
-    async (page) => {
-      if (!details) return; // Don't fetch if we don't have details
-
-      try {
-        const response = await getPaginatedVerifyRequestResults(
-          id,
-          page,
-          ITEMS_PER_PAGE
-        );
-        setResults(response.data.data || []);
-        setTotalPages(Math.ceil(details.num_contacts / ITEMS_PER_PAGE));
-        return true; // Return success status
-      } catch (err) {
-        setError("Failed to load results");
-        console.error("Error fetching results:", err);
-        setResults([]);
-        return false; // Return failure status
-      } finally {
-        setLoading(false);
-      }
-    },
-    [id, details]
-  );
-
-  // Separate effects for details and results
-  useEffect(() => {
-    const loadDetails = async () => {
-      setLoading(true);
-      setError(null);
-      const success = await fetchDetails();
-      if (!success) {
-        setLoading(false);
-      }
-    };
-    loadDetails();
-  }, [fetchDetails]);
-
-  // Only fetch results when details are loaded and page changes
-  useEffect(() => {
-    if (details && !error) {
-      fetchResults(currentPage);
-    }
-  }, [details, currentPage, fetchResults, error]);
-
-  // Calculate result statistics
-  const stats = (results || []).reduce(
-    (acc, item) => {
-      const result = item?.result?.toLowerCase() || "pending";
-      acc[result] = (acc[result] || 0) + 1;
-      return acc;
-    },
-    {
-      valid: 0,
-      invalid: 0,
-      catchall: 0,
-      pending: 0,
-    }
-  );
+  // Use custom hook for all batch data management
+  const {
+    details,
+    results,
+    loading,
+    error,
+    currentPage,
+    totalPages,
+    searchQuery,
+    stats,
+    setCurrentPage,
+    setSearchQuery,
+  } = useBatchData(id);
 
   // Export results to CSV
   // const handleExport = useCallback(() => {
   //   if (!results.length) return;
 
-  //   const headers = ["Email", "Result", "Mail Server"];
-  //   const csvContent = [
-  //     headers.join(","),
-  //     ...results.map((item) =>
-  //       [
-  //         item.global_id,
-  //         item.result || "pending",
-  //         item.processed_ts || "",
-  //       ].join(",")
-  //     ),
-  //   ].join("\n");
+    const headers = ["Email", "Result", "Mail Server"];
+    const csvContent = [
+      headers.join(","),
+      ...results.map((item) =>
+        [
+          item.email || item.global_id,
+          item.result || "pending",
+          getMailServerDisplay(item.mail_server) || "",
+        ].join(",")
+      ),
+    ].join("\n");
 
-  //   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  //   const link = document.createElement("a");
-  //   const url = URL.createObjectURL(blob);
-  //   link.setAttribute("href", url);
-  //   link.setAttribute("download", `email-verification-results-${id}.csv`);
-  //   document.body.appendChild(link);
-  //   link.click();
-  //   document.body.removeChild(link);
-  // }, [results, id]);
-
-  // Filtered exports
-  const handleExportFiltered = useCallback(
-    async (filter) => {
-      let allResults = [];
-      let page = 1;
-      let done = false;
-
-      while (!done) {
-        const response = await exportBatchResultsCsv(
-          id,
-          page,
-          ITEMS_PER_PAGE,
-          filter
-        );
-        const pageResults = response.data.data || [];
-        allResults = [...allResults, ...pageResults];
-        if (pageResults.length < ITEMS_PER_PAGE) done = true;
-        else page++;
-      }
-
-      // Build and download CSV
-      const headers = ["Email", "Result", "Mail Server"];
-      const csvContent = [
-        headers.join(","),
-        ...allResults.map((item) =>
-          [
-            item.email,
-            item.result || "pending",
-            item.mail_server || "",
-          ].join(",")
-        ),
-      ].join("\n");
-
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-      link.setAttribute("href", url);
-      link.setAttribute("download", `email-results-${filter}-${id}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    },
-    [id]
-  );
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `email-verification-results-${id}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }, [results, id]);
 
   if (loading) {
     return (
@@ -259,6 +139,32 @@ export default function EmailsBatchDetailsController() {
         </Popup>
       </div>
 
+      <div className={styles.searchContainer}>
+        <input
+          type="text"
+          placeholder="Search emails..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className={styles.searchInput}
+        />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          fill="none"
+          viewBox="0 0 24 24"
+          className={styles.searchIcon}
+        >
+          <path
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="1.5"
+            d="m21 21-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"
+          />
+        </svg>
+      </div>
+
       <div className={styles.detailsMeta}>
         <div className={styles.metaCard}>
           <div className={styles.metaLabel}>Total Emails</div>
@@ -341,7 +247,9 @@ export default function EmailsBatchDetailsController() {
           <tbody>
             {results.map((item, index) => (
               <tr key={index} className={styles.tableRow}>
-                <td className={styles.tableCell}>{item.global_id}</td>
+                <td className={styles.tableCell}>
+                  {item.email || item.global_id}
+                </td>
                 <td className={`${styles.tableCell} ${styles.tableCellResult}`}>
                   {item.result || "Pending"}
                 </td>

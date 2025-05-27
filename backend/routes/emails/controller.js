@@ -129,24 +129,40 @@ async function getVerifyRequestDetails(req, res) {
  * Get paginated verify request results
  */
 async function getPaginatedVerifyRequestResults(req, res) {
-	try {
-		// Validate request params
-		const request_id = req.params.request_id;
-		const page = parseInt(req.params.page) || 1;
-		const per_page = parseInt(req.params.per_page) || 50;
-		
-		if (!request_id || typeof request_id !== 'string') return res.status(HttpStatus.BAD_REQUEST_STATUS).send("Request ID is required");
-		if (!page || typeof page !== 'number') return res.status(HttpStatus.BAD_REQUEST_STATUS).send("Page is required");
-		if (typeof per_page !== 'number') return res.status(HttpStatus.BAD_REQUEST_STATUS).send("Per page must be a number");
+  try {
+    // Validate request params
+    const request_id = req.params.request_id;
+    const page = parseInt(req.query.page) || 1;
+    const per_page = parseInt(req.query.per_page) || 50;
+    const search = req.query.search || null;
 
-		// Get paginated verify request results
-		const [ok, resp] = await db_getPaginatedVerifyRequestResults(req.user.id, request_id, page, per_page);
-		if (ok) return res.status(HttpStatus.SUCCESS_STATUS).json({'data': resp});
-		return res.status(HttpStatus.FAILED_STATUS).send("Err = " + resp);
-	} catch (err) {
-		console.log("MTE = ", err);
-		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
-	}
+    if (!request_id || typeof request_id !== "string")
+      return res
+        .status(HttpStatus.BAD_REQUEST_STATUS)
+        .send("Request ID is required");
+    if (!page || typeof page !== "number")
+      return res.status(HttpStatus.BAD_REQUEST_STATUS).send("Page is required");
+    if (typeof per_page !== "number")
+      return res
+        .status(HttpStatus.BAD_REQUEST_STATUS)
+        .send("Per page must be a number");
+
+    // Get paginated verify request results
+    const [ok, resp] = await db_getPaginatedVerifyRequestResults(
+      req.user.id,
+      request_id,
+      page,
+      per_page,
+      search
+    );
+    if (ok) return res.status(HttpStatus.SUCCESS_STATUS).json({ data: resp });
+    return res.status(HttpStatus.FAILED_STATUS).send("Err = " + resp);
+  } catch (err) {
+    console.log("MTE = ", err);
+    return res
+      .status(HttpStatus.MISC_ERROR_STATUS)
+      .send(HttpStatus.MISC_ERROR_MSG);
+  }
 }
 
 /**

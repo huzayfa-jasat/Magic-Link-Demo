@@ -34,7 +34,13 @@ async function updateProfileDetails(req, res) {
 		let ok;
 		switch (req.params.key) {
 			case "email":
-				ok = await db_updateProfileEmail(req.user.id, req.body.email);
+				ok = await db_updateProfileEmail(req.user.id, req.body.value);
+				break;
+			case "name":
+				ok = await db_updateProfileName(req.user.id, req.body.value);
+				break;
+			case "pfp":
+				ok = await db_updateProfilePicture(req.user.id, req.body.value);
 				break;
 			default:
 				return res.sendStatus(HttpStatus.NOT_FOUND_STATUS);

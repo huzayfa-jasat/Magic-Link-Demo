@@ -128,8 +128,14 @@ async function db_getVerifyRequestDetails(user_id, request_id) {
 	return [true, db_resp[0]];
 }
 
-async function db_getPaginatedVerifyRequestResults(user_id, request_id, page, per_page) {
-	let err_code;
+async function db_getPaginatedVerifyRequestResults(
+  user_id,
+  request_id,
+  page,
+  per_page,
+  search = null
+) {
+  let err_code;
 
 	// Ensure request ID is associated with user
 	const perms_resp = await knex('Requests').where({
@@ -139,19 +145,34 @@ async function db_getPaginatedVerifyRequestResults(user_id, request_id, page, pe
 	if (err_code) console.log("err 1 = ", err_code);
 	if (err_code || perms_resp.length <= 0) return [false, err_code];
 
-	// Load contacts & statuses from request, joining with Contacts_Global for latest_result
-	const db_resp = await knex('Requests_Contacts')
-		.join('Contacts_Global', 'Requests_Contacts.global_id', 'Contacts_Global.global_id')
-		.where('Requests_Contacts.request_id', request_id)
-		.select(
-			'Requests_Contacts.global_id',
-			'Requests_Contacts.processed_ts',
-			'Contacts_Global.latest_result as result'
-		)
-		.orderBy('Requests_Contacts.processed_ts', 'asc')
-		.limit(per_page)
-		.offset((page - 1) * per_page)
-		.catch(err => { if (err) err_code = err.code });
+  // Build query for contacts & statuses from request, joining with Contacts_Global for latest_result
+  let query = knex("Requests_Contacts")
+    .join(
+      "Contacts_Global",
+      "Requests_Contacts.global_id",
+      "Contacts_Global.global_id"
+    )
+    .where("Requests_Contacts.request_id", request_id);
+
+  // Add search filter if provided
+  if (search && search.trim()) {
+    query = query.where("Contacts_Global.email", "like", `%${search.trim()}%`);
+  }
+
+  const db_resp = await query
+    .select(
+      "Requests_Contacts.global_id",
+      "Requests_Contacts.processed_ts",
+      "Contacts_Global.latest_result as result",
+      "Contacts_Global.email",
+      "Contacts_Global.last_mail_server as mail_server"
+    )
+    .orderBy("Requests_Contacts.processed_ts", "asc")
+    .limit(per_page)
+    .offset((page - 1) * per_page)
+    .catch((err) => {
+      if (err) err_code = err.code;
+    });
 
 	if (err_code) console.log("err 2 = ", err_code);
 	if (err_code) return [false, err_code];

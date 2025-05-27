@@ -20,11 +20,8 @@ async function db_getProfileDetails(user_id) {
 	.select(
 		'name AS name',
 		'email AS email',
-		'profile_picture AS profile_picture',
-	)
-	.limit(1)
-	.catch((err)=>{if (err) err_code = err.code});
-	
+		'profile_image AS profileImage',
+	).limit(1).catch((err)=>{if (err) err_code = err.code});
 	if (err_code || db_resp.length <= 0) return [false, null];
 	return [true, db_resp[0]];
 }
@@ -53,10 +50,8 @@ async function db_updateProfileName(user_id, new_name) {
 
 async function db_updateProfilePicture(user_id, new_profile_picture) {
 	let err_code;
-	const encoded = encodeImage(new_profile_picture);
-	if (!encoded) return false;
 	await knex('Users').where('id',user_id).update({
-		'profile_picture': encoded,
+		'profile_image': encodeImage(new_profile_picture),
 	}).catch((err)=>{if (err) err_code = err.code});
 	if (err_code) return false;
 	return true;
