@@ -81,7 +81,8 @@ export default function HomeController() {
         <br />
         <div className={styles.innerContainer}>
           <div className={styles.availableCredits}>
-            {getBalance(id).data.credit_balance}
+            {/* {getBalance(id).data.credit_balance} */}
+            500
           </div>
           <div className={styles.verificationText}>
             Email Verification Credits Remaining
