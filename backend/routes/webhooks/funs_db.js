@@ -1,4 +1,5 @@
 // Dependencies
+
 const knex = require('knex')(require('../../knexfile.js').development);
 
 /**
@@ -49,35 +50,30 @@ async function handleSuccessfulPayment(userId, credits, sessionId) {
 async function handleIncomingResults(id, email, result, server) {
     let err;
 
-    try {
+    // Update request status
+    const db_resp = await knex('Requests')
+        .where('request_id', id)
+        .increment('num_processed', 1)
+        .update({
+            'request_status': knex.raw('IF(num_processed = num_contacts, "completed", request_status)')
+        })
+        .catch((error) => { err = error; });
 
-        await knex('Requests')
-            .where('request_id', id)
-            .increment('num_processed', 1)
-            .update({
-                'request_status': knex.raw('IF(num_processed = num_contacts, "completed", request_status)')
-            })
-            .catch((error) => { err = error; });
+    // Update global contact
+    const updateResp = await knex('Contacts_Global')
+        .where('email', email)
+        .update({
+            'latest_result': result,
+            'last_mail_server': server
+        })
+        .catch((error) => { err = error; });
 
-        if (err) throw err;
-
-        // Update global contact
-        await knex('Contacts_Global')
-            .where('email', email)
-            .update({
-                'latest_result': result,
-                'last_mail_server': server
-            })
-            .catch((error) => { err = error; });
-
-        if (err) throw err;
+    if (err) {
+        console.error('Error updating global contact:', err);
+        throw err;
     }
 
-    catch (error) {
-        console.error('Error handling incoming results:', error);
-        throw error;
-    }
-
+    return [true, db_resp, updateResp];
 }
 
 module.exports = {

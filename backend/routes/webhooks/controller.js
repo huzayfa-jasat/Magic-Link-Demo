@@ -106,12 +106,10 @@ async function handleResults(req, res) {
         const { id, email, result, server } = req.body;
 
         // Validate request body
-        if (!id || typeof id !== 'number') return res.status(HttpStatus.BAD_REQUEST_STATUS)
-        if (!email || typeof email !== 'string') return res.status(HttpStatus.BAD_REQUEST_STATUS)
-        if (!result || typeof result !== 'number') return res.status(HttpStatus.BAD_REQUEST_STATUS)
-        if (!server || typeof server !== 'string') return res.status(HttpStatus.BAD_REQUEST_STATUS)
+        if (!id || !email || !result || !server) {
+            return res.status(HttpStatus.BAD_REQUEST)
+        }
 
-        // Handle incoming results
         await handleIncomingResults(id, email, result_map[result], server);
 
         return res.status(HttpStatus.SUCCESS_STATUS);
