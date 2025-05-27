@@ -1,5 +1,5 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const db = require('../../utils/db');
+const knex = require('knex')(require('../../knexfile.js').development);
 
 /**
  * Create a Stripe customer for a user
@@ -18,7 +18,7 @@ async function createStripeCustomer(userId, email) {
         });
 
         // Update user with Stripe ID
-        await db('Users')
+        await knex('Users')
             .where('id', userId)
             .update({ stripe_id: customer.id })
             .catch((error) => { err = error; });
@@ -39,7 +39,7 @@ async function createStripeCustomer(userId, email) {
 async function getStripeCustomerId(userId) {
     let err;
     try {
-        const user = await db('Users')
+        const user = await knex('Users')
             .where('id', userId)
             .select('stripe_id')
             .first()
@@ -63,7 +63,7 @@ async function createCheckoutSession(stripeCustomerId, packageCode) {
     let err;
     try {
         // Get product and price ID
-        const product = await db('Stripe_Products')
+        const product = await knex('Stripe_Products')
             .where('package_code', packageCode)
             .select('product_id', 'price_id')
             .first()

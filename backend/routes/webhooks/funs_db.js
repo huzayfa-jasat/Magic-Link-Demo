@@ -1,5 +1,5 @@
 // Dependencies
-const db = require('../../utils/db');
+const knex = require('knex')(require('../../knexfile.js').development);
 
 /**
  * Handle successful payment and update user credits
@@ -12,7 +12,7 @@ async function handleSuccessfulPayment(userId, credits, sessionId) {
     let err;
     try {
         // Start a transaction
-        await db.transaction(async (trx) => {
+        await knex.transaction(async (trx) => {
             // Update user credits
             await trx('Users')
                 .where('id', userId)
@@ -51,18 +51,18 @@ async function handleIncomingResults(id, email, result, server) {
 
     try {
 
-        await db('Requests')
+        await knex('Requests')
             .where('request_id', id)
             .increment('num_processed', 1)
             .update({
-                'request_status': db.raw('IF(num_processed = num_contacts, "completed", request_status)')
+                'request_status': knex.raw('IF(num_processed = num_contacts, "completed", request_status)')
             })
             .catch((error) => { err = error; });
 
         if (err) throw err;
 
         // Update global contact
-        await db('Contacts_Global')
+        await knex('Contacts_Global')
             .where('email', email)
             .update({
                 'latest_result': result,
