@@ -104,8 +104,6 @@ async function db_listVerifyRequests(user_id) {
       "request_type",
       "num_contacts",
       "num_processed",
-      "num_invalid",
-      "num_catch_all",
       "file_name"
     )
     .catch((err) => {
@@ -113,21 +111,59 @@ async function db_listVerifyRequests(user_id) {
     });
 
   if (err_code) return [false, null];
+
+  // Get counts from Requests_Contacts for each request
+  for (let request of db_resp) {
+    const counts = await knex("Requests_Contacts")
+      .join('Contacts_Global', 'Requests_Contacts.global_id', 'Contacts_Global.global_id')
+      .where("Requests_Contacts.request_id", request.request_id)
+      .select(
+        knex.raw("SUM(Contacts_Global.latest_result = 'valid') as num_processed"),
+        knex.raw("SUM(Contacts_Global.latest_result = 'invalid') as num_invalid"),
+        knex.raw("SUM(Contacts_Global.latest_result = 'catch-all') as num_catch_all")
+      )
+      .first();
+
+    request.num_processed = counts.num_processed || 0;
+    request.num_invalid = counts.num_invalid || 0;
+    request.num_catch_all = counts.num_catch_all || 0;
+  }
+
   return [true, db_resp];
 }
 
 async function db_getVerifyRequestDetails(user_id, request_id) {
-	let err_code;
+  let err_code;
 
-	// Get request object details
-	const db_resp = await knex('Requests').where({
-		'user_id': user_id,
-		'request_id': request_id,
-		'request_status': 'pending'
-	}).select('request_id', 'request_type', 'num_contacts', 'num_processed', 'num_invalid', 'num_catch_all', 'file_name').catch(err => { if (err) err_code = err.code });
+  // Get request object details
+  const db_resp = await knex('Requests')
+    .where({
+      'user_id': user_id,
+      'request_id': request_id,
+      'request_status': 'pending'
+    })
+    .select('request_id', 'request_type', 'num_contacts', 'num_processed', 'file_name')
+    .catch(err => { if (err) err_code = err.code });
 
-	if (err_code) return [false, null];
-	return [true, db_resp[0]];
+  if (err_code) return [false, null];
+  if (!db_resp[0]) return [false, null];
+
+  // Get counts from Requests_Contacts
+  const counts = await knex("Requests_Contacts")
+    .join('Contacts_Global', 'Requests_Contacts.global_id', 'Contacts_Global.global_id')
+    .where("Requests_Contacts.request_id", request_id)
+    .select(
+      knex.raw("SUM(Contacts_Global.latest_result = 'valid') as num_processed"),
+      knex.raw("SUM(Contacts_Global.latest_result = 'invalid') as num_invalid"),
+      knex.raw("SUM(Contacts_Global.latest_result = 'catch-all') as num_catch_all")
+    )
+    .first();
+
+  db_resp[0].num_processed = counts.num_processed || 0;
+  db_resp[0].num_invalid = counts.num_invalid || 0;
+  db_resp[0].num_catch_all = counts.num_catch_all || 0;
+
+  return [true, db_resp[0]];
 }
 
 async function db_getPaginatedVerifyRequestResults(user_id, request_id, page, per_page) {
