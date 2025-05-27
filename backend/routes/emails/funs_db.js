@@ -202,6 +202,33 @@ async function db_getPaginatedEmailResults(user_id, page, per_page) {
 	return [true, db_resp];
 }
 
+async function db_exportBatchResultsCsv(user_id, request_id, filter, page, per_page) {
+	let err_code;
+	const offset = (page - 1) * per_page;
+	let query = knex('Requests_Contacts as rc')
+		.join('Contacts_Global as cg', 'rc.global_id', 'cg.global_id')
+		.join('Requests as r', 'rc.request_id', 'r.request_id')
+		.where('rc.request_id', request_id)
+		.andWhere('r.user_id', user_id)
+		.select(
+			'cg.email',
+			'cg.latest_result as result',
+			'cg.last_mail_server as mail_server',
+			'rc.processed_ts'
+		)
+		.offset(offset)
+		.limit(per_page)
+		.orderBy('rc.processed_ts', 'asc');
+
+	if (filter && filter !== 'all') {
+		query = query.andWhere('cg.latest_result', filter);
+	}
+
+	const db_resp = await query.catch((err)=>{if (err) err_code = err.code});
+	if (err_code) return [false, null];
+	return [true, db_resp];
+}
+
 
 // -------------------
 // UPDATE Functions
@@ -222,4 +249,5 @@ module.exports = {
 	db_getVerifyRequestDetails,
 	db_getPaginatedVerifyRequestResults,
 	db_getPaginatedEmailResults,
+	db_exportBatchResultsCsv,
 };

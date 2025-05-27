@@ -1,0 +1,100 @@
+.container {
+  font-family: "Sohne", sans-serif;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  color: var(--black);
+}
+
+.h1Header {
+  margin-bottom: 1rem;
+}
+
+.creditGrid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 880px) {
+  .creditGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.creditCard {
+  background: white;
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.creditCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.packageName {
+  font-size: 1.5rem;
+  color: var(--brd-light);
+  font-weight: 450;
+  margin-top: 10px;
+}
+
+.numCredits {
+  font-size: 2rem;
+  color: var(--main-hl);
+  font-weight: 450;
+  margin-top: 10px;
+  margin-bottom: 5px;
+}
+
+.bonus {
+  color: var(--brd-light);
+  font-size: 0.9rem;
+  margin-top: 10px;
+  font-weight: 600;
+}
+
+.extraCredits {
+  font-size: 1.2rem;
+  color: var(--main-hl);
+  font-weight: 450;
+  /* margin-bottom: 5px; */
+}
+
+.verificationText {
+  margin-top: 0;
+}
+
+.price {
+  font-weight: bold;
+  margin: 1rem 0;
+}
+
+.buyBtn {
+  background: linear-gradient(to right, #0ba3e3, #1b4ed1);
+  border: none;
+  color: white;
+  font-weight: bold;
+  padding: 0.8rem 1.2rem;
+  width: 100%;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s ease;
+  display: block;
+  text-align: center;
+  text-decoration: none;
+}
+
+.buyBtn:hover {
+  filter: brightness(1.1);
+}

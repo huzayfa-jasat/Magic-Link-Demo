@@ -23,8 +23,8 @@ export default function EmailsBatchDetailsController() {
   } = useBatchData(id);
 
   // Export results to CSV
-  const handleExport = useCallback(() => {
-    if (!results.length) return;
+  // const handleExport = useCallback(() => {
+  //   if (!results.length) return;
 
     const headers = ["Email", "Result", "Mail Server"];
     const csvContent = [
@@ -74,7 +74,9 @@ export default function EmailsBatchDetailsController() {
       <div className={styles.container}>
         <div className={styles.empty}>
           <p className={styles.emptyText}>Batch not found</p>
-          <p className={styles.emptySubtext}>The requested batch could not be found</p>
+          <p className={styles.emptySubtext}>
+            The requested batch could not be found
+          </p>
         </div>
       </div>
     );
@@ -83,23 +85,58 @@ export default function EmailsBatchDetailsController() {
   return (
     <div className={styles.detailsContainer}>
       <Link to="/home" className={styles.backLink}>
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-          <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="1.5"
+            d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+          />
         </svg>
         Back to Home
       </Link>
 
       <div className={styles.detailsHeader}>
-        <h1 className={styles.detailsTitle}>
-          {details.file_name || 'Details'}
-        </h1>
+        <h1 className={styles.detailsTitle}>Details</h1>
         <button
           className={`${styles.button} ${styles.buttonPrimary}`}
           onClick={handleExport}
           disabled={!results.length}
         >
           Export
-        </button>
+        </button> */}
+        <Popup
+          trigger={
+            <button className={`${styles.button} ${styles.buttonPrimary}`}>
+              Export ▼
+            </button>
+          }
+          position="bottom left"
+          on={["click"]}
+          closeOnDocumentClick
+        >
+          <div className={styles.exportMenu}>
+            <button onClick={() => handleExportFiltered("valid")}>
+              Only Valid
+            </button>
+            <button onClick={() => handleExportFiltered("invalid")}>
+              Only Invalid
+            </button>
+            <button onClick={() => handleExportFiltered("catch-all")}>
+              Only Catch-All
+            </button>
+            <button onClick={() => handleExportFiltered("all")}>
+              All Emails
+            </button>
+          </div>
+        </Popup>
       </div>
 
       <div className={styles.searchContainer}>
@@ -134,9 +171,7 @@ export default function EmailsBatchDetailsController() {
           <div className={styles.metaValue}>{details.num_contacts}</div>
         </div>
         <div className={styles.metaCard}>
-          <div className={styles.metaLabel}>
-            Valid
-          </div>
+          <div className={styles.metaLabel}>Valid</div>
           <div className={`${styles.metaValue} ${styles.resultValid}`}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -178,9 +213,7 @@ export default function EmailsBatchDetailsController() {
           </div>
         </div>
         <div className={styles.metaCard}>
-          <div className={styles.metaLabel}>
-            Catch-All
-          </div>
+          <div className={styles.metaLabel}>Catch-All</div>
           <div className={`${styles.metaValue} ${styles.resultCatchAll}`}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -218,7 +251,7 @@ export default function EmailsBatchDetailsController() {
                   {item.email || item.global_id}
                 </td>
                 <td className={`${styles.tableCell} ${styles.tableCellResult}`}>
-                  {item.result || 'Pending'}
+                  {item.result || "Pending"}
                 </td>
                 <td className={styles.tableCell}>
                   {getMailServerDisplay(item.mail_server)}
@@ -232,8 +265,10 @@ export default function EmailsBatchDetailsController() {
       {totalPages > 1 && (
         <div className={styles.pagination}>
           <button
-            className={`${styles.paginationButton} ${currentPage === 1 ? styles.paginationButtonDisabled : ''}`}
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            className={`${styles.paginationButton} ${
+              currentPage === 1 ? styles.paginationButtonDisabled : ""
+            }`}
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
             disabled={currentPage === 1}
           >
             Previous
@@ -241,15 +276,19 @@ export default function EmailsBatchDetailsController() {
           {[...Array(totalPages)].map((_, i) => (
             <button
               key={i}
-              className={`${styles.paginationButton} ${currentPage === i + 1 ? styles.paginationButtonActive : ''}`}
+              className={`${styles.paginationButton} ${
+                currentPage === i + 1 ? styles.paginationButtonActive : ""
+              }`}
               onClick={() => setCurrentPage(i + 1)}
             >
               {i + 1}
             </button>
           ))}
           <button
-            className={`${styles.paginationButton} ${currentPage === totalPages ? styles.paginationButtonDisabled : ''}`}
-            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            className={`${styles.paginationButton} ${
+              currentPage === totalPages ? styles.paginationButtonDisabled : ""
+            }`}
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
           >
             Next

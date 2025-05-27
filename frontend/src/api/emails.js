@@ -72,6 +72,7 @@ export const getVerifyRequestDetails = async (requestId) => {
 /**
  * List all verify requests for the current user
  * @returns {Promise} List of verify requests
+ * Response: num_contacts, num_processed, num_invalid, num_catch_all, request_id, request_type
  */
 export const listVerifyRequests = async () => {
   return await http.get("/emails/requests/list", {
@@ -97,7 +98,6 @@ export const getPaginatedVerifyRequestResults = async (
   if (search && search.trim()) {
     params.search = search.trim();
   }
-
   return await http.get(`/emails/requests/${requestId}/results`, {
     params,
     withCredentials: true,
@@ -113,6 +113,27 @@ export const getPaginatedVerifyRequestResults = async (
 export const getPaginatedEmailResults = async (page, perPage = 50) => {
   return await http.get("/emails/emails/results", {
     params: { page, per_page: perPage },
+    withCredentials: true,
+  });
+};
+
+/**
+ * Get paginated results for a specific verify request
+ * @param {string} requestId - The ID of the verify request
+ * @param {number} page - The page number (1-based)
+ * @param {number} [perPage=50] - Number of results per page
+ * @param {string} filter
+ * @returns {Promise} Paginated verify request results
+ */
+
+export const exportBatchResultsCsv = async (
+  requestId,
+  page = 1,
+  perPage = 50,
+  filter
+) => {
+  return await http.get("/emails/export-batch-results", {
+    query: { requestId, filter, page, perPage },
     withCredentials: true,
   });
 };

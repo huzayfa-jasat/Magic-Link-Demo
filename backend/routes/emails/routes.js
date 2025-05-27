@@ -14,6 +14,7 @@ const {
     listVerifyRequests,
     getPaginatedVerifyRequestResults,
     getPaginatedEmailResults,
+    exportBatchResultsCsv,
 } = require('./controller.js');
 
 // Routes
@@ -25,6 +26,7 @@ emailsRouter.get('/request/:request_id/dtl', getVerifyRequestDetails);
 emailsRouter.get('/requests/list', listVerifyRequests);
 emailsRouter.get('/requests/:request_id/results', getPaginatedVerifyRequestResults);
 emailsRouter.get('/emails/results', getPaginatedEmailResults);
+emailsRouter.get('/export-batch-results', exportBatchResultsCsv);
 
 // Export
 module.exports = emailsRouter;

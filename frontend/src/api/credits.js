@@ -3,42 +3,40 @@ import { http } from "./http";
 
 /*
 ------------------------
-> SETTINGS API CALLS <
+> CREDITS API CALLS <
 ------------------------
 */
 
-export const getProfileDetails = async () => {
-  return await http.get("/settings/profile/dtl", {
-    withCredentials: true,
+// response: data.credit_balance
+export const getBalance = async (userId) => {
+  return await http.get(
+    "/balance",
+    {
+      user: { id: userId },
+    },
+    {
+      withCredentials: true,
+    }
+  );
+  // .then((res) => {
+  //   console.log(res);
+  // });
+};
+
+export const purchaseCredits = async () => {
+  return await http.post("/purchase", {
+    // TODO
   });
 };
 
-export const updateProfileName = async (name) => {
-  return await http.patch(
-    "/settings/profile/name/touch",
-    { name },
-    {
-      withCredentials: true,
-    }
-  );
+export const getReferralInviteCode = async () => {
+  return await http.get("/invite/code", {
+    // TODO
+  });
 };
 
-export const updateProfileLogo = async (pfp) => {
-  return await http.patch(
-    "/settings/profile/pfp/touch",
-    { pfp },
-    {
-      withCredentials: true,
-    }
-  );
-};
-
-export const updateProfileEmail = async (email) => {
-  return await http.patch(
-    "/settings/profile/email/touch",
-    { email },
-    {
-      withCredentials: true,
-    }
-  );
+export const getReferralInviteList = async () => {
+  return await http.get("/invites/list", {
+    // TODO
+  });
 };

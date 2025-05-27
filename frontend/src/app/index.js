@@ -12,3 +12,9 @@ export { default as Credits } from "../app/Credits/Controller.jsx";
 
 /* Settings */
 export { default as Settings } from "../app/Settings/Controller.jsx";
+
+/* Packages */
+export { default as PackagesHome } from "../app/Packages/Controller.jsx";
+
+/* Credits */
+export { default as CreditsHome } from "../app/Credits/Controller.jsx";
