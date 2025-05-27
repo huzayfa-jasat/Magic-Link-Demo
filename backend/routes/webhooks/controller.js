@@ -100,23 +100,20 @@ async function handleWebhook(req, res) {
 }
 
 async function handleResults(req, res) {
-    
+
     try {
-        // Parse request body
-        const { id, email, result, server } = req.body;
-
-        // Validate request body
-        if (!id || !email || !result || !server) {
-            return res.status(HttpStatus.BAD_REQUEST)
+        const { id, results } = req.body;
+        if (!id || !results) {
+            return res.status(HttpStatus.BAD_REQUEST).json({
+                error: 'Missing required fields: id and results'
+            });
         }
-
-        await handleIncomingResults(id, email, result_map[result], server);
-
-        return res.status(HttpStatus.SUCCESS_STATUS);
-
+        const resultsArray = Array.isArray(results) ? results : [results];
+        const resp = await handleIncomingResults(id, resultsArray); // handle the results
+        return (resp) ? res.status(HttpStatus.SUCCESS_STATUS) : res.status(HttpStatus.INTERNAL_SERVER_ERROR)
     } catch (err) {
         console.log("MTE = ", err);
-        return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+        return res.status(HttpStatus.MISC_ERROR_STATUS)
     }
 }
 

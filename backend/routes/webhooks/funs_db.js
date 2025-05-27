@@ -40,41 +40,50 @@ async function handleSuccessfulPayment(userId, credits, sessionId) {
 }
 
 /**
- * 
- * @param {number} id 
- * @param {string} email 
- * @param {string} result 
- * @param {string} server 
+ * Handle incoming verification results (supports multiple results)
+ * @param {number} id - Request ID
+ * @param {Array} results - Array of result objects or single result object
+ * @returns {Promise<boolean>} - Returns true if successful, false if an error occurred
+ * Each result object should have: { email, result, server }
  */
+async function handleIncomingResults(id, results) {
+    let err_code
+   
+    const trxResult = await knex.transaction(async (trx) => {
+        const [{ num_processed = 0, num_contacts = 0 }] = await trx('Requests')
+            .where('request_id', id)
+            .select('num_processed', 'num_contacts')
+            .catch((err) => { if (err) err_code = err.code; });
 
-async function handleIncomingResults(id, email, result, server) {
-    let err;
+        const newProcessed = num_processed + resultsArray.length;
+        const newStatus = newProcessed >= num_contacts ? 'completed' : 'in_progress';
 
-    // Update request status
-    const db_resp = await knex('Requests')
-        .where('request_id', id)
-        .increment('num_processed', 1)
-        .update({
-            'request_status': knex.raw('IF(num_processed = num_contacts, "completed", request_status)')
-        })
-        .catch((error) => { err = error; });
+        await trx('Requests')
+            .where('request_id', id)
+            .update({
+                num_processed: newProcessed,
+                request_status: newStatus
+            })
+            .catch((err) => { if (err) err_code = err.code; });
 
-    // Update global contact
-    const updateResp = await knex('Contacts_Global')
-        .where('email', email)
-        .update({
-            'latest_result': result,
-            'last_mail_server': server
-        })
-        .catch((error) => { err = error; });
+        for (const resultItem of resultsArray) {
+            const { email, result, server } = resultItem;
 
-    if (err) {
-        console.error('Error updating global contact:', err);
-        throw err;
-    }
+            await trx('Contacts_Global')
+                .where('email', email)
+                .update({
+                    latest_result: result,
+                    last_mail_server: server
+                })
+                .catch((err) => { if (err) err_code = err.code; });
+        }
+        return true;
+    });
 
-    return [true, db_resp, updateResp];
+    return trxResult && !err_code ? true : false;
+    
 }
+
 
 module.exports = {
     handleSuccessfulPayment,
