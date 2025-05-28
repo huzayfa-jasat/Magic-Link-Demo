@@ -58,14 +58,34 @@ async function handleSuccessfulPayment(userId, credits, sessionId) {
  */
 async function handleIncomingResults(id, results) {
     let err_code
-   
+
     const trxResult = await knex.transaction(async (trx) => {
+
+        const resp = await trx('Contacts_Global')
+            .whereIn('email', results.map(result => result.email))
+            .select('global_id', 'email')
+            .catch((err) => { if (err) err_code = err.code; });
+
+
+        const GLOBAL_ID_MAP = resp.reduce((acc, currentItem) => {
+            acc[currentItem.email] = currentItem.global_id;
+            return acc;
+        }, {});
+
+        await trx('Requests_Contacts')
+            .insert(results.map(result => ({
+                request_id: id,
+                global_id: GLOBAL_ID_MAP[result.email],
+                processed_ts: new Date()
+            })))
+            .catch((err) => { if (err) err_code = err.code; });
+
         const [{ num_processed = 0, num_contacts = 0 }] = await trx('Requests')
             .where('request_id', id)
             .select('num_processed', 'num_contacts')
             .catch((err) => { if (err) err_code = err.code; });
 
-        const newProcessed = num_processed + resultsArray.length;
+        const newProcessed = num_processed + results.length;
         const newStatus = newProcessed >= num_contacts ? 'completed' : 'in_progress';
 
         await trx('Requests')
@@ -76,7 +96,7 @@ async function handleIncomingResults(id, results) {
             })
             .catch((err) => { if (err) err_code = err.code; });
 
-        for (const resultItem of resultsArray) {
+        await Promise.all(results.map(async (resultItem) => {
             const { email, result, server } = resultItem;
 
             await trx('Contacts_Global')
@@ -86,12 +106,12 @@ async function handleIncomingResults(id, results) {
                     last_mail_server: server
                 })
                 .catch((err) => { if (err) err_code = err.code; });
-        }
+        }));
         return true;
     });
 
     return trxResult && !err_code ? true : false;
-    
+
 }
 
 
