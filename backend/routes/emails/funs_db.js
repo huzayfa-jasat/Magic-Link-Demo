@@ -111,25 +111,73 @@ async function db_listVerifyRequests(user_id) {
     });
 
   if (err_code) return [false, null];
+
+  // Get counts from Requests_Contacts for each request
+  for (let request of db_resp) {
+    const counts = await knex("Requests_Contacts")
+      .join('Contacts_Global', 'Requests_Contacts.global_id', 'Contacts_Global.global_id')
+      .where("Requests_Contacts.request_id", request.request_id)
+      .select(
+        knex.raw("COUNT(*) as num_processed"),
+        knex.raw("SUM(Contacts_Global.latest_result = 'valid') as num_valid"),
+        knex.raw("SUM(Contacts_Global.latest_result = 'invalid') as num_invalid"),
+        knex.raw("SUM(Contacts_Global.latest_result = 'catch-all') as num_catch_all")
+      )
+      .first();
+
+    request.num_processed = counts.num_processed || 0;
+    request.num_valid = counts.num_valid || 0;
+    request.num_invalid = counts.num_invalid || 0;
+    request.num_catch_all = counts.num_catch_all || 0;
+  }
+
   return [true, db_resp];
 }
 
 async function db_getVerifyRequestDetails(user_id, request_id) {
-	let err_code;
+  let err_code;
 
-	// Get request object details
-	const db_resp = await knex('Requests').where({
-		'user_id': user_id,
-		'request_id': request_id,
-		'request_status': 'pending'
-	}).select('request_id', 'request_type', 'num_contacts', 'num_processed', 'file_name').catch(err => { if (err) err_code = err.code });
+  // Get request object details
+  const db_resp = await knex('Requests')
+    .where({
+      'user_id': user_id,
+      'request_id': request_id,
+      'request_status': 'pending'
+    })
+    .select('request_id', 'request_type', 'num_contacts', 'num_processed', 'file_name')
+    .catch(err => { if (err) err_code = err.code });
 
-	if (err_code) return [false, null];
-	return [true, db_resp[0]];
+  if (err_code) return [false, null];
+  if (!db_resp[0]) return [false, null];
+
+  // Get counts from Requests_Contacts
+  const counts = await knex("Requests_Contacts")
+    .join('Contacts_Global', 'Requests_Contacts.global_id', 'Contacts_Global.global_id')
+    .where("Requests_Contacts.request_id", request_id)
+    .select(
+      knex.raw("COUNT(*) as num_processed"),
+      knex.raw("SUM(Contacts_Global.latest_result = 'valid') as num_valid"),
+      knex.raw("SUM(Contacts_Global.latest_result = 'invalid') as num_invalid"),
+      knex.raw("SUM(Contacts_Global.latest_result = 'catch-all') as num_catch_all")
+    )
+    .first();
+
+  db_resp[0].num_processed = counts.num_processed || 0;
+  db_resp[0].num_valid = counts.num_valid || 0;
+  db_resp[0].num_invalid = counts.num_invalid || 0;
+  db_resp[0].num_catch_all = counts.num_catch_all || 0;
+
+  return [true, db_resp[0]];
 }
 
-async function db_getPaginatedVerifyRequestResults(user_id, request_id, page, per_page) {
-	let err_code;
+async function db_getPaginatedVerifyRequestResults(
+  user_id,
+  request_id,
+  page,
+  per_page,
+  search = null
+) {
+  let err_code;
 
 	// Ensure request ID is associated with user
 	const perms_resp = await knex('Requests').where({
@@ -139,19 +187,34 @@ async function db_getPaginatedVerifyRequestResults(user_id, request_id, page, pe
 	if (err_code) console.log("err 1 = ", err_code);
 	if (err_code || perms_resp.length <= 0) return [false, err_code];
 
-	// Load contacts & statuses from request, joining with Contacts_Global for latest_result
-	const db_resp = await knex('Requests_Contacts')
-		.join('Contacts_Global', 'Requests_Contacts.global_id', 'Contacts_Global.global_id')
-		.where('Requests_Contacts.request_id', request_id)
-		.select(
-			'Requests_Contacts.global_id',
-			'Requests_Contacts.processed_ts',
-			'Contacts_Global.latest_result as result'
-		)
-		.orderBy('Requests_Contacts.processed_ts', 'asc')
-		.limit(per_page)
-		.offset((page - 1) * per_page)
-		.catch(err => { if (err) err_code = err.code });
+  // Build query for contacts & statuses from request, joining with Contacts_Global for latest_result
+  let query = knex("Requests_Contacts")
+    .join(
+      "Contacts_Global",
+      "Requests_Contacts.global_id",
+      "Contacts_Global.global_id"
+    )
+    .where("Requests_Contacts.request_id", request_id);
+
+  // Add search filter if provided
+  if (search && search.trim()) {
+    query = query.where("Contacts_Global.email", "like", `%${search.trim()}%`);
+  }
+
+  const db_resp = await query
+    .select(
+      "Requests_Contacts.global_id",
+      "Requests_Contacts.processed_ts",
+      "Contacts_Global.latest_result as result",
+      "Contacts_Global.email",
+      "Contacts_Global.last_mail_server as mail_server"
+    )
+    .orderBy("Requests_Contacts.processed_ts", "asc")
+    .limit(per_page)
+    .offset((page - 1) * per_page)
+    .catch((err) => {
+      if (err) err_code = err.code;
+    });
 
 	if (err_code) console.log("err 2 = ", err_code);
 	if (err_code) return [false, err_code];
@@ -181,6 +244,33 @@ async function db_getPaginatedEmailResults(user_id, page, per_page) {
 	return [true, db_resp];
 }
 
+async function db_exportBatchResultsCsv(user_id, request_id, filter, page, per_page) {
+	let err_code;
+	const offset = (page - 1) * per_page;
+	let query = knex('Requests_Contacts as rc')
+		.join('Contacts_Global as cg', 'rc.global_id', 'cg.global_id')
+		.join('Requests as r', 'rc.request_id', 'r.request_id')
+		.where('rc.request_id', request_id)
+		.andWhere('r.user_id', user_id)
+		.select(
+			'cg.email',
+			'cg.latest_result as result',
+			'cg.last_mail_server as mail_server',
+			'rc.processed_ts'
+		)
+		.offset(offset)
+		.limit(per_page)
+		.orderBy('rc.processed_ts', 'asc');
+
+	if (filter && filter !== 'all') {
+		query = query.andWhere('cg.latest_result', filter);
+	}
+
+	const db_resp = await query.catch((err)=>{if (err) err_code = err.code});
+	if (err_code) return [false, null];
+	return [true, db_resp];
+}
+
 
 // -------------------
 // UPDATE Functions
@@ -201,4 +291,5 @@ module.exports = {
 	db_getVerifyRequestDetails,
 	db_getPaginatedVerifyRequestResults,
 	db_getPaginatedEmailResults,
+	db_exportBatchResultsCsv,
 };

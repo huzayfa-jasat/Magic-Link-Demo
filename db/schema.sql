@@ -11,7 +11,7 @@ CREATE TABLE Users (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`name` varchar(125) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci
 	`email` varchar(125) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
-	`profile_picture` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci
+	`profile_image` LONGBLOB,
 	`referral_code` varchar(10) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
 	`created_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (`id`),
@@ -149,4 +149,3 @@ CREATE TABLE Stripe_Purchases (
 	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE
 );
-

@@ -8,8 +8,16 @@ const {
 	db_getVerifyRequestDetails,
 	db_getPaginatedVerifyRequestResults,
 	db_getPaginatedEmailResults,
+	db_exportBatchResultsCsv,
 } = require("./funs_db.js");
 
+const { Parser } = require('json2csv');
+
+// Default constants
+const DEFAULT_BATCH_RESULT_FILTER = 'all';
+const DEFAULT_BATCH_RESULT_PAGE = 1;
+const DEFAULT_BATCH_RESULT_PER_PAGE = 500;
+const ALLOWED_FILTERS = ['all', 'valid', 'invalid', 'catch-all'];
 
 /**
  * Verify a single email
@@ -121,24 +129,40 @@ async function getVerifyRequestDetails(req, res) {
  * Get paginated verify request results
  */
 async function getPaginatedVerifyRequestResults(req, res) {
-	try {
-		// Validate request params
-		const request_id = req.params.request_id;
-		const page = parseInt(req.params.page) || 1;
-		const per_page = parseInt(req.params.per_page) || 50;
-		
-		if (!request_id || typeof request_id !== 'string') return res.status(HttpStatus.BAD_REQUEST_STATUS).send("Request ID is required");
-		if (!page || typeof page !== 'number') return res.status(HttpStatus.BAD_REQUEST_STATUS).send("Page is required");
-		if (typeof per_page !== 'number') return res.status(HttpStatus.BAD_REQUEST_STATUS).send("Per page must be a number");
+  try {
+    // Validate request params
+    const request_id = req.params.request_id;
+    const page = parseInt(req.query.page) || 1;
+    const per_page = parseInt(req.query.per_page) || 50;
+    const search = req.query.search || null;
 
-		// Get paginated verify request results
-		const [ok, resp] = await db_getPaginatedVerifyRequestResults(req.user.id, request_id, page, per_page);
-		if (ok) return res.status(HttpStatus.SUCCESS_STATUS).json({'data': resp});
-		return res.status(HttpStatus.FAILED_STATUS).send("Err = " + resp);
-	} catch (err) {
-		console.log("MTE = ", err);
-		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
-	}
+    if (!request_id || typeof request_id !== "string")
+      return res
+        .status(HttpStatus.BAD_REQUEST_STATUS)
+        .send("Request ID is required");
+    if (!page || typeof page !== "number")
+      return res.status(HttpStatus.BAD_REQUEST_STATUS).send("Page is required");
+    if (typeof per_page !== "number")
+      return res
+        .status(HttpStatus.BAD_REQUEST_STATUS)
+        .send("Per page must be a number");
+
+    // Get paginated verify request results
+    const [ok, resp] = await db_getPaginatedVerifyRequestResults(
+      req.user.id,
+      request_id,
+      page,
+      per_page,
+      search
+    );
+    if (ok) return res.status(HttpStatus.SUCCESS_STATUS).json({ data: resp });
+    return res.status(HttpStatus.FAILED_STATUS).send("Err = " + resp);
+  } catch (err) {
+    console.log("MTE = ", err);
+    return res
+      .status(HttpStatus.MISC_ERROR_STATUS)
+      .send(HttpStatus.MISC_ERROR_MSG);
+  }
 }
 
 /**
@@ -164,6 +188,29 @@ async function getPaginatedEmailResults(req, res) {
 	}
 }
 
+async function exportBatchResultsCsv(req, res) {
+	try {
+		const request_id = req.query.request_id;
+		const filter = req.query.filter || DEFAULT_BATCH_RESULT_FILTER;
+		const page = parseInt(req.query.page) || DEFAULT_BATCH_RESULT_PAGE;
+		const per_page = parseInt(req.query.per_page) || DEFAULT_BATCH_RESULT_PER_PAGE;
+		if (!request_id) return res.status(HttpStatus.BAD_REQUEST_STATUS).send('Missing request_id');
+
+		// Validate filter
+		if (!ALLOWED_FILTERS.includes(filter)) {
+			return res.status(HttpStatus.BAD_REQUEST_STATUS).send('Invalid filter');
+		}
+
+		const [ok, results] = await db_exportBatchResultsCsv(req.user.id, request_id, filter, page, per_page);
+		if (!ok) return res.status(HttpStatus.FAILED_STATUS).send('Failed to fetch results');
+
+		const hasMore = results.length === per_page;
+		return res.status(HttpStatus.SUCCESS_STATUS).json({ data: results, hasMore });
+	} catch (err) {
+		console.log('MTE = ', err);
+		return res.status(HttpStatus.MISC_ERROR_STATUS).send('Error exporting results');
+	}
+}
 
 // Export
 module.exports = {
@@ -174,4 +221,5 @@ module.exports = {
 	getVerifyRequestDetails,
 	getPaginatedVerifyRequestResults,
 	getPaginatedEmailResults,
+	exportBatchResultsCsv,
 };

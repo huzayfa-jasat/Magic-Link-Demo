@@ -6,7 +6,7 @@ import {
   Routes,
   Outlet,
   Navigate,
-  useLocation
+  useLocation,
 } from "react-router-dom";
 
 // Context Imports
@@ -32,6 +32,8 @@ import {
   EmailsHome,
   EmailsUpload,
   EmailsBatchDetails,
+  PackagesHome,
+  CreditsHome,
 } from "./app";
 
 // Rule-based Router
@@ -50,12 +52,14 @@ function RulesRouter({ rule }) {
       setAuthStatus(1);
     }
   }
-  useEffect(()=>{getStatus()},[]);
+  useEffect(() => {
+    getStatus();
+  }, []);
 
   // Return
   switch (authStatus) {
     case -1: // Loading
-      // return <LoadingCircle />;
+    // return <LoadingCircle />;
     case 0: // Not logged in
       if (rule === "public") return <Outlet />;
       else return <Navigate to="/login" />;
@@ -83,11 +87,61 @@ export default function App() {
           </Route>
           {/* Only logged-in users */}
           <Route element={<RulesRouter rule="private" />}>
-            <Route exact path="/home" element={<AppLayout title="Home"><EmailsHome /></AppLayout>} />
+            <Route
+              exact
+              path="/home"
+              element={
+                <AppLayout title="Home">
+                  <EmailsHome />
+                </AppLayout>
+              }
+            />
             <Route exact path="/" element={<Navigate to="/home" />} />
-            <Route exact path="/upload" element={<AppLayout title="Upload"><EmailsUpload /></AppLayout>} />
-            <Route exact path="/:id/details" element={<AppLayout title="Batch Details"><EmailsBatchDetails /></AppLayout>} />
-            <Route exact path="/settings" element={<AppLayout title="Settings"><Settings /></AppLayout>} />
+            <Route
+              exact
+              path="/upload"
+              element={
+                <AppLayout title="Upload">
+                  <EmailsUpload />
+                </AppLayout>
+              }
+            />
+            <Route
+              exact
+              path="/:id/details"
+              element={
+                <AppLayout title="Batch Details">
+                  <EmailsBatchDetails />
+                </AppLayout>
+              }
+            />
+            <Route
+              exact
+              path="/packages"
+              element={
+                <AppLayout title="Packages">
+                  <PackagesHome />
+                </AppLayout>
+              }
+            />
+            <Route
+              exact
+              path="/settings"
+              element={
+                <AppLayout title="Settings">
+                  <Settings />
+                </AppLayout>
+              }
+            />
+            <Route
+              exact
+              path="/credits"
+              element={
+                <AppLayout title="Credits">
+                  <CreditsHome />
+                </AppLayout>
+              }
+            />
           </Route>
           {/* Public to everyone */}
           <Route path="/*" element={<NotFound404 />} />

@@ -16,7 +16,7 @@ export const getProfileDetails = async () => {
 export const updateProfileName = async (name) => {
   return await http.patch(
     "/settings/profile/name/touch",
-    { name },
+    { value: name },
     {
       withCredentials: true,
     }
@@ -26,7 +26,7 @@ export const updateProfileName = async (name) => {
 export const updateProfileLogo = async (pfp) => {
   return await http.patch(
     "/settings/profile/pfp/touch",
-    { pfp },
+    { value: pfp },
     {
       withCredentials: true,
     }
@@ -36,7 +36,7 @@ export const updateProfileLogo = async (pfp) => {
 export const updateProfileEmail = async (email) => {
   return await http.patch(
     "/settings/profile/email/touch",
-    { email },
+    { value: email },
     {
       withCredentials: true,
     }
