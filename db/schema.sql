@@ -96,9 +96,6 @@ CREATE TABLE Requests (
 	`end_ts` TIMESTAMP NULL DEFAULT NULL,
 	`num_contacts` int NOT NULL,
 	`num_processed` int NOT NULL,
-	`num_invalid` int NOT NULL,
-	`num_catch_all` int NOT NULL,
-
 	`file_name` varchar(125) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
 	PRIMARY KEY (`request_id`),
 	FOREIGN KEY (`user_id`) REFERENCES Users(`id`) ON DELETE CASCADE
