@@ -96,6 +96,8 @@ CREATE TABLE Requests (
 	`end_ts` TIMESTAMP NULL DEFAULT NULL,
 	`num_contacts` int NOT NULL,
 	`num_processed` int NOT NULL,
+
+
 	`file_name` varchar(125) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
 	PRIMARY KEY (`request_id`),
 	FOREIGN KEY (`user_id`) REFERENCES Users(`id`) ON DELETE CASCADE
@@ -127,3 +129,23 @@ CREATE TABLE Users_Credit_Balance_History (
 	PRIMARY KEY (`user_id`, `usage_ts`),
 	FOREIGN KEY (`user_id`) REFERENCES Users(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+
+DROP TABLE IF EXISTS `Stripe_Products`;
+CREATE TABLE Stripe_Products (
+	id INT AUTO_INCREMENT PRIMARY KEY,
+	package_code VARCHAR(64) NOT NULL UNIQUE,
+	product_id VARCHAR(255) NOT NULL,
+	price_id VARCHAR(255) NOT NULL,
+	credits INT NOT NULL DEFAULT 0
+);
+
+DROP TABLE IF EXISTS `Stripe_Purchases`;
+CREATE TABLE Stripe_Purchases (
+	id INT AUTO_INCREMENT PRIMARY KEY,
+	user_id INT NOT NULL,
+	session_id VARCHAR(255) NOT NULL,
+	credits INT NOT NULL,
+	status VARCHAR(32) NOT NULL,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE
+);
