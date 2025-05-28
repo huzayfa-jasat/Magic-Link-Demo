@@ -2,6 +2,7 @@
 const HttpStatus = require('../../types/HttpStatus');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { handleSuccessfulPayment, handleIncomingResults } = require('./funs_db');
+const knex = require('knex')(require('../../knexfile.js').development);
 
 const result_map = ["invalid", "catchall", "valid"];
 
@@ -16,7 +17,7 @@ async function handleWebhook(req, res) {
 
     try {
         if (!sig) {
-            return res.status(HttpStatus.BAD_REQUEST).json({
+            return res.status(HttpStatus.FAILED_STATUS).json({
                 error: 'Missing Stripe signature'
             });
         }
@@ -28,7 +29,7 @@ async function handleWebhook(req, res) {
         );
     } catch (err) {
         console.error('Webhook signature verification failed:', err.message);
-        return res.status(HttpStatus.BAD_REQUEST).json({
+        return res.status(HttpStatus.FAILED_STATUS).json({
             error: 'Invalid signature'
         });
     }
@@ -41,7 +42,7 @@ async function handleWebhook(req, res) {
                 // Verify the session is paid
                 if (session.payment_status !== 'paid') {
                     console.error('Session not paid:', session.id);
-                    return res.status(HttpStatus.BAD_REQUEST).json({
+                    return res.status(HttpStatus.FAILED_STATUS).json({
                         error: 'Session not paid'
                     });
                 }
@@ -50,20 +51,20 @@ async function handleWebhook(req, res) {
                 const customer = await stripe.customers.retrieve(session.customer);
                 if (!customer || !customer.metadata.userId) {
                     console.error('Invalid customer:', session.customer);
-                    return res.status(HttpStatus.BAD_REQUEST).json({
+                    return res.status(HttpStatus.FAILED_STATUS).json({
                         error: 'Invalid customer'
                     });
                 }
 
                 // Get the product details
-                const product = await db('Stripe_Products')
+                const product = await knex('Stripe_Products')
                     .where('product_id', session.metadata.product_id)
                     .select('credits')
                     .first();
 
                 if (!product) {
                     console.error('Product not found:', session.metadata.product_id);
-                    return res.status(HttpStatus.BAD_REQUEST).json({
+                    return res.status(HttpStatus.FAILED_STATUS).json({
                         error: 'Product not found'
                     });
                 }
@@ -75,7 +76,7 @@ async function handleWebhook(req, res) {
                     session.id
                 );
 
-                return res.status(HttpStatus.OK).json({ received: true });
+                return res.status(HttpStatus.SUCCESS_STATUS).json({ received: true });
             }
 
             case 'checkout.session.expired':
@@ -89,11 +90,11 @@ async function handleWebhook(req, res) {
                 break;
             default:
                 console.log(`Unhandled event type: ${event.type}`);
-                return res.status(HttpStatus.OK).json({ received: true });
+                return res.status(HttpStatus.SUCCESS_STATUS).json({ received: true });
         }
     } catch (err) {
         console.error('Error processing webhook:', err);
-        return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        return res.status(HttpStatus.MISC_ERROR_STATUS).json({
             error: 'Webhook handler failed'
         });
     }

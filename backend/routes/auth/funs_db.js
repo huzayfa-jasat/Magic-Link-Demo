@@ -1,7 +1,8 @@
 // Dependencies
 const crypto = require('crypto');
 const knex = require('knex')(require('../../knexfile.js').development);
-const { createStripeCustomer } = require('../../utils/stripe');
+const Stripe = require('stripe');
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
 // Constants
 const HASH_ITERATIONS = parseInt(process.env.HASH_ITERATIONS);
@@ -50,6 +51,26 @@ async function db_createUser(email, pass) {
     }
 
     return true;
+}
+
+// Create Stripe customer
+async function createStripeCustomer(userId, email) {
+    try {
+        const customer = await stripe.customers.create({
+            email: email,
+            metadata: {
+                userId: userId
+            }
+        });
+        // Update user with Stripe ID
+        await knex('Users')
+            .where('id', userId)
+            .update({ stripe_id: customer.id });
+        return customer.id;
+    } catch (error) {
+        console.error('Error creating Stripe customer:', error);
+        throw error;
+    }
 }
 
 

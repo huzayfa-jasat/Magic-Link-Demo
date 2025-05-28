@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { createCheckout } = require('./controller');
-const { isAuthenticated } = require('../../utils/auth');
+const { checkUserAuth } = require('../auth/funs_perms');
 
 // Create checkout session
-router.post('/create-checkout', isAuthenticated, createCheckout);
+router.post('/create-checkout', checkUserAuth, createCheckout);
 
 module.exports = router; 

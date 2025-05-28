@@ -9,11 +9,10 @@ SET NAMES utf8mb3;
 DROP TABLE IF EXISTS `Users`;
 CREATE TABLE Users (
 	`id` int AUTO_INCREMENT NOT NULL,
-	`name` varchar(125) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci,
+	`name` varchar(125) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci
 	`email` varchar(125) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
-	`profile_picture` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci,
+	`profile_picture` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci
 	`referral_code` varchar(10) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
-	`stripe_id` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci,
 	`created_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (`id`),
 	UNIQUE KEY (`email`),
@@ -97,6 +96,8 @@ CREATE TABLE Requests (
 	`end_ts` TIMESTAMP NULL DEFAULT NULL,
 	`num_contacts` int NOT NULL,
 	`num_processed` int NOT NULL,
+
+
 	`file_name` varchar(125) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
 	PRIMARY KEY (`request_id`),
 	FOREIGN KEY (`user_id`) REFERENCES Users(`id`) ON DELETE CASCADE
@@ -129,24 +130,23 @@ CREATE TABLE Users_Credit_Balance_History (
 	FOREIGN KEY (`user_id`) REFERENCES Users(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
--- Stripe Tables
-
 DROP TABLE IF EXISTS `Stripe_Products`;
 CREATE TABLE Stripe_Products (
-	`package_code` enum('starter', 'basic', 'standard', 'pro', 'business', 'enterprise', 'elite', 'premium_3m', 'premium_5m', 'ultimate') NOT NULL,
-	`product_id` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
-	`price_id` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
-	`credits` int NOT NULL,
-	`amount` decimal(10,2) NOT NULL,
-	PRIMARY KEY (`package_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+	id INT AUTO_INCREMENT PRIMARY KEY,
+	package_code VARCHAR(64) NOT NULL UNIQUE,
+	product_id VARCHAR(255) NOT NULL,
+	price_id VARCHAR(255) NOT NULL,
+	credits INT NOT NULL DEFAULT 0
+);
 
 DROP TABLE IF EXISTS `Stripe_Purchases`;
 CREATE TABLE Stripe_Purchases (
-	`event_id` int AUTO_INCREMENT NOT NULL,
-	`user_id` int NOT NULL,
-	`package_code` enum('starter', 'basic', 'standard', 'pro', 'business', 'enterprise', 'elite', 'premium_3m', 'premium_5m', 'ultimate') NOT NULL,
-	`event_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	PRIMARY KEY (`event_id`),
-	FOREIGN KEY (`user_id`) REFERENCES Users(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+	id INT AUTO_INCREMENT PRIMARY KEY,
+	user_id INT NOT NULL,
+	session_id VARCHAR(255) NOT NULL,
+	credits INT NOT NULL,
+	status VARCHAR(32) NOT NULL,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE
+);
+

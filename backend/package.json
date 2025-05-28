@@ -24,6 +24,6 @@
     "passport": "^0.6.0",
     "passport-local": "^1.0.0",
     "sendpost_javascript_sdk": "^1.2.2",
-    "stripe": "^14.17.0"
+    "stripe": "^14.25.0"
   }
 }

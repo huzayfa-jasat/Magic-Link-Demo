@@ -14,12 +14,22 @@ async function handleSuccessfulPayment(userId, credits, sessionId) {
     try {
         // Start a transaction
         await knex.transaction(async (trx) => {
-            // Update user credits
-            await trx('Users')
-                .where('id', userId)
-                .increment('credits', credits)
-                .catch((error) => { err = error; });
-
+            // Check if user already has a balance row
+            const existing = await trx('Users_Credit_Balance')
+                .where('user_id', userId)
+                .first();
+            if (existing) {
+                // Update user credits
+                await trx('Users_Credit_Balance')
+                    .where('user_id', userId)
+                    .increment('current_balance', credits)
+                    .catch((error) => { err = error; });
+            } else {
+                // Insert new balance row
+                await trx('Users_Credit_Balance')
+                    .insert({ user_id: userId, current_balance: credits })
+                    .catch((error) => { err = error; });
+            }
             if (err) throw err;
 
             // Record the purchase
