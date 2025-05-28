@@ -118,13 +118,15 @@ async function db_listVerifyRequests(user_id) {
       .join('Contacts_Global', 'Requests_Contacts.global_id', 'Contacts_Global.global_id')
       .where("Requests_Contacts.request_id", request.request_id)
       .select(
-        knex.raw("SUM(Contacts_Global.latest_result = 'valid') as num_processed"),
+        knex.raw("COUNT(*) as num_processed"),
+        knex.raw("SUM(Contacts_Global.latest_result = 'valid') as num_valid"),
         knex.raw("SUM(Contacts_Global.latest_result = 'invalid') as num_invalid"),
         knex.raw("SUM(Contacts_Global.latest_result = 'catch-all') as num_catch_all")
       )
       .first();
 
     request.num_processed = counts.num_processed || 0;
+    request.num_valid = counts.num_valid || 0;
     request.num_invalid = counts.num_invalid || 0;
     request.num_catch_all = counts.num_catch_all || 0;
   }
@@ -153,13 +155,15 @@ async function db_getVerifyRequestDetails(user_id, request_id) {
     .join('Contacts_Global', 'Requests_Contacts.global_id', 'Contacts_Global.global_id')
     .where("Requests_Contacts.request_id", request_id)
     .select(
-      knex.raw("SUM(Contacts_Global.latest_result = 'valid') as num_processed"),
+      knex.raw("COUNT(*) as num_processed"),
+      knex.raw("SUM(Contacts_Global.latest_result = 'valid') as num_valid"),
       knex.raw("SUM(Contacts_Global.latest_result = 'invalid') as num_invalid"),
       knex.raw("SUM(Contacts_Global.latest_result = 'catch-all') as num_catch_all")
     )
     .first();
 
   db_resp[0].num_processed = counts.num_processed || 0;
+  db_resp[0].num_valid = counts.num_valid || 0;
   db_resp[0].num_invalid = counts.num_invalid || 0;
   db_resp[0].num_catch_all = counts.num_catch_all || 0;
 
