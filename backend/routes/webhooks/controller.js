@@ -57,10 +57,13 @@ async function handleWebhook(req, res) {
                 }
 
                 // Get the product details
-                const product = await knex('Stripe_Products')
-                    .where('product_id', session.metadata.product_id)
-                    .select('credits')
-                    .first();
+                let query = knex('Stripe_Products').where('product_id', session.metadata.product_id);
+                if (process.env.NODE_ENV === 'development') {
+                    query = query.andWhere('is_live', 0);
+                } else {
+                    query = query.andWhere('is_live', 1);
+                }
+                const product = await query.select('credits').first();
 
                 if (!product) {
                     console.error('Product not found:', session.metadata.product_id);

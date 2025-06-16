@@ -136,7 +136,8 @@ CREATE TABLE Stripe_Products (
 	package_code VARCHAR(64) NOT NULL UNIQUE,
 	product_id VARCHAR(255) NOT NULL,
 	price_id VARCHAR(255) NOT NULL,
-	credits INT NOT NULL DEFAULT 0
+	credits INT NOT NULL DEFAULT 0,
+	is_live TINYINT(1) NOT NULL DEFAULT 0
 );
 
 DROP TABLE IF EXISTS `Stripe_Purchases`;
