@@ -143,7 +143,8 @@ CREATE TABLE Stripe_Products (
 	package_code VARCHAR(64) NOT NULL UNIQUE,
 	product_id VARCHAR(255) NOT NULL,
 	price_id VARCHAR(255) NOT NULL,
-	credits INT NOT NULL DEFAULT 0
+	credits INT NOT NULL DEFAULT 0,
+	is_live TINYINT(1) NOT NULL DEFAULT 0
 );
 
 DROP TABLE IF EXISTS `Stripe_Purchases`;
@@ -156,3 +157,15 @@ CREATE TABLE Stripe_Purchases (
 	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE
 );
+
+DROP TABLE IF EXISTS 'PassReset_Codes';
+CREATE TABLE PassReset_Codes (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`user_id` int NOT NULL,
+	`code` varchar(6) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
+    `expires_at` TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL 10 MINUTE) AFTER `created_ts`,
+    `created_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY (`code`),
+    FOREIGN KEY (`user_id`) REFERENCES Users(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
