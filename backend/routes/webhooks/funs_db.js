@@ -1,6 +1,7 @@
 // Dependencies
 
 const knex = require('knex')(require('../../knexfile.js').development);
+const { sendLowCreditsEmail } = require('../../external_apis/resend');
 
 /**
  * Handle successful payment and update user credits
@@ -43,6 +44,14 @@ async function handleSuccessfulPayment(userId, credits, sessionId) {
 
             if (err) throw err;
         });
+
+        // After transaction, check balance and send low credits email if needed
+        const user = await knex('Users').where('id', userId).first();
+        const balanceRow = await knex('Users_Credit_Balance').where('user_id', userId).first();
+        const balance = balanceRow ? balanceRow.current_balance : 0;
+        if (balance < 1000 && user && user.email) {
+            await sendLowCreditsEmail(user.email, balance);
+        }
     } catch (error) {
         console.error('Error handling successful payment:', error);
         throw error;

@@ -3,7 +3,8 @@ const authPass = require('../../auth_pass/native.js');
 const HttpStatus = require('../../types/HttpStatus.js');
 
 // Function Imports
-const { db_getUserDetails, db_createUser, db_changePassword } = require("./funs_db.js");
+const { db_getUserDetails, db_createUser, db_changePassword, db_createPasswordResetCode, db_validatePassResetCode } = require("./funs_db.js");
+const { sendWelcomeEmail, sendPasswordResetEmail } = require('../../external_apis/resend.js');
 
 /**
  * Handle login success
@@ -43,7 +44,10 @@ async function getUserStatus(req, res) {
 async function registerUser(req, res) {
     try {
         const ok = await db_createUser(req.body.em, req.body.pw);
-        if (ok) return res.sendStatus(HttpStatus.SUCCESS_STATUS);
+        if (ok) {
+            await sendWelcomeEmail(req.body.em);
+            return res.sendStatus(HttpStatus.SUCCESS_STATUS);
+        }
         return res.status(HttpStatus.FAILED_STATUS).send("Failed to register");
 
     } catch (err) {
@@ -76,6 +80,47 @@ function logoutUser(req, res, _next) {
     });
 }
 
+/**
+ * Send password reset email
+ */
+async function requestPasswordReset(req, res) {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(HttpStatus.FAILED_STATUS).json({ error: 'Email is required' });
+        }
+
+        const [ok,result] = await db_createPasswordResetCode(email);
+        if (!ok) {
+            return res.status(HttpStatus.FAILED_STATUS).json({ error: 'User not found' });
+        }
+        const resetLink = `${process.env.FRONTEND_URL_PREFIX}/auth/reset-password?email=${encodeURIComponent(email)}&code=${result.code}`;
+        await sendPasswordResetEmail(email, resetLink);
+
+        return res.sendStatus(HttpStatus.SUCCESS_STATUS);
+    } catch (err) {
+        return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+    }
+}
+
+/**
+ * Validate password reset code
+ */
+async function validatePasswordReset(req, res) {
+    try {
+        const { email, code, newPassword } = req.body;
+        if (!email || !code || !newPassword) {
+            return res.status(HttpStatus.FAILED_STATUS).send("Email, code, and new password are required");
+        }
+        // Validate code and update password
+        const [ok, result] = await db_validatePassResetCode(email, code, newPassword);
+        if (!ok) return res.status(HttpStatus.UNAUTHORIZED_STATUS).send("Invalid or expired password reset code");
+
+        return res.sendStatus(HttpStatus.SUCCESS_STATUS);
+    } catch (err) {
+        return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+    }
+}
 // Export controllers
 module.exports = {
     authPass,
@@ -84,5 +129,7 @@ module.exports = {
     getUserStatus,
     registerUser,
     changePassword,
-    logoutUser
+    logoutUser,
+    requestPasswordReset,
+    validatePasswordReset
 };

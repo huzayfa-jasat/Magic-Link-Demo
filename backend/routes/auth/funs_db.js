@@ -7,7 +7,9 @@ const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 // Constants
 const HASH_ITERATIONS = parseInt(process.env.HASH_ITERATIONS);
 
-
+function generateCode() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+}
 // -------------------
 // CREATE Functions
 // -------------------
@@ -73,6 +75,39 @@ async function createStripeCustomer(userId, email) {
     }
 }
 
+async function db_createPasswordResetCode(email) {
+    const maxRetries = 10;
+    let retries = 0;
+    let success = false;
+
+    while (!success && retries < maxRetries) {
+        try {
+
+            const [user] = await knex('Users').where({email}).select('id');
+            if (!user) return [false, null];
+
+            const code = generateCode();
+
+            await knex('PassReset_Codes').insert({
+                user_id: user.id,
+                code: code,
+            });
+
+            success = true;
+            return [true, {code,user_id: user.id}];
+        } catch (err) {
+            if (err.code) {
+                retries++;
+                if (retries === maxRetries) {
+                    return [false, null];
+                }
+            } else {
+                return [false, null];
+            }
+        }
+    }
+}
+
 
 // -------------------
 // READ Functions
@@ -124,6 +159,46 @@ async function db_createPassword(target_user_id, pass, cb) {
 }
 
 
+/**
+ * Validate a password reset code and update password
+ */
+async function db_validatePassResetCode(email, code, newPassword) {
+    try {
+        // Get user ID from email
+        const [user] = await knex('Users').where({ email }).select('id');
+        if (!user) return [false, "User not found"];
+
+        // Find valid code
+        const [resetCode] = await knex('PassReset_Codes')
+            .where({
+                user_id: user.id,
+                code
+            })
+            .where('created_ts', '>', knex.raw('DATE_SUB(NOW(), INTERVAL 10 MINUTE)'))
+            .select('id');
+
+        if (!resetCode) return [false, "Invalid or expired code"];
+
+        // Delete the code entry
+        await knex('PassReset_Codes')
+            .where({ id: resetCode.id })
+            .del();
+
+        // Update password
+        await new Promise((resolve, reject) => {
+            db_changePassword(user.id, newPassword, (resp) => {
+                if (resp.ok) resolve();
+                else reject(new Error(resp.msg || "Password change failed"));
+            });
+        });
+
+        return [true, { user_id: user.id }];
+    } catch (err) {
+        console.error("Error validating password reset code:", err);
+        return [false, "Failed to validate password reset code"];
+    }
+}
+
 // -------------------
 // DELETE Functions
 // -------------------
@@ -135,4 +210,6 @@ module.exports = {
 	db_getUserDetails,
 	db_createUser,
 	db_changePassword, db_createPassword,
-};
+    db_createPasswordResetCode,
+    db_validatePassResetCode
+};  
