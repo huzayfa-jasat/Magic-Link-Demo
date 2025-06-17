@@ -11,9 +11,18 @@ const HASH_ITERATIONS = parseInt(process.env.HASH_ITERATIONS);
 // -------------------
 // CREATE Functions
 // -------------------
-async function db_createUser(email, pass) {
+async function db_createUser(email, pass, early_access_code) {
 	let err_code;
 	
+    // Validate early access code
+    const code_result = await knex('Early_Access_Codes')
+        .where('txt_code', early_access_code)
+        .select('num_credits')
+        .first()
+        .catch((err) => { if (err) err_code = err });
+    
+    if (err_code || !code_result) return false;
+
     // Generate referral code
     const referral_code = crypto.randomBytes(10).toString('hex').toUpperCase().slice(0, 6);
 
@@ -24,12 +33,19 @@ async function db_createUser(email, pass) {
 	}).catch((err)=>{if (err) err_code = err});
 	if (err_code) return false;
 
-	// Insert zero balance for new user
+	// Insert initial balance for new user with early access credits
 	const user_id = db_resp[0];
 	await knex('Users_Credit_Balance').insert({
 		'user_id': user_id,
-		'current_balance': 0
+		'current_balance': code_result.num_credits
 	}).catch((err)=>{if (err) err_code = err});
+	if (err_code) return false;
+
+	// Delete used early access code
+	await knex('Early_Access_Codes')
+		.where('txt_code', early_access_code)
+		.del()
+		.catch((err)=>{if (err) err_code = err});
 	if (err_code) return false;
 
 	// Create password
