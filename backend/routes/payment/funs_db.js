@@ -63,11 +63,13 @@ async function createCheckoutSession(stripeCustomerId, packageCode) {
     let err;
     try {
         // Get product and price ID
-        const product = await knex('Stripe_Products')
-            .where('package_code', packageCode)
-            .select('product_id', 'price_id')
-            .first()
-            .catch((error) => { err = error; });
+        let query = knex('Stripe_Products').where('package_code', packageCode);
+        if (process.env.NODE_ENV === 'development') {
+            query = query.andWhere('is_live', 0);
+        } else {
+            query = query.andWhere('is_live', 1);
+        }
+        const product = await query.select('product_id', 'price_id').first().catch((error) => { err = error; });
 
         if (err) throw err;
         if (!product) throw new Error('Invalid package code');
