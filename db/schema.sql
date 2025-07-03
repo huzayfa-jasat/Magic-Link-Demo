@@ -6,6 +6,13 @@ SET NAMES utf8mb3;
 
 -- DB Schema
 
+DROP TABLE IF EXISTS `Early_Access_Codes`;
+CREATE TABLE Early_Access_Codes (
+	`txt_code` varchar(15) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
+	`num_credits` int NOT NULL DEFAULT 0,
+	PRIMARY KEY (`txt_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+
 DROP TABLE IF EXISTS `Users`;
 CREATE TABLE Users (
 	`id` int AUTO_INCREMENT NOT NULL,
