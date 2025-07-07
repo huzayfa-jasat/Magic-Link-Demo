@@ -1,4 +1,5 @@
-const { Queue, QueueScheduler } = require('bullmq');
+const bullmq = require('bullmq');
+const { Queue, QueueScheduler } = bullmq;
 const IORedis = require('ioredis');
 
 // Redis connection for BullMQ

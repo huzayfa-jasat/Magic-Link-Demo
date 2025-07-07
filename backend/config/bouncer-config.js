@@ -1,4 +1,7 @@
-const mysql = require('mysql2/promise');
+const knex = require('knex');
+const config = require('../knexfile');
+const environment = process.env.NODE_ENV || 'development';
+const db = knex(config[environment]);
 
 /**
  * Bouncer Email Verification System Configuration
@@ -329,26 +332,17 @@ function validateConfiguration() {
 }
 
 /**
- * Get database connection configuration for knex or mysql2
+ * Get database connection configuration for knex
  */
 function getDatabaseConfig() {
-    return {
-        host: database.host,
-        user: database.user,
-        password: database.password,
-        database: database.database,
-        port: database.port,
-        ssl: database.ssl,
-        charset: database.charset,
-        timezone: database.timezone,
-        acquireTimeout: database.acquireTimeout,
-        timeout: database.timeout,
-        reconnect: database.reconnect,
-        pool: {
-            min: 0,
-            max: database.connectionLimit
-        }
-    };
+    return config[environment];
+}
+
+/**
+ * Get configured knex instance
+ */
+function getKnexInstance() {
+    return db;
 }
 
 /**
@@ -428,6 +422,7 @@ module.exports = {
     // Utility functions
     validateConfiguration,
     getDatabaseConfig,
+    getKnexInstance,
     getRedisConfig,
     getEnvironment,
     isProduction,
