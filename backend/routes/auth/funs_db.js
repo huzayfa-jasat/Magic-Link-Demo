@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const knex = require('knex')(require('../../knexfile.js').development);
 const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+const { generateUniqueApiKey } = require('../../utils/generateApiKey.js');
 
 // Constants
 const HASH_ITERATIONS = parseInt(process.env.HASH_ITERATIONS);
@@ -28,10 +29,14 @@ async function db_createUser(email, pass, early_access_code) {
     // Generate referral code
     const referral_code = crypto.randomBytes(10).toString('hex').toUpperCase().slice(0, 6);
 
+    // Generate unique API key
+    const api_key = await generateUniqueApiKey(knex);
+
     // Add to user table
 	const db_resp = await knex('Users').insert({
 		'email': email,
         'referral_code': referral_code,
+        'api_key': api_key,
 	}).catch((err)=>{if (err) err_code = err});
 	if (err_code) return false;
 
