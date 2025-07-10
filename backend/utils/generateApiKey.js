@@ -16,22 +16,35 @@ function generateApiKey() {
  */
 async function generateUniqueApiKey(knex) {
     let apiKey;
-    let isUnique = false;
+    let attempts = 0;
+    const maxAttempts = 10;
     
-    while (!isUnique) {
-        apiKey = generateApiKey();
-        
-        // Check if this API key already exists
-        const existing = await knex('Users')
-            .where('api_key', apiKey)
-            .first();
+    while (attempts < maxAttempts) {
+        try {
+            apiKey = generateApiKey();
             
-        if (!existing) {
-            isUnique = true;
+            // Check if this API key already exists
+            const existing = await knex('Users')
+                .where('api_key', apiKey)
+                .first();
+                
+            if (!existing) {
+                return apiKey;
+            }
+            
+            attempts++;
+        } catch (error) {
+            console.error('Error checking API key uniqueness:', error);
+            attempts++;
+            
+            // If we've exhausted all attempts, throw an error
+            if (attempts >= maxAttempts) {
+                throw new Error('Failed to generate unique API key after maximum attempts');
+            }
         }
     }
     
-    return apiKey;
+    throw new Error('Failed to generate unique API key after maximum attempts');
 }
 
 module.exports = {
