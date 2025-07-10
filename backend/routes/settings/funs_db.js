@@ -1,7 +1,7 @@
 // Dependencies
 const knex = require('knex')(require('../../knexfile.js').development);
 const { encodeImage } = require('../../utils/convertEncodedImage.js');
-const { generateUniqueApiKey } = require('../../utils/generateApiKey.js');
+const { generateApiKeys } = require('../../utils/generateApiKey.js');
 
 
 // -------------------
@@ -44,6 +44,36 @@ async function db_getApiKey(user_id) {
 	return [true, db_resp.api_key];
 }
 
+/**
+ * Choose the first unique API key from an array of candidates
+ * @param {string[]} apiKeys - Array of API keys to check
+ * @returns {Promise<string|null>} - The first unique API key, or null if none found
+ */
+async function db_chooseUniqueApiKey(apiKeys) {
+	let err_code;
+	
+	// Get existing API keys from database
+	const existingKeys = await knex('Users')
+		.whereIn('api_key', apiKeys)
+		.select('api_key')
+		.catch((err)=>{if (err) err_code = err.code});
+		
+	if (err_code) return null;
+	
+	// Create a set of existing keys for faster lookup
+	const existingSet = new Set(existingKeys.map(row => row.api_key));
+	
+	// Find the first API key that doesn't exist
+	for (const apiKey of apiKeys) {
+		if (!existingSet.has(apiKey)) {
+			return apiKey;
+		}
+	}
+	
+	// No unique API key found
+	return null;
+}
+
 // -------------------
 // UPDATE Functions
 // -------------------
@@ -82,12 +112,19 @@ async function db_updateProfilePicture(user_id, new_profile_picture) {
 async function db_generateApiKey(user_id) {
 	let err_code;
 	
-	// Generate a unique API key
-	const apiKey = await generateUniqueApiKey(knex);
+	// Generate 10 candidate API keys
+	const candidateKeys = generateApiKeys(10);
+	
+	// Find a unique one
+	const uniqueKey = await db_chooseUniqueApiKey(candidateKeys);
+	
+	if (!uniqueKey) {
+		return false;
+	}
 	
 	// Update the user's API key
 	await knex('Users').where('id', user_id).update({
-		'api_key': apiKey,
+		'api_key': uniqueKey,
 	}).catch((err)=>{if (err) err_code = err.code});
 	
 	if (err_code) return false;
@@ -127,4 +164,5 @@ module.exports = {
 	db_updateProfilePicture,
 	db_generateApiKey,
 	db_getUserByApiKey,
+	db_chooseUniqueApiKey,
 };

@@ -10,44 +10,19 @@ function generateApiKey() {
 }
 
 /**
- * Generate a new API key and ensure it's unique in the database
- * @param {Object} knex - Knex database instance
- * @returns {Promise<string>} A unique API key
+ * Generate an array of unique API keys
+ * @param {number} count - Number of API keys to generate
+ * @returns {string[]} Array of API keys
  */
-async function generateUniqueApiKey(knex) {
-    let apiKey;
-    let attempts = 0;
-    const maxAttempts = 10;
-    
-    while (attempts < maxAttempts) {
-        try {
-            apiKey = generateApiKey();
-            
-            // Check if this API key already exists
-            const existing = await knex('Users')
-                .where('api_key', apiKey)
-                .first();
-                
-            if (!existing) {
-                return apiKey;
-            }
-            
-            attempts++;
-        } catch (error) {
-            console.error('Error checking API key uniqueness:', error);
-            attempts++;
-            
-            // If we've exhausted all attempts, throw an error
-            if (attempts >= maxAttempts) {
-                throw new Error('Failed to generate unique API key after maximum attempts');
-            }
-        }
+function generateApiKeys(count = 10) {
+    const apiKeys = [];
+    for (let i = 0; i < count; i++) {
+        apiKeys.push(generateApiKey());
     }
-    
-    throw new Error('Failed to generate unique API key after maximum attempts');
+    return apiKeys;
 }
 
 module.exports = {
     generateApiKey,
-    generateUniqueApiKey
+    generateApiKeys
 }; 
