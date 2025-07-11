@@ -3,7 +3,6 @@ const crypto = require('crypto');
 const knex = require('knex')(require('../../knexfile.js').development);
 const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
-const { generateApiKeys } = require('../../utils/generateApiKey.js');
 
 // Constants
 const HASH_ITERATIONS = parseInt(process.env.HASH_ITERATIONS);
@@ -11,6 +10,7 @@ const HASH_ITERATIONS = parseInt(process.env.HASH_ITERATIONS);
 function generateCode() {
     return Math.floor(100000 + Math.random() * 900000).toString();
 }
+
 // -------------------
 // CREATE Functions
 // -------------------
@@ -29,32 +29,10 @@ async function db_createUser(email, pass, early_access_code) {
     // Generate referral code
     const referral_code = crypto.randomBytes(10).toString('hex').toUpperCase().slice(0, 6);
 
-    // Generate candidate API keys and find a unique one
-    const candidateKeys = generateApiKeys(10);
-    const existingKeys = await knex('Users')
-        .whereIn('api_key', candidateKeys)
-        .select('api_key')
-        .catch((err) => { if (err) err_code = err });
-    
-    if (err_code) return false;
-    
-    // Find first unique API key
-    const existingSet = new Set(existingKeys.map(row => row.api_key));
-    let api_key = null;
-    for (const key of candidateKeys) {
-        if (!existingSet.has(key)) {
-            api_key = key;
-            break;
-        }
-    }
-    
-    if (!api_key) return false; // All keys are taken
-
-    // Add to user table
+    // Add to user table (without API key initially)
 	const db_resp = await knex('Users').insert({
 		'email': email,
         'referral_code': referral_code,
-        'api_key': api_key,
 	}).catch((err)=>{if (err) err_code = err});
 	if (err_code) return false;
 
@@ -81,6 +59,11 @@ async function db_createUser(email, pass, early_access_code) {
         });
     });
     if (!create_pass) return false;
+
+    // Generate API key using the settings function
+    const { db_generateApiKey } = require('../settings/funs_db.js');
+    const apiKeySuccess = await db_generateApiKey(user_id);
+    if (!apiKeySuccess) return false;
 
     // Create Stripe customer
     try {
