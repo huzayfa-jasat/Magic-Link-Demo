@@ -8,6 +8,9 @@ const {
 	db_updateProfileEmail,
 	db_updateProfileName,
 	db_updateProfilePicture,
+	db_createApiKey,
+	db_refreshApiKey,
+	db_removeApiKey,
 } = require("./funs_db.js");
 
 
@@ -28,7 +31,7 @@ async function getProfileDetails(req, res) {
 }
 
 /**
- * Get API key
+ * Get API key (masked)
  */
 async function getApiKey(req, res) {
 	try {
@@ -36,6 +39,57 @@ async function getApiKey(req, res) {
 		
 		if (ok) return res.status(HttpStatus.SUCCESS_STATUS).json({'data': { apiKey }});
 		return res.status(HttpStatus.FAILED_STATUS).send("Failed to load API key");
+
+	} catch (err) {
+		console.log("MTE = ", err);
+		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+	}
+}
+
+/**
+ * Create API key
+ */
+async function createApiKey(req, res) {
+	try {
+		const [ok, apiKey] = await db_createApiKey(req.user.id);
+		if (ok && apiKey) {
+			return res.status(HttpStatus.SUCCESS_STATUS).json({'data': apiKey});
+		} else if (!ok) {
+			return res.status(HttpStatus.FAILED_STATUS).send("API key already exists or failed to create");
+		}
+		return res.status(HttpStatus.FAILED_STATUS).send("Failed to create API key");
+
+	} catch (err) {
+		console.log("MTE = ", err);
+		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+	}
+}
+
+/**
+ * Regenerate API key
+ */
+async function refreshApiKey(req, res) {
+	try {
+		const [ok, apiKey] = await db_refreshApiKey(req.user.id);
+		if (ok && apiKey) {
+			return res.status(HttpStatus.SUCCESS_STATUS).json({'data': apiKey});
+		}
+		return res.status(HttpStatus.FAILED_STATUS).send("Failed to regenerate API key");
+
+	} catch (err) {
+		console.log("MTE = ", err);
+		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+	}
+}
+
+/**
+ * Delete API key
+ */
+async function removeApiKey(req, res) {
+	try {
+		const ok = await db_removeApiKey(req.user.id);
+		if (ok) return res.sendStatus(HttpStatus.SUCCESS_STATUS);
+		return res.status(HttpStatus.FAILED_STATUS).send("Failed to delete API key");
 
 	} catch (err) {
 		console.log("MTE = ", err);
@@ -95,7 +149,7 @@ async function updateProfilePicture(req, res) {
 	try {
 		if (!('profile_picture' in req.body)) {
 			return res.status(HttpStatus.FAILED_STATUS).send("Missing 'profile_picture' in request body");
-		}
+		}	
 		const ok = await db_updateProfilePicture(req.user.id, req.body.profile_picture);
 		if (ok) return res.sendStatus(HttpStatus.SUCCESS_STATUS);
 		return res.status(HttpStatus.FAILED_STATUS).send("Failed to update profile picture");
@@ -110,6 +164,9 @@ async function updateProfilePicture(req, res) {
 module.exports = {
 	getProfileDetails,
 	getApiKey,
+	createApiKey,
+	refreshApiKey,
+	removeApiKey,
 	updateProfileDetails,
 	updateProfileName,
 	updateProfilePicture,

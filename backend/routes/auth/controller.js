@@ -10,9 +10,6 @@ const {
     db_createPasswordResetCode,
     db_validatePassResetCode,
 } = require("./funs_db.js");
-const {
-    db_generateApiKey
-} = require("../settings/funs_db.js");
 
 // Transactional Email Function Imports
 const {
@@ -66,9 +63,6 @@ async function registerUser(req, res) {
         const [ok, user_id] = await db_createUser(req.body.em, req.body.pw, req.body.code);
         if (!ok) return res.status(HttpStatus.FAILED_STATUS).send("Failed to register");
 
-        // Generate API key using the settings function
-        const apiKeySuccess = await db_generateApiKey(user_id);
-        if (!apiKeySuccess) return res.status(HttpStatus.FAILED_STATUS).send("Failed to register");
 
         // Send welcome email
         await sendWelcomeEmail(req.body.em);

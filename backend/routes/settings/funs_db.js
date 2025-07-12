@@ -29,7 +29,7 @@ async function db_getProfileDetails(user_id) {
 }
 
 /**
- * Get API key for a user
+ * Get API key for a user (masked with asterisks)
  */
 async function db_getApiKey(user_id) {
 	let err_code;
@@ -41,7 +41,18 @@ async function db_getApiKey(user_id) {
 		.catch((err)=>{if (err) err_code = err.code});
 		
 	if (err_code || !db_resp) return [false, null];
-	return [true, db_resp.api_key];
+	
+	// If no API key exists, return null
+	if (!db_resp.api_key) return [true, null];
+	
+	// Mask the API key - show first 4 and last 4 characters, rest as asterisks
+	const apiKey = db_resp.api_key;
+	if (apiKey.length <= 8) {
+		// If key is too short, mask most of it
+		return [true, apiKey.charAt(0) + '*'.repeat(Math.max(0, apiKey.length - 2)) + (apiKey.length > 1 ? apiKey.charAt(apiKey.length - 1) : '')];
+	}
+	const maskedKey = apiKey.substring(0, 4) + '*'.repeat(apiKey.length - 8) + apiKey.substring(apiKey.length - 4);
+	return [true, maskedKey];
 }
 
 /**
@@ -105,11 +116,45 @@ async function db_updateProfilePicture(user_id, new_profile_picture) {
 }
 
 /**
- * Generate a new API key for a user
+ * Create a new API key for a user (returns the full unmasked key)
  * @param {number} user_id - The user ID
- * @returns {Promise<boolean>} Success status
+ * @returns {Promise<[boolean, string|null]>} [Success status, API key or null]
  */
-async function db_generateApiKey(user_id) {
+async function db_createApiKey(user_id) {
+	let err_code;
+	
+	// Check if user already has an API key
+	const existing = await knex('Users')
+		.where('id', user_id)
+		.select('api_key')
+		.first()
+		.catch((err)=>{if (err) err_code = err.code});
+		
+	if (err_code) return [false, null];
+	if (existing && existing.api_key) return [false, null]; // User already has API key
+	
+	// Generate 10 candidate API keys
+	const candidateKeys = generateApiKeys(10);
+	
+	// Find a unique one
+	const uniqueKey = await db_chooseUniqueApiKey(candidateKeys);	
+	if (!uniqueKey) return [false, null];
+	
+	// Update the user's API key
+	await knex('Users').where('id', user_id).update({
+		'api_key': uniqueKey,
+	}).catch((err)=>{if (err) err_code = err.code});
+	
+	if (err_code) return [false, null];
+	return [true, uniqueKey];
+}
+
+/**
+ * Regenerate API key for a user (returns the full unmasked key)
+ * @param {number} user_id - The user ID
+ * @returns {Promise<[boolean, string|null]>} [Success status, new API key or null]
+ */
+async function db_refreshApiKey(user_id) {
 	let err_code;
 	
 	// Generate 10 candidate API keys
@@ -117,14 +162,28 @@ async function db_generateApiKey(user_id) {
 	
 	// Find a unique one
 	const uniqueKey = await db_chooseUniqueApiKey(candidateKeys);
-	
-	if (!uniqueKey) {
-		return false;
-	}
+	if (!uniqueKey) return [false, null];
 	
 	// Update the user's API key
 	await knex('Users').where('id', user_id).update({
 		'api_key': uniqueKey,
+	}).catch((err)=>{if (err) err_code = err.code});
+	
+	if (err_code) return [false, null];
+	return [true, uniqueKey];
+}
+
+/**
+ * Delete API key for a user
+ * @param {number} user_id - The user ID
+ * @returns {Promise<boolean>} Success status
+ */
+async function db_removeApiKey(user_id) {
+	let err_code;
+	
+	// Set API key to null
+	await knex('Users').where('id', user_id).update({
+		'api_key': null,
 	}).catch((err)=>{if (err) err_code = err.code});
 	
 	if (err_code) return false;
@@ -162,7 +221,9 @@ module.exports = {
 	db_updateProfileEmail,
 	db_updateProfileName,
 	db_updateProfilePicture,
-	db_generateApiKey,
+	db_createApiKey,
+	db_refreshApiKey,
+	db_removeApiKey,
 	db_getUserByApiKey,
 	db_chooseUniqueApiKey,
 };
