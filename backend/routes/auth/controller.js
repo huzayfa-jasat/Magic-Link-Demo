@@ -2,9 +2,23 @@
 const authPass = require('../../auth_pass/native.js');
 const HttpStatus = require('../../types/HttpStatus.js');
 
-// Function Imports
-const { db_getUserDetails, db_createUser, db_changePassword, db_createPasswordResetCode, db_validatePassResetCode } = require("./funs_db.js");
-const { sendWelcomeEmail, sendPasswordResetEmail } = require('../../external_apis/resend.js');
+// DB Function Imports
+const {
+    db_getUserDetails,
+    db_createUser,
+    db_changePassword,
+    db_createPasswordResetCode,
+    db_validatePassResetCode,
+} = require("./funs_db.js");
+const {
+    db_generateApiKey
+} = require("../settings/funs_db.js");
+
+// Transactional Email Function Imports
+const {
+    sendWelcomeEmail,
+    sendPasswordResetEmail
+} = require('../../external_apis/resend.js');
 
 /**
  * Handle login success
@@ -48,9 +62,17 @@ async function registerUser(req, res) {
             return res.status(HttpStatus.FAILED_STATUS).send("Early access code required");
         }
 
-        const ok = await db_createUser(req.body.em, req.body.pw, req.body.code);
-        if (ok) return res.sendStatus(HttpStatus.SUCCESS_STATUS);
-        return res.status(HttpStatus.FAILED_STATUS).send("Failed to register");
+        // Create user
+        const [ok, user_id] = await db_createUser(req.body.em, req.body.pw, req.body.code);
+        if (!ok) return res.status(HttpStatus.FAILED_STATUS).send("Failed to register");
+
+        // Generate API key using the settings function
+        const apiKeySuccess = await db_generateApiKey(user_id);
+        if (!apiKeySuccess) return res.status(HttpStatus.FAILED_STATUS).send("Failed to register");
+
+        // Send welcome email
+        await sendWelcomeEmail(req.body.em);
+        return res.status(HttpStatus.SUCCESS_STATUS).send("User registered successfully");
 
     } catch (err) {
         return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
