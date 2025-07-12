@@ -1,10 +1,19 @@
+// Dependencies
 import { http } from "./http";
 
-export const createCheckout = async (package_name) => {
+// Constants
+const MODULE_PREFIX = "/pay";
+
+/*
+------------------------
+> PURCHASE API CALLS <
+------------------------
+*/
+export const createCheckout = async (package_code) => {
   return await http.post(
-    "/create-checkout",
+    `${MODULE_PREFIX}/checkout`,
     {
-      body: package_name,
+      package_code,
     },
     {
       withCredentials: true,

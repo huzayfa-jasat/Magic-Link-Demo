@@ -1,40 +1,33 @@
 .container {
-  font-family: "Sohne", sans-serif;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
+  margin: 0;
 }
 
 .title {
-  font-size: 1.5rem;
-  font-weight: 500;
-  margin-bottom: 1rem;
-  color: var(--black);
-}
-
-.h1Header {
-  margin-bottom: 1rem;
+  margin: 0;
+  font-family: "Circular", "Geist", sans-serif;
+  font-size: 26px;
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  color: #fff;
 }
 
 .creditGrid {
   display: grid;
-  gap: 1.5rem;
-  grid-template-columns: 1fr;
-}
-
-@media (min-width: 880px) {
-  .creditGrid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  gap: 15px;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
 }
 
 .creditCard {
-  background: white;
-  border-radius: 12px;
-  padding: 1rem;
-  text-align: center;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 20px;
+  text-align: left;
+  transition: all 0.2s ease-in-out;
+  border: 1px solid var(--brd-light);
+  border-radius: 6px;
+  background-color: var(--brd-light-2);
 }
 
 .creditCard:hover {
@@ -43,58 +36,111 @@
 }
 
 .packageName {
-  font-size: 1.5rem;
-  color: var(--brd-light);
-  font-weight: 450;
-  margin-top: 10px;
+  margin: 0;
+  font-family: "Circular", "Geist", sans-serif;
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  color: var(--black);
 }
 
 .numCredits {
-  font-size: 2rem;
+  font-family: "PP Supply Mono", sans-serif;
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: 1px;
   color: var(--main-hl);
-  font-weight: 450;
-  margin-top: 10px;
-  margin-bottom: 5px;
+}
+
+.bonusContainer {
+  width: 100%;
+  height: fit-content;
+  margin: 20px 0 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 10px;
+  padding: 15px;
+  text-align: left;
+  transition: all 0.2s ease-in-out;
+  border: 1px dashed var(--txt-light-2);
+  border-radius: 6px;
+  background-color: var(--brd-light-2);
 }
 
 .bonus {
-  color: var(--brd-light);
-  font-size: 0.9rem;
-  margin-top: 10px;
-  font-weight: 600;
+  margin: 0;
+  font-family: "Circular", "Geist", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: -0.3px;
+  color: var(--txt-light);
 }
 
 .extraCredits {
-  font-size: 1.2rem;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   color: var(--main-hl);
-  font-weight: 450;
-  /* margin-bottom: 5px; */
+}
+
+.extraCredits span {
+  font-family: "PP Supply Mono", sans-serif;
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
 }
 
 .verificationText {
-  margin-top: 0;
+  margin: 0;
+  font-family: "Circular", "Geist", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: -0.3px;
+  color: var(--txt-light);
 }
 
 .price {
-  font-weight: bold;
-  margin: 1rem 0;
+  margin: 0;
+  font-family: "Circular", "Geist", sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: -0.3px;
+  color: var(--main-hl);
 }
 
 .buyBtn {
-  background: linear-gradient(to right, #0ba3e3, #1b4ed1);
-  border: none;
-  color: white;
-  font-weight: bold;
-  padding: 0.8rem 1.2rem;
   width: 100%;
-  border-radius: 8px;
+  height: 40px;
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 5px;
+  background-color: var(--main-hl);
+  color: var(--white);
   cursor: pointer;
-  transition: 0.2s ease;
-  display: block;
-  text-align: center;
+  transition: all 0.2s ease-in-out;
   text-decoration: none;
+  font-family: "Circular", "Geist", sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: -0.3px;
 }
 
 .buyBtn:hover {
-  filter: brightness(1.1);
+  /* filter: brightness(1.1); */
+  background-color: var(--main-hl-hover);
+}
+
+.buyBtn.premium {
+  background: linear-gradient(90deg, #c0eaff, #68cdff);
 }

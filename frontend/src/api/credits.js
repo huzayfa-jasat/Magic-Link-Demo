@@ -1,48 +1,38 @@
 // Dependencies
 import { http } from "./http";
 
+// Constants
+const MODULE_PREFIX = "/credits";
+
 /*
 ------------------------
 > CREDITS API CALLS <
 ------------------------
 */
 
-// response: data.credit_balance
-export const getBalance = async (userId) => {
+export const getBalance = async () => {
   return await http.get(
-    "/balance",
-    {
-      user: { id: userId },
-    },
+    `${MODULE_PREFIX}/balance`,
     {
       withCredentials: true,
     }
   );
-  // .then((res) => {
-  //   console.log(res);
-  // });
-};
-
-export const purchaseCredits = async () => {
-  return await http.post("/purchase", {
-    // TODO
-  });
 };
 
 export const getReferralInviteCode = async () => {
-  return await http.get("/invite/code", {
-    // TODO
+  return await http.get(`${MODULE_PREFIX}/invite/code`, {
+    withCredentials: true,
   });
 };
 
 export const getReferralInviteList = async () => {
-  return await http.get("/invites/list", {
-    // TODO
+  return await http.get(`${MODULE_PREFIX}/invites/list`, {
+    withCredentials: true,
   });
 };
 
 export const listAllTransactions = async () => {
-  return await http.get("/purchase/history", {
+  return await http.get(`${MODULE_PREFIX}/history`, {
     withCredentials: true,
   });
 };

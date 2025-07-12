@@ -108,6 +108,45 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'Circular';
+  src: url('./assets/fonts/circularstd/CircularStd_Book.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Circular';
+  src: url('./assets/fonts/circularstd/CircularStd_BookItalic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Circular';
+  src: url('./assets/fonts/circularstd/CircularStd_Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Apercu Mono';
+  src: url('./assets/fonts/apercu_mono/apercu_mono.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PP Supply Mono';
+  src: url('./assets/fonts/pp_supply_mono/pp_supply_mono_light.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+
 /* Variables */
 :root {
   --black: #fff;
@@ -115,6 +154,14 @@
   --body: #0E121A;
   --main-hl: #BBE8FF;
   --brd-light: #242b38;
+  --brd-light-2: #242b3850;
+  --txt-light: #9fabc2;
+  --txt-light-2: #9fabc275;
+  --main-hl-hover: #99d6f0;
+  --main-hl-fade: #99d6f040;
+  --main-hl-fade2: #99d6f020;
+  --fg-pos: #07D28B;
+  --fg-neg: #F58680;
 }
 
 
@@ -141,6 +188,8 @@ ol[role='list'] {
 body {
   min-height: 100vh;
   line-height: 1.5;
+  padding: 0;
+  margin: 0;
 }
 h1, h2, h3, h4,
 button, input, label {

@@ -68,9 +68,11 @@
 
 /* Typography */
 .title {
-  font-size: 1.5rem;
-  font-weight: 500;
-  margin-bottom: 1rem;
+  margin: 0;
+  font-family: "Circular", "Geist", sans-serif;
+  font-size: 26px;
+  font-weight: 400;
+  letter-spacing: -0.5px;
   color: #fff;
 }
 
@@ -155,9 +157,7 @@
 
 /* Upload styles */
 .uploadContainer {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem;
+  width: 100%;
 }
 
 .uploadArea {

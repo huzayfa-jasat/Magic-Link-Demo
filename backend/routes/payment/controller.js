@@ -2,20 +2,20 @@ const HttpStatus = require('../../types/HttpStatus');
 const { createStripeCustomer, getStripeCustomerId, createCheckoutSession } = require('./funs_db');
 
 // Valid package codes
-const VALID_PACKAGES = [
+const VALID_PACKAGES = new Set([
     'starter', 'basic', 'standard', 'pro', 'business', 
     'enterprise', 'elite', 'premium_3m', 'premium_5m', 'ultimate'
-];
+]);
 
 /**
  * Create a checkout session for a package
  */
 async function createCheckout(req, res) {
     try {
-        const { packageCode } = req.body;
+        const { package_code } = req.body;
 
         // Validate package code
-        if (!packageCode || !VALID_PACKAGES.includes(packageCode)) {
+        if (!package_code || !VALID_PACKAGES.has(package_code)) {
             return res.status(HttpStatus.FAILED_STATUS).json({ 
                 error: 'Invalid package code',
                 validPackages: VALID_PACKAGES
@@ -31,7 +31,7 @@ async function createCheckout(req, res) {
         }
 
         // Create checkout session
-        const checkoutUrl = await createCheckoutSession(stripeCustomerId, packageCode);
+        const checkoutUrl = await createCheckoutSession(stripeCustomerId, package_code);
 
         res.status(HttpStatus.SUCCESS_STATUS).json({ url: checkoutUrl });
     } catch (error) {

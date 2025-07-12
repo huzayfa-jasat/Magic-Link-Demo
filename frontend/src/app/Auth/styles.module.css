@@ -1,0 +1,248 @@
+.container {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+}
+.form {
+  width: calc(100% - 60px);
+  max-width: 450px;
+  margin-top: -50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logo {
+  height: auto;
+  width: 40px;
+  margin: 0 auto 50px 0;
+}
+.title {
+  margin: 0 auto 15px 0;
+  font-family: "Circular", "Geist", sans-serif;
+  font-size: 27px;
+  font-weight: 500;
+  letter-spacing: -0.7px;
+  color: var(--black);
+}
+.formSubtitle {
+  margin: 0 auto 50px 0;
+  font-family: "Circular", "Geist", sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: -0.3px;
+  color: var(--txt-light);
+}
+.betterThanSubtitle {
+  width: 100%;
+  margin: 0 auto 50px 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 10px 10px;
+  border: 1px solid var(--brd-light);
+  border-radius: 50px;
+  font-family: "Circular", "Geist", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: -0.3px;
+  color: var(--txt-light);
+  background-color: var(--brd-light-2);
+}
+.betterThanSubtitle > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: fit-content;
+  font-family: "Sohne Mono", monospace;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: -0.3px;
+  color: var(--white);
+  background: linear-gradient(90deg, #c0eaff, #68cdff);
+  padding: 5px 12px 5px 10px;
+  border-radius: 50px;
+  text-transform: uppercase;
+}
+.section {
+  width: 100%;
+  margin-bottom: 30px;
+}
+.section.nmb {
+  margin-bottom: 0;
+}
+.top {
+  margin: 0 auto 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.subtitle {
+  margin: 0 auto 10px 0;
+  font-family: "Circular", "Geist", sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  color: var(--black);
+}
+.top > .subtitle {
+  margin: 0;
+}
+.forgot {
+  font-family: "Circular", "Geist", sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  color: var(--txt-light);
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  text-decoration: none;
+}
+.forgot:hover {
+  color: var(--main-hl);
+}
+.section > input {
+  height: 45px;
+  width: 100%;
+  padding: 0 12px;
+  box-sizing: border-box;
+  border: 1px solid var(--brd-light);
+  border-radius: 8px;
+  font-family: "Circular", "Geist", sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  color: var(--black);
+  background-color: var(--brd-light-2);
+}
+.buttons {
+  padding-top: 30px;
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--brd-light);
+  gap: 15px;
+  width: 100%;
+}
+.buttons > button {
+  height: 45px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--brd-light);
+  border-radius: 8px;
+  font-family: "Circular", "Geist", sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  letter-spacing: -0.3px;
+  color: var(--black);
+  background-color: var(--white);
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+}
+.buttons > button > svg {
+  margin: auto 10px auto 0;
+  height: 18px;
+  width: auto;
+}
+
+.button,
+.buttons > button.button {
+  color: var(--white);
+  background-color: var(--main-hl);
+}
+
+.button:hover,
+.buttons > button.button:hover {
+  background-color: var(--main-hl-hover);
+}
+
+button.otp,
+.buttons > button.otp {
+  color: var(--main-hl);
+  background-color: var(--main-hl-fade);
+}
+button.otp:hover,
+.buttons > button.otp:hover {
+  background-color: var(--main-hl-fade2);
+}
+
+.or {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.or > span {
+  font-family: "Circular", "Geist", sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--txt-light);
+}
+
+.register {
+  margin-top: 50px;
+  font-family: "Circular", "Geist", sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  color: var(--txt-light);
+  text-decoration: none;
+}
+.register > span {
+  font-family: "Circular", "Geist", sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  color: var(--main-hl);
+  text-decoration: underline;
+}
+
+.registerv2 {
+  margin: -20px 0 50px 0;
+  width: 100%;
+  background-color: transparent;
+  border: 1px dashed var(--brd-light);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--brd-light-2);
+  transition: all 0.2s ease-in-out;
+  text-decoration: none;
+}
+.registerv2 > p {
+  margin: auto 0;
+  font-family: "Circular", "Geist", sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  color: var(--black);
+}
+.registerv2 > p > span {
+  font-family: "Circular", "Geist", sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  color: var(--main-hl);
+  text-decoration: underline;
+}
+.registerv2 > div {
+  height: 40px;
+  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--main-hl);
+  transition: all 0.2s ease-in-out;
+}
+
+.registerv2:hover {
+  background-color: var(--brd-light);
+  border-color: var(--txt-light);
+}
+.registerv2:hover > div {
+  background-color: var(--main-hl-hover);
+}

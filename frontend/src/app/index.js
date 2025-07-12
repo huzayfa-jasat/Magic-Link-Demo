@@ -18,3 +18,6 @@ export { default as PackagesHome } from "../app/Packages/Controller.jsx";
 
 /* Credits */
 export { default as CreditsHome } from "../app/Credits/Controller.jsx";
+
+/* Referrals */
+export { default as ReferralsHome } from "../app/Referrals/Controller.jsx";
