@@ -3,18 +3,21 @@ const { Queue, QueueScheduler } = bullmq;
 const IORedis = require('ioredis');
 
 // Redis connection for BullMQ
-const redis = new IORedis({
-    host: process.env.REDIS_HOST || 'localhost',
-    port: process.env.REDIS_PORT || 6379,
-    password: process.env.REDIS_PASSWORD,
-    db: 0,
-    maxRetriesPerRequest: 3,
-    lazyConnect: true,
-    retryDelayOnFailover: 100,
-    enableOfflineQueue: false,
-    connectTimeout: 30000,
-    commandTimeout: 5000
-});
+// const redis = new IORedis({
+//     host: process.env.REDIS_HOST || 'localhost',
+//     port: process.env.REDIS_PORT || 6379,
+//     password: process.env.REDIS_PASSWORD,
+//     db: 0,
+//     maxRetriesPerRequest: 3,
+//     lazyConnect: true,
+//     retryDelayOnFailover: 100,
+//     enableOfflineQueue: false,
+//     connectTimeout: 30000,
+//     commandTimeout: 5000
+// });
+
+// Set redis to null for development
+const redis = null;
 
 // Job types for different queue operations
 const JOB_TYPES = {
@@ -35,16 +38,16 @@ const PRIORITY = {
 };
 
 // Queue instances
-const emailVerificationQueue = new Queue('email-verification', { connection: redis });
-const batchStatusQueue = new Queue('batch-status-check', { connection: redis });
-const batchDownloadQueue = new Queue('batch-download', { connection: redis });
-const cleanupQueue = new Queue('cleanup-tasks', { connection: redis });
+// const emailVerificationQueue = new Queue('email-verification', { connection: redis });
+// const batchStatusQueue = new Queue('batch-status-check', { connection: redis });
+// const batchDownloadQueue = new Queue('batch-download', { connection: redis });
+// const cleanupQueue = new Queue('cleanup-tasks', { connection: redis });
 
 // Queue schedulers for delayed/repeated jobs
-const emailVerificationScheduler = new QueueScheduler('email-verification', { connection: redis });
-const batchStatusScheduler = new QueueScheduler('batch-status-check', { connection: redis });
-const batchDownloadScheduler = new QueueScheduler('batch-download', { connection: redis });
-const cleanupScheduler = new QueueScheduler('cleanup-tasks', { connection: redis });
+// const emailVerificationScheduler = new QueueScheduler('email-verification', { connection: redis });
+// const batchStatusScheduler = new QueueScheduler('batch-status-check', { connection: redis });
+// const batchDownloadScheduler = new QueueScheduler('batch-download', { connection: redis });
+// const cleanupScheduler = new QueueScheduler('cleanup-tasks', { connection: redis });
 
 // Default job options
 const defaultJobOptions = {
@@ -62,13 +65,13 @@ module.exports = {
     redis,
     JOB_TYPES,
     PRIORITY,
-    emailVerificationQueue,
-    batchStatusQueue,
-    batchDownloadQueue,
-    cleanupQueue,
-    emailVerificationScheduler,
-    batchStatusScheduler,
-    batchDownloadScheduler,
-    cleanupScheduler,
+    // emailVerificationQueue,
+    // batchStatusQueue,
+    // batchDownloadQueue,
+    // cleanupQueue,
+    // emailVerificationScheduler,
+    // batchStatusScheduler,
+    // batchDownloadScheduler,
+    // cleanupScheduler,
     defaultJobOptions
 };

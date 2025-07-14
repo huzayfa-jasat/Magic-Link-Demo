@@ -31,7 +31,7 @@ async function createCheckout(req, res) {
         }
 
         // Create checkout session
-        const checkoutUrl = await createCheckoutSession(stripeCustomerId, packageCode);
+        const { url: checkoutUrl } = await createCheckoutSession(stripeCustomerId, packageCode);
 
         res.status(HttpStatus.SUCCESS_STATUS).json({ url: checkoutUrl });
     } catch (error) {

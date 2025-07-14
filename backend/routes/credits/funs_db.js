@@ -98,11 +98,32 @@ async function db_getCreditBalanceHistory(user_id) {
 // DELETE Functions
 // -------------------
 
+/**
+ * Purchase regular credits
+ */
+async function db_purchaseCredits(userId, credits, packageCode, sessionId) {
+	let err;
+	await knex('Stripe_Purchases').insert({
+		user_id: userId,
+		session_id: sessionId,
+		credits: credits,
+		status: 'pending',
+		created_at: new Date()
+	}).catch((error) => { err = error; });
+	if (err) return [false, null];
+	return [true, {
+		message: 'Purchase initiated',
+		packageCode: packageCode,
+		credits: credits,
+		status: 'pending'
+	}];
+}
 
 
 // ----- Export -----
 module.exports = {
 	db_getCreditsBalance,
+	db_purchaseCredits,
 	db_getReferralInviteCode,
 	db_getReferralInviteList,
 	db_getCreditBalance,

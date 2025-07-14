@@ -59,6 +59,55 @@ async function handleSuccessfulPayment(userId, credits, sessionId) {
 }
 
 /**
+ * Handle successful catchall payment and update user catchall credits
+ * @param {number} userId - The user's ID
+ * @param {number} credits - Number of catchall credits to add
+ * @param {string} sessionId - Stripe session ID
+ * @returns {Promise<void>}
+ */
+async function handleSuccessfulCatchallPayment(userId, credits, sessionId) {
+    let err;
+    try {
+        // Start a transaction
+        await knex.transaction(async (trx) => {
+            // Check if user already has a catchall balance row
+            const existing = await trx('Users_Catchall_Credit_Balance')
+                .where('user_id', userId)
+                .first();
+            if (existing) {
+                // Update user catchall credits
+                await trx('Users_Catchall_Credit_Balance')
+                    .where('user_id', userId)
+                    .increment('current_balance', credits)
+                    .catch((error) => { err = error; });
+            } else {
+                // Insert new catchall balance row
+                await trx('Users_Catchall_Credit_Balance')
+                    .insert({ user_id: userId, current_balance: credits })
+                    .catch((error) => { err = error; });
+            }
+            if (err) throw err;
+
+            // Record the catchall purchase
+            await trx('Stripe_Catchall_Purchases').insert({
+                user_id: userId,
+                session_id: sessionId,
+                credits: credits,
+                status: 'completed',
+                created_at: new Date()
+            }).catch((error) => { err = error; });
+
+            if (err) throw err;
+        });
+
+        console.log(`[${userId}] Added ${credits} catchall credits from purchase`);
+    } catch (error) {
+        console.error('Error handling successful catchall payment:', error);
+        throw error;
+    }
+}
+
+/**
  * Handle incoming verification results (supports multiple results)
  * @param {number} id - Request ID
  * @param {Array} results - Array of result objects or single result object
@@ -126,5 +175,6 @@ async function handleIncomingResults(id, results) {
 
 module.exports = {
     handleSuccessfulPayment,
+    handleSuccessfulCatchallPayment,
     handleIncomingResults
 }; 

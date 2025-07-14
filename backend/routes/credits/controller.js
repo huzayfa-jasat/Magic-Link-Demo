@@ -4,7 +4,7 @@ const HttpStatus = require('../../types/HttpStatus.js');
 // Function Imports
 const {
 	db_getCreditsBalance,
-	// db_purchaseCredits,
+	db_purchaseCredits,
 	db_getReferralInviteCode,
 	db_getReferralInviteList,
 	db_getCreditBalance,
@@ -31,8 +31,36 @@ async function getBalance(req, res) {
  */
 async function purchaseCredits(req, res) {
 	try {
-		// TODO: Implement purchase credits
-		return res.status(HttpStatus.FAILED_STATUS).send("Missing implementation");
+		const { packageCode } = req.body;
+
+		// Validate package code
+		if (!VALID_PACKAGES.includes(packageCode)) {
+			return res.status(HttpStatus.FAILED_STATUS).json({
+				error: 'Invalid package code',
+				validPackages: VALID_PACKAGES
+			});
+		}
+
+		const userId = req.user.id;
+
+		// Get or create Stripe customer ID
+		let stripeCustomerId = await getStripeCustomerId(userId);
+		if (!stripeCustomerId) {
+			stripeCustomerId = await createStripeCustomer(userId, req.user.email);
+		}
+
+		// Create checkout session
+		const { url: checkoutUrl, sessionId } = await createCheckoutSession(stripeCustomerId, packageCode);
+
+		// Record the purchase attempt in the database
+		const [ok, resp] = await db_purchaseCredits(userId, 0, packageCode, sessionId);
+		if (ok) {
+			return res.status(HttpStatus.SUCCESS_STATUS).json({
+				url: checkoutUrl,
+				data: resp
+			});
+		}
+		return res.status(HttpStatus.FAILED_STATUS).send("Failed to process purchase");
 
 	} catch (err) {
 		console.log("MTE = ", err);

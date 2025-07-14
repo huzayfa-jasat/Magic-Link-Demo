@@ -1,7 +1,7 @@
 // Dependencies
 const HttpStatus = require('../../types/HttpStatus');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const { handleSuccessfulPayment, handleIncomingResults } = require('./funs_db');
+const { handleSuccessfulPayment, handleSuccessfulCatchallPayment, handleIncomingResults } = require('./funs_db');
 const knex = require('knex')(require('../../knexfile.js').development);
 
 const result_map = ["invalid", "catchall", "valid"];
@@ -66,18 +66,36 @@ async function handleWebhook(req, res) {
                 const product = await query.select('credits').first();
 
                 if (!product) {
-                    console.error('Product not found:', session.metadata.product_id);
-                    return res.status(HttpStatus.FAILED_STATUS).json({
-                        error: 'Product not found'
-                    });
-                }
+                    // Check if it's a catchall product
+                    let catchallQuery = knex('Stripe_Catchall_Products').where('product_id', session.metadata.product_id);
+                    if (process.env.NODE_ENV === 'development') {
+                        catchallQuery = catchallQuery.andWhere('is_live', 0);
+                    } else {
+                        catchallQuery = catchallQuery.andWhere('is_live', 1);
+                    }
+                    const catchallProduct = await catchallQuery.select('credits').first();
 
-                // Update user credits
-                await handleSuccessfulPayment(
-                    parseInt(customer.metadata.userId),
-                    product.credits,
-                    session.id
-                );
+                    if (!catchallProduct) {
+                        console.error('Product not found:', session.metadata.product_id);
+                        return res.status(HttpStatus.FAILED_STATUS).json({
+                            error: 'Product not found'
+                        });
+                    }
+
+                    // Handle catchall credits purchase
+                    await handleSuccessfulCatchallPayment(
+                        parseInt(customer.metadata.userId),
+                        catchallProduct.credits,
+                        session.id
+                    );
+                } else {
+                    // Handle regular credits purchase
+                    await handleSuccessfulPayment(
+                        parseInt(customer.metadata.userId),
+                        product.credits,
+                        session.id
+                    );
+                }
 
                 return res.status(HttpStatus.SUCCESS_STATUS).json({ received: true });
             }
