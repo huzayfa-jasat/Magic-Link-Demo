@@ -1,0 +1,231 @@
+openapi: 3.0.3
+info:
+  title: OmniVerifier Public API
+  description: Public API for email verification and credit management
+  version: 1.0.0
+  contact:
+    name: OmniVerifier Support
+    email: support@omniverifier.com
+
+servers:
+  - url: https://api.omniverifier.com/api
+    description: Production server
+  - url: http://127.0.0.1:11793/api
+    description: Development server
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /credits:
+    get:
+      summary: Get user credits
+      description: Retrieve the current credit balance for the authenticated user
+      operationId: getCredits
+      tags:
+        - Credits
+      responses:
+        '200':
+          description: Successfully retrieved credits
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  credits:
+                    type: integer
+                    description: Current credit balance
+                    example: 1500
+                  user_id:
+                    type: integer
+                    description: User ID
+                    example: 2
+        '400':
+          description: Bad request - API key missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /valid:
+    post:
+      summary: Validate emails
+      description: Validate a batch of emails for valid/invalid status. Costs 1 credit per email.
+      operationId: validateEmails
+      tags:
+        - Email Verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - emails
+              properties:
+                emails:
+                  type: array
+                  items:
+                    type: string
+                    format: email
+                  description: Array of email addresses to validate
+                  minItems: 1
+                  maxItems: 1000
+                  example: ["user@example.com", "test@domain.com", "catchall@domain.com"]
+      responses:
+        '200':
+          description: Successfully validated emails
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EmailResult'
+                  processed:
+                    type: integer
+                    description: Number of emails processed
+                    example: 3
+                  user_id:
+                    type: integer
+                    description: User ID
+                    example: 2
+        '400':
+          description: Bad request - validation error or insufficient credits
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /catchall:
+    post:
+      summary: Validate emails for catchall detection
+      description: Validate a batch of emails for catchall detection. Costs 2 credits per email.
+      operationId: validateCatchall
+      tags:
+        - Email Verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - emails
+              properties:
+                emails:
+                  type: array
+                  items:
+                    type: string
+                    format: email
+                  description: Array of email addresses to validate for catchall
+                  minItems: 1
+                  maxItems: 1000
+                  example: ["user@example.com", "catchall@domain.com", "test@domain.com"]
+      responses:
+        '200':
+          description: Successfully validated emails for catchall
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CatchallResult'
+                  processed:
+                    type: integer
+                    description: Number of emails processed
+                    example: 3
+                  user_id:
+                    type: integer
+                    description: User ID
+                    example: 2
+        '400':
+          description: Bad request - validation error or insufficient credits
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: API key for authentication
+
+  schemas:
+    EmailResult:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address
+          example: "user@example.com"
+        status:
+          type: string
+          enum: [valid, invalid, catch-all, disposable, unknown]
+          description: Email validation status
+          example: "valid"
+        mail_server:
+          type: string
+          description: Mail server information
+          example: "gmail-smtp-in.l.google.com"
+
+    CatchallResult:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address
+          example: "catchall@domain.com"
+        status:
+          type: string
+          enum: [valid, invalid, catch-all, disposable, unknown]
+          description: Email validation status
+          example: "catch-all"
+        mail_server:
+          type: string
+          description: Mail server information
+          example: "domain.com"
+        is_catchall:
+          type: boolean
+          description: Whether the email is a catchall
+          example: true
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: "Invalid API key"
+        code:
+          type: string
+          description: Error code
+          example: "INVALID_API_KEY" 
