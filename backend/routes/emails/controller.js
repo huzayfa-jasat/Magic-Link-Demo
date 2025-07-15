@@ -11,6 +11,9 @@ const {
 	db_exportBatchResultsCsv,
 } = require("./funs_db.js");
 
+const { db_getCreditBalance } = require("../credits/funs_db.js");
+const { sendLowCreditsEmail } = require('../../external_apis/resend');
+
 const { Parser } = require('json2csv');
 
 // Default constants
@@ -18,6 +21,24 @@ const DEFAULT_BATCH_RESULT_FILTER = 'all';
 const DEFAULT_BATCH_RESULT_PAGE = 1;
 const DEFAULT_BATCH_RESULT_PER_PAGE = 500;
 const ALLOWED_FILTERS = ['all', 'valid', 'invalid', 'catch-all'];
+
+/**
+ * Check if user has low credits and send notification email
+ * @param {number} userId - The user ID
+ * @param {string} userEmail - The user's email address
+ */
+async function checkAndNotifyLowCredits(userId, userEmail) {
+	try {
+		const [ok, balance] = await db_getCreditBalance(userId);
+		if (ok && balance < 1000) {
+			await sendLowCreditsEmail(userEmail, balance).catch((err) => {
+				console.error('Failed to send low credits email:', err);
+			});
+		}
+	} catch (err) {
+		console.error('Error checking low credits:', err);
+	}
+}
 
 /**
  * Verify a single email
@@ -29,8 +50,17 @@ async function verifySingleEmail(req, res) {
 		if (!email || typeof email !== 'string') return res.status(HttpStatus.BAD_REQUEST_STATUS).send("Email is required");
 
 		// Verify email
-		const [ok, verify_request_id] = await db_createVerifyRequest(req.user.id, [email]);
-		if (ok) return res.status(HttpStatus.SUCCESS_STATUS).json({'data': verify_request_id});
+		const [ok, result] = await db_createVerifyRequest(req.user.id, [email]);
+		if (ok) {
+			// Check for low credits and send notification
+			await checkAndNotifyLowCredits(req.user.id, req.user.email);
+			return res.status(HttpStatus.SUCCESS_STATUS).json({'data': result});
+		}
+		
+		// Handle specific error types
+		if (result === 'insufficient_credits') {
+			return res.status(429).send("Insufficient credits to process this request");
+		}
 		return res.status(HttpStatus.FAILED_STATUS).send("Failed to create verify request");
 
 	} catch (err) {
@@ -52,8 +82,17 @@ async function verifyBulkEmails(req, res) {
 		}
 
 		// Verify email
-		const [ok, verify_request_id] = await db_createVerifyRequest(req.user.id, emails.map(email => email.replaceAll('\\\"','').trim()));
-		if (ok) return res.status(HttpStatus.SUCCESS_STATUS).json({'data': verify_request_id});
+		const [ok, result] = await db_createVerifyRequest(req.user.id, emails.map(email => email.replaceAll('\\\"','').trim()));
+		if (ok) {
+			// Check for low credits and send notification
+			await checkAndNotifyLowCredits(req.user.id, req.user.email);
+			return res.status(HttpStatus.SUCCESS_STATUS).json({'data': result});
+		}
+		
+		// Handle specific error types
+		if (result === 'insufficient_credits') {
+			return res.status(429).send("Insufficient credits to process this request");
+		}
 		return res.status(HttpStatus.FAILED_STATUS).send("Failed to create verify request");
 
 	} catch (err) {
@@ -76,16 +115,24 @@ async function verifyImportEmails(req, res) {
     }
 
     // Verify emails
-    const [ok, verify_request_id] = await db_createVerifyRequest(
+    const [ok, result] = await db_createVerifyRequest(
       req.user.id,
       emails,
       request_id,
       file_name || null
     );
-    if (ok)
+    if (ok) {
+      // Check for low credits and send notification
+      await checkAndNotifyLowCredits(req.user.id, req.user.email);
       return res
         .status(HttpStatus.SUCCESS_STATUS)
-        .json({ data: verify_request_id });
+        .json({ data: result });
+    }
+    
+    // Handle specific error types
+    if (result === 'insufficient_credits') {
+      return res.status(429).send("Insufficient credits to process this request");
+    }
     return res
       .status(HttpStatus.FAILED_STATUS)
       .send("Failed to create verify request");
