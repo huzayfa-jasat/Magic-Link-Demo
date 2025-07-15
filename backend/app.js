@@ -95,7 +95,7 @@ app.use(route_prefix+'/emails/', emailsRoute);
 app.use(route_prefix+'/credits/', creditsRoute);
 app.use(route_prefix+'/payment/', paymentRoute);
 app.use(route_prefix+'/verify/', verifyRoute);
-app.use(route_prefix+'/email/', publicRoute);
+app.use(route_prefix+'/validate/', publicRoute);
 
 // Catch unhandled requests
 app.all('/*', (_, res) => { res.sendStatus(404); });

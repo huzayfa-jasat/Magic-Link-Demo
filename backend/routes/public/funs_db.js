@@ -52,15 +52,17 @@ async function db_validateEmails(user_id, emails) {
         };
     });
 
-    // Add missing emails as 'unknown' status
-    emails.forEach(email => {
-        if (!resultsMap[email]) {
-            resultsMap[email] = {
-                email: email,
-                status: 'unknown',
-                mail_server: 'unknown'
-            };
-        }
+    // Create array of unknown emails
+    const unknownEmails = emails.filter(email => !resultsMap[email]);
+    // TODO: Add to validator queue
+
+    // Add missing emails as 'unknown' status for response
+    unknownEmails.forEach(email => {
+        resultsMap[email] = {
+            email: email,
+            status: 'unknown',
+            mail_server: 'unknown'
+        };
     });
 
     // Deduct credits
@@ -117,16 +119,18 @@ async function db_validateCatchall(user_id, emails) {
         };
     });
 
-    // Add missing emails as 'unknown' status
-    emails.forEach(email => {
-        if (!resultsMap[email]) {
-            resultsMap[email] = {
-                email: email,
-                status: 'unknown',
-                mail_server: 'unknown',
-                is_catchall: false
-            };
-        }
+    // Create array of unknown emails
+    const unknownEmails = emails.filter(email => !resultsMap[email]);
+    // TODO: Add to validator queue
+
+    // Add missing emails as 'unknown' status for response
+    unknownEmails.forEach(email => {
+        resultsMap[email] = {
+            email: email,
+            status: 'unknown',
+            mail_server: 'unknown',
+            is_catchall: false
+        };
     });
 
     // Deduct credits

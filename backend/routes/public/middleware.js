@@ -12,8 +12,8 @@ async function checkApiKey(req, res, next) {
     
     if (!apiKey) {
         return res.status(HttpStatus.FAILED_STATUS).json({
-            error: 'API key required',
-            code: 'MISSING_API_KEY'
+            error: 'Missing or invalid API key',
+            code: 'INVALID_API_KEY'
         });
     }
 
@@ -26,7 +26,7 @@ async function checkApiKey(req, res, next) {
 
     if (err_code || !user) {
         return res.status(HttpStatus.FAILED_STATUS).json({
-            error: 'Invalid API key',
+            error: 'Missing or invalid API key',
             code: 'INVALID_API_KEY'
         });
     }

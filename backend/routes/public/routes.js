@@ -23,7 +23,7 @@ publicRouter.use(checkApiKey);
 publicRouter.get('/credits', getCredits);
 
 // Validate emails for valid/invalid status
-publicRouter.post('/valid', validateEmails);
+publicRouter.post('/validate', validateEmails);
 
 // Validate emails for catchall detection
 publicRouter.post('/catchall', validateCatchall);

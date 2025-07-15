@@ -22,22 +22,27 @@ const validateEmailArray = (emails) => {
         return { valid: false, error: 'Maximum 1000 emails allowed per request' };
     }
     
-    // Validate email format and structure
+    // Filter out invalid emails and return valid ones
+    const validEmails = [];
     for (let i = 0; i < emails.length; i++) {
         const email = emails[i];
         
         if (!email || typeof email !== 'string') {
-            return { valid: false, error: `Invalid email format at index ${i}` };
+            continue; // Skip invalid emails
         }
         
         // Basic email validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            return { valid: false, error: `Invalid email format: ${email}` };
+        if (emailRegex.test(email)) {
+            validEmails.push(email);
         }
     }
     
-    return { valid: true };
+    if (validEmails.length === 0) {
+        return { valid: false, error: 'No valid emails found' };
+    }
+    
+    return { valid: true, emails: validEmails };
 };
 
 /**
@@ -53,7 +58,7 @@ async function getCredits(req, res) {
 
         return res.status(HttpStatus.SUCCESS_STATUS).json({
             credits: credits,
-            user_id: req.apiUser.id
+            //todo: return validation & catchall credits (when new PR ready)
         });
 
     } catch (err) {
@@ -69,14 +74,14 @@ async function validateEmails(req, res) {
     try {
         const { emails } = req.body;
         
-        // Validate emails array
+        // Validate emails array and get valid emails
         const emailValidation = validateEmailArray(emails);
         if (!emailValidation.valid) {
             return res.status(HttpStatus.FAILED_STATUS).send(emailValidation.error);
         }
 
         // Sanitize emails (trim and lowercase)
-        const sanitizedEmails = emails.map(email => email.trim().toLowerCase());
+        const sanitizedEmails = emailValidation.emails.map(email => email.trim().toLowerCase());
 
         // Validate emails
         const [ok, result] = await db_validateEmails(req.apiUser.id, sanitizedEmails);
@@ -108,14 +113,14 @@ async function validateCatchall(req, res) {
     try {
         const { emails } = req.body;
         
-        // Validate emails array
+        // Validate emails array and get valid emails
         const emailValidation = validateEmailArray(emails);
         if (!emailValidation.valid) {
             return res.status(HttpStatus.FAILED_STATUS).send(emailValidation.error);
         }
 
         // Sanitize emails (trim and lowercase)
-        const sanitizedEmails = emails.map(email => email.trim().toLowerCase());
+        const sanitizedEmails = emailValidation.emails.map(email => email.trim().toLowerCase());
 
         // Validate emails for catchall
         const [ok, result] = await db_validateCatchall(req.apiUser.id, sanitizedEmails);
