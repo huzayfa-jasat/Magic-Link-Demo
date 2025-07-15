@@ -1,15 +1,18 @@
 // Dependencies
 const crypto = require('crypto');
 const knex = require('knex')(require('../../knexfile.js').development);
-const Stripe = require('stripe');
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+
+// Function Imports
+const { createStripeCustomer } = require('../payment/funs_db.js');
 
 // Constants
 const HASH_ITERATIONS = parseInt(process.env.HASH_ITERATIONS);
 
+// Helper Functions
 function generateCode() {
     return Math.floor(100000 + Math.random() * 900000).toString();
 }
+
 // -------------------
 // CREATE Functions
 // -------------------
@@ -23,17 +26,17 @@ async function db_createUser(email, pass, early_access_code) {
         .first()
         .catch((err) => { if (err) err_code = err });
     
-    if (err_code || !code_result) return false;
+    if (err_code || !code_result) return [false, null];
 
     // Generate referral code
     const referral_code = crypto.randomBytes(10).toString('hex').toUpperCase().slice(0, 6);
 
-    // Add to user table
+    // Add to user table (without API key initially)
 	const db_resp = await knex('Users').insert({
 		'email': email,
         'referral_code': referral_code,
 	}).catch((err)=>{if (err) err_code = err});
-	if (err_code) return false;
+	if (err_code) return [false, null];
 
 	// Insert initial balance for new user with early access credits
 	const user_id = db_resp[0];
@@ -41,7 +44,7 @@ async function db_createUser(email, pass, early_access_code) {
 		'user_id': user_id,
 		'current_balance': code_result.num_credits
 	}).catch((err)=>{if (err) err_code = err});
-	if (err_code) return false;
+	if (err_code) return [false, null];
 
     // Record signup event
     if (code_result.num_credits > 0) {
@@ -58,16 +61,16 @@ async function db_createUser(email, pass, early_access_code) {
 		.where('txt_code', early_access_code)
 		.del()
 		.catch((err)=>{if (err) err_code = err});
-	if (err_code) return false;
+	if (err_code) return [false, null];
 
 	// Create password
     const create_pass = await new Promise((resolve, _) => {
         db_createPassword(user_id, pass, function(pw_ok) {
-            if (!pw_ok.ok) return resolve(false);
-            return resolve(true);
+            if (!pw_ok.ok) return resolve([false, null]);
+            return resolve([true, user_id]);
         });
     });
-    if (!create_pass) return false;
+    if (!create_pass) return [false, null];
 
     // Create Stripe customer
     try {
@@ -78,27 +81,7 @@ async function db_createUser(email, pass, early_access_code) {
         // The customer can be created later when they make their first purchase
     }
 
-    return true;
-}
-
-// Create Stripe customer
-async function createStripeCustomer(userId, email) {
-    try {
-        const customer = await stripe.customers.create({
-            email: email,
-            metadata: {
-                userId: userId
-            }
-        });
-        // Update user with Stripe ID
-        await knex('Users')
-            .where('id', userId)
-            .update({ stripe_id: customer.id });
-        return customer.id;
-    } catch (error) {
-        console.error('Error creating Stripe customer:', error);
-        throw error;
-    }
+    return [true, user_id];
 }
 
 async function db_createPasswordResetCode(email) {

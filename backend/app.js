@@ -85,6 +85,7 @@ const settingsRoute = require('./routes/settings/routes.js');
 const emailsRoute = require('./routes/emails/routes.js');
 const creditsRoute = require('./routes/credits/routes.js');
 const paymentRoute = require('./routes/payment/routes.js');
+const verifyRoute = require('./routes/verify/routes.js');
 
 // Routes
 app.use(route_prefix+'/auth/', authRoute);
@@ -92,6 +93,8 @@ app.use(route_prefix+'/settings/', settingsRoute);
 app.use(route_prefix+'/emails/', emailsRoute);
 app.use(route_prefix+'/credits/', creditsRoute);
 app.use(route_prefix+'/pay/', paymentRoute);
+app.use(route_prefix+'/payment/', paymentRoute);
+app.use(route_prefix+'/verify/', verifyRoute);
 
 // Catch unhandled requests
 app.all('/*', (_, res) => { res.sendStatus(404); });
