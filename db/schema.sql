@@ -145,7 +145,8 @@ CREATE TABLE Stripe_Products (
 	product_id VARCHAR(255) NOT NULL,
 	price_id VARCHAR(255) NOT NULL,
 	credits INT NOT NULL DEFAULT 0,
-	is_live TINYINT(1) NOT NULL DEFAULT 0
+	is_live TINYINT(1) NOT NULL DEFAULT 0,
+	credit_type ENUM('default', 'catchall') NOT NULL DEFAULT 'default'
 );
 
 DROP TABLE IF EXISTS `Stripe_Purchases`;
@@ -323,6 +324,7 @@ CREATE TABLE Users_Catchall_Credit_Balance_History (
 -- Separate pricing plans for catchall credits
 
 
+-- Keep existing table for regular credits
 
 DROP TABLE IF EXISTS `Stripe_Catchall_Purchases`;
 CREATE TABLE Stripe_Catchall_Purchases (

@@ -62,17 +62,20 @@ async function getStripeCustomerId(userId) {
 async function createCheckoutSession(stripeCustomerId, packageCode) {
     let err;
     try {
-        // Get product and price ID from Stripe_Products table
+        // Get product and price ID from unified Stripe_Products table
         let query = knex('Stripe_Products').where('package_code', packageCode);
         if (process.env.NODE_ENV === 'development') {
             query = query.andWhere('is_live', 0);
         } else {
             query = query.andWhere('is_live', 1);
         }
-        const product = await query.select('product_id', 'price_id', 'credits').first().catch((error) => { err = error; });
+        const product = await query.select('product_id', 'price_id', 'credits', 'credit_type').first().catch((error) => { err = error; });
 
         if (err) throw err;
         if (!product) throw new Error('Invalid package code');
+
+        // Determine credit type from database column
+        const creditType = product.credit_type === 'catchall' ? 'catchall_credits' : 'regular_credits';
 
         const session = await stripe.checkout.sessions.create({
             customer: stripeCustomerId,
@@ -88,7 +91,7 @@ async function createCheckoutSession(stripeCustomerId, packageCode) {
                 package_code: packageCode,
                 product_id: product.product_id,
                 credits: product.credits,
-                type: packageCode.startsWith('catchall_') ? 'catchall_credits' : 'regular_credits'
+                type: creditType
             }
         });
 
