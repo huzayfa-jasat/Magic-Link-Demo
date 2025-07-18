@@ -1,7 +1,7 @@
 // Dependencies
 const HttpStatus = require('../../types/HttpStatus');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const { handleSuccessfulPayment, handleIncomingResults } = require('./funs_db');
+const { handleSuccessfulPayment, handleSuccessfulCatchallPayment, handleIncomingResults } = require('./funs_db');
 const knex = require('knex')(require('../../knexfile.js').development);
 
 const result_map = ["invalid", "catchall", "valid"];
@@ -47,37 +47,75 @@ async function handleWebhook(req, res) {
                     });
                 }
 
-                // Get the customer
-                const customer = await stripe.customers.retrieve(session.customer);
-                if (!customer || !customer.metadata.userId) {
-                    console.error('Invalid customer:', session.customer);
+                // Get the user ID from our database using the Stripe customer ID
+                const user = await knex('Users')
+                    .where('stripe_id', session.customer)
+                    .select('id')
+                    .first();
+
+                if (!user) {
+                    console.error('User not found for customer:', session.customer);
                     return res.status(HttpStatus.FAILED_STATUS).json({
-                        error: 'Invalid customer'
+                        error: 'User not found'
                     });
                 }
 
-                // Get the product details
+                const userId = user.id;
+
+                // Get the product details from both tables
+                let product = null;
+                let isCatchall = false;
+
+                // First check regular products
                 let query = knex('Stripe_Products').where('product_id', session.metadata.product_id);
                 if (process.env.NODE_ENV === 'development') {
                     query = query.andWhere('is_live', 0);
                 } else {
                     query = query.andWhere('is_live', 1);
                 }
-                const product = await query.select('credits').first();
+                product = await query.select('credits').first();
 
                 if (!product) {
-                    console.error('Product not found:', session.metadata.product_id);
-                    return res.status(HttpStatus.FAILED_STATUS).json({
-                        error: 'Product not found'
-                    });
+                    // Check if it's a catchall product
+                    let catchallQuery = knex('Stripe_Catchall_Products').where('product_id', session.metadata.product_id);
+                    if (process.env.NODE_ENV === 'development') {
+                        catchallQuery = catchallQuery.andWhere('is_live', 0);
+                    } else {
+                        catchallQuery = catchallQuery.andWhere('is_live', 1);
+                    }
+                    product = await catchallQuery.select('credits').first();
+                    isCatchall = true;
+
+                    if (!product) {
+                        console.error('Product not found:', session.metadata.product_id);
+                        return res.status(HttpStatus.FAILED_STATUS).json({
+                            error: 'Product not found'
+                        });
+                    }
                 }
 
-                // Update user credits
-                await handleSuccessfulPayment(
-                    parseInt(customer.metadata.userId),
-                    product.credits,
-                    session.id
-                );
+                // Handle the payment based on type
+                if (isCatchall) {
+                    // Update the purchase record with correct credits
+                    await knex('Stripe_Catchall_Purchases')
+                        .where('session_id', session.id)
+                        .update({ 
+                            credits: product.credits,
+                            status: 'completed'
+                        });
+                    
+                    await handleSuccessfulCatchallPayment(userId, product.credits, session.id);
+                } else {
+                    // Update the purchase record with correct credits
+                    await knex('Stripe_Purchases')
+                        .where('session_id', session.id)
+                        .update({ 
+                            credits: product.credits,
+                            status: 'completed'
+                        });
+                    
+                    await handleSuccessfulPayment(userId, product.credits, session.id);
+                }
 
                 return res.status(HttpStatus.SUCCESS_STATUS).json({ received: true });
             }
@@ -124,5 +162,5 @@ async function handleResults(req, res) {
 
 module.exports = {
     handleWebhook,
-    handleResults
+    handleResults,
 }; 

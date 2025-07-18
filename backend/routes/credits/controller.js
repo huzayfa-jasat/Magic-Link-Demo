@@ -4,7 +4,6 @@ const HttpStatus = require('../../types/HttpStatus.js');
 // Function Imports
 const {
 	db_getCreditsBalance,
-	// db_purchaseCredits,
 	db_getReferralInviteCode,
 	db_getReferralInviteList,
 	db_getCreditBalance,
@@ -20,20 +19,6 @@ async function getBalance(req, res) {
 		const [ok, resp] = await db_getCreditsBalance(req.user.id);
 		if (ok) return res.status(HttpStatus.SUCCESS_STATUS).json({'credit_balance': resp});
 		return res.status(HttpStatus.FAILED_STATUS).send("Failed to get balance");
-	} catch (err) {
-		console.log("MTE = ", err);
-		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
-	}
-}
-
-/**
- * Purchase credits
- */
-async function purchaseCredits(req, res) {
-	try {
-		// TODO: Implement purchase credits
-		return res.status(HttpStatus.FAILED_STATUS).send("Missing implementation");
-
 	} catch (err) {
 		console.log("MTE = ", err);
 		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
@@ -104,7 +89,6 @@ async function getCreditBalanceHistory(req, res) {
 // Export
 module.exports = {
 	getBalance,
-    purchaseCredits,
     getReferralInviteCode,
     getReferralInviteList,
 	getCreditBalance,

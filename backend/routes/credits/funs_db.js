@@ -98,7 +98,6 @@ async function db_getCreditBalanceHistory(user_id) {
 // -------------------
 
 
-
 // ----- Export -----
 module.exports = {
 	db_getCreditsBalance,

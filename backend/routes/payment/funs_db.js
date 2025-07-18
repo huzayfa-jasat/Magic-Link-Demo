@@ -57,22 +57,25 @@ async function getStripeCustomerId(userId) {
  * Create a Stripe checkout session
  * @param {string} stripeCustomerId - The Stripe customer ID
  * @param {string} packageCode - The package code
- * @returns {Promise<string>} The checkout session URL
+ * @returns {Promise<{url: string, sessionId: string}>} The checkout session URL and session ID
  */
 async function createCheckoutSession(stripeCustomerId, packageCode) {
     let err;
     try {
-        // Get product and price ID
+        // Get product and price ID from unified Stripe_Products table
         let query = knex('Stripe_Products').where('package_code', packageCode);
         if (process.env.NODE_ENV === 'development') {
             query = query.andWhere('is_live', 0);
         } else {
             query = query.andWhere('is_live', 1);
         }
-        const product = await query.select('product_id', 'price_id').first().catch((error) => { err = error; });
+        const product = await query.select('product_id', 'price_id', 'credits', 'credit_type').first().catch((error) => { err = error; });
 
         if (err) throw err;
         if (!product) throw new Error('Invalid package code');
+
+        // Determine credit type from database column
+        const creditType = product.credit_type === 'catchall' ? 'catchall_credits' : 'regular_credits';
 
         const session = await stripe.checkout.sessions.create({
             customer: stripeCustomerId,
@@ -86,11 +89,16 @@ async function createCheckoutSession(stripeCustomerId, packageCode) {
             cancel_url: `${process.env.FRONTEND_URL_PREFIX}/payment/cancel`,
             metadata: {
                 package_code: packageCode,
-                product_id: product.product_id
+                product_id: product.product_id,
+                credits: product.credits,
+                type: creditType
             }
         });
 
-        return session.url;
+        return {
+            url: session.url,
+            sessionId: session.id
+        };
     } catch (error) {
         console.error('Error creating checkout session:', error);
         throw error;
