@@ -23,7 +23,7 @@ export const loginUser = async (username, password) => {
   return resp.status === 200;
 };
 
-export const registerUser = async (email, pass, name, pfp = null) => {
+export const registerUser = async (email, pass, name, invite_code, pfp = null) => {
   return await http.post(
     "/auth/register",
     {
@@ -31,6 +31,7 @@ export const registerUser = async (email, pass, name, pfp = null) => {
       pw: pass,
       dn: name !== null && name.length > 0 ? name : email,
       pfp: pfp,
+      code: invite_code,
     },
     { withCredentials: true }
   );

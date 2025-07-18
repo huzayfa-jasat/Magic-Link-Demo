@@ -3,10 +3,10 @@ const { createStripeCustomer, getStripeCustomerId, createCheckoutSession } = req
 const knex = require('knex')(require('../../knexfile.js').development);
 
 // Valid package codes
-const VALID_PACKAGES = [
+const VALID_PACKAGES = new Set([
     'starter', 'basic', 'standard', 'pro', 'business', 
     'enterprise', 'elite', 'premium_3m', 'premium_5m', 'ultimate'
-];
+]);
 
 // Valid catchall package codes
 const VALID_CATCHALL_PACKAGES = [
@@ -19,7 +19,7 @@ const VALID_CATCHALL_PACKAGES = [
  */
 async function createCheckout(req, res) {
     try {
-        const { packageCode } = req.body;
+        const { package_code } = req.body;
 
         if (!packageCode) {
             return res.status(HttpStatus.FAILED_STATUS).json({ 

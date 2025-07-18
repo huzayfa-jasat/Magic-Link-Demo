@@ -88,16 +88,19 @@ const paymentRoute = require('./routes/payment/routes.js');
 const verifyRoute = require('./routes/verify/routes.js');
 const catchallRoute = require('./routes/catchall/routes.js');
 const catchallCreditsRoute = require('./routes/catchall-credits/routes.js');
+const publicRoute = require('./routes/public/routes.js');
 
 // Routes
 app.use(route_prefix+'/auth/', authRoute);
 app.use(route_prefix+'/settings/', settingsRoute);
 app.use(route_prefix+'/emails/', emailsRoute);
 app.use(route_prefix+'/credits/', creditsRoute);
+app.use(route_prefix+'/pay/', paymentRoute);
 app.use(route_prefix+'/payment/', paymentRoute);
 app.use(route_prefix+'/verify/', verifyRoute);
 app.use(route_prefix+'/catchall/', catchallRoute);
 app.use(route_prefix+'/catchall-credits/', catchallCreditsRoute);
+app.use(route_prefix+'/validate/', publicRoute);
 
 // Catch unhandled requests
 app.all('/*', (_, res) => { res.sendStatus(404); });

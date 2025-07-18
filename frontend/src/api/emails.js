@@ -1,6 +1,9 @@
 // Dependencies
 import { http } from "./http";
 
+// Constants
+const MODULE_PREFIX = "/emails";
+
 /*
 ------------------------
 > EMAILS API CALLS <
@@ -14,7 +17,7 @@ import { http } from "./http";
  */
 export const verifySingleEmail = async (email) => {
   return await http.post(
-    "/emails/verify/single",
+    `${MODULE_PREFIX}/verify/single`,
     { email },
     {
       withCredentials: true,
@@ -29,7 +32,7 @@ export const verifySingleEmail = async (email) => {
  */
 export const verifyBulkEmails = async (emails) => {
   return await http.post(
-    "/emails/verify/bulk",
+    `${MODULE_PREFIX}/verify/bulk`,
     { emails },
     {
       withCredentials: true,
@@ -50,7 +53,7 @@ export const verifyImportEmails = async (
   fileName = null
 ) => {
   return await http.post(
-    "/emails/verify/import",
+    `${MODULE_PREFIX}/verify/import`,
     { emails, request_id: requestId, file_name: fileName },
     {
       withCredentials: true,
@@ -64,7 +67,7 @@ export const verifyImportEmails = async (
  * @returns {Promise} The verify request details
  */
 export const getVerifyRequestDetails = async (requestId) => {
-  return await http.get(`/emails/request/${requestId}/dtl`, {
+  return await http.get(`${MODULE_PREFIX}/request/${requestId}/dtl`, {
     withCredentials: true,
   });
 };
@@ -75,7 +78,7 @@ export const getVerifyRequestDetails = async (requestId) => {
  * Response: num_contacts, num_processed, num_invalid, num_catch_all, request_id, request_type
  */
 export const listVerifyRequests = async () => {
-  return await http.get("/emails/requests/list", {
+  return await http.get(`${MODULE_PREFIX}/requests/list`, {
     withCredentials: true,
   });
 };
@@ -98,7 +101,7 @@ export const getPaginatedVerifyRequestResults = async (
   if (search && search.trim()) {
     params.search = search.trim();
   }
-  return await http.get(`/emails/requests/${requestId}/results`, {
+  return await http.get(`${MODULE_PREFIX}/requests/${requestId}/results`, {
     params,
     withCredentials: true,
   });
@@ -111,7 +114,7 @@ export const getPaginatedVerifyRequestResults = async (
  * @returns {Promise} Paginated email results
  */
 export const getPaginatedEmailResults = async (page, perPage = 50) => {
-  return await http.get("/emails/emails/results", {
+  return await http.get(`${MODULE_PREFIX}/emails/results`, {
     params: { page, per_page: perPage },
     withCredentials: true,
   });
@@ -132,7 +135,7 @@ export const exportBatchResultsCsv = async (
   perPage = 50,
   filter
 ) => {
-  return await http.get("/emails/export-batch-results", {
+  return await http.get(`${MODULE_PREFIX}/export-batch-results`, {
     query: { requestId, filter, page, perPage },
     withCredentials: true,
   });

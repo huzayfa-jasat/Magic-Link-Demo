@@ -1,8 +1,17 @@
+// Dependencies
 import { useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
-import styles from "./Emails.module.css";
+import Popup from "reactjs-popup";
+
+// Component Imports
+import useBatchData from "./hooks/useBatchData";
 import getMailServerDisplay from "./getMailServerDisplay";
-import  useBatchData  from "./hooks/useBatchData";
+
+// API Imports
+import { exportBatchResultsCsv } from "../../api/emails";
+
+// Style Imports
+import styles from "./Emails.module.css";
 
 // Main Component
 export default function EmailsBatchDetailsController() {
@@ -22,32 +31,85 @@ export default function EmailsBatchDetailsController() {
     setSearchQuery,
   } = useBatchData(id);
 
-  // Export results to CSV
+  // Export current page results to CSV
   // const handleExport = useCallback(() => {
   //   if (!results.length) return;
 
-    const headers = ["Email", "Result", "Mail Server"];
-    const csvContent = [
-      headers.join(","),
-      ...results.map((item) =>
-        [
-          item.email || item.global_id,
-          item.result || "pending",
-          getMailServerDisplay(item.mail_server) || "",
-        ].join(",")
-      ),
-    ].join("\n");
+  //   // Set up CSV headers
+  //   const headers = ["Email", "Result", "Mail Server"];
+    
+  //   // Build CSV content from current results
+  //   const csvContent = [
+  //     headers.join(","),
+  //     ...results.map((item) =>
+  //       [
+  //         item.email || item.global_id,
+  //         item.result || "pending",
+  //         getMailServerDisplay(item.mail_server) || "",
+  //       ].join(",")
+  //     ),
+  //   ].join("\n");
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `email-verification-results-${id}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }, [results, id]);
+  //   // Create and trigger download
+  //   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  //   const link = document.createElement("a");
+  //   const url = URL.createObjectURL(blob);
+  //   link.setAttribute("href", url);
+  //   link.setAttribute("download", `email-verification-results-${id}.csv`);
+  //   document.body.appendChild(link);
+  //   link.click();
+  //   document.body.removeChild(link);
+  // }, [results, id]);
 
+  // Export filtered results to CSV (fetches all pages for the filter)
+  const handleExportFiltered = useCallback(
+    async (filter) => {
+      const ITEMS_PER_PAGE = 50;
+      let allResults = [];
+      let page = 1;
+      let done = false;
+
+      // Fetch all pages of filtered results
+      while (!done) {
+        const response = await exportBatchResultsCsv(
+          id,
+          page,
+          ITEMS_PER_PAGE,
+          filter
+        );
+        const pageResults = response.data.data || [];
+        allResults = [...allResults, ...pageResults];
+        if (pageResults.length < ITEMS_PER_PAGE) done = true;
+        else page++;
+      }
+
+      // Build CSV content from all filtered results
+      const headers = ["Email", "Result", "Mail Server"];
+      const csvContent = [
+        headers.join(","),
+        ...allResults.map((item) =>
+          [
+            item.email || item.global_id,
+            item.result || "pending",
+            getMailServerDisplay(item.mail_server) || "",
+          ].join(",")
+        ),
+      ].join("\n");
+
+      // Create and trigger download
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `email-results-${filter}-${id}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    },
+    [id]
+  );
+
+  // Loading state
   if (loading) {
     return (
       <div className={styles.container}>
@@ -58,6 +120,7 @@ export default function EmailsBatchDetailsController() {
     );
   }
 
+  // Error state
   if (error) {
     return (
       <div className={styles.container}>
@@ -69,6 +132,7 @@ export default function EmailsBatchDetailsController() {
     );
   }
 
+  // Not found state
   if (!details) {
     return (
       <div className={styles.container}>
@@ -82,8 +146,10 @@ export default function EmailsBatchDetailsController() {
     );
   }
 
+  // Main render - batch details page
   return (
     <div className={styles.detailsContainer}>
+      {/* Navigation back to home */}
       <Link to="/home" className={styles.backLink}>
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -103,9 +169,11 @@ export default function EmailsBatchDetailsController() {
         Back to Home
       </Link>
 
+      {/* Page header with title and export dropdown */}
       <div className={styles.detailsHeader}>
         <h1 className={styles.detailsTitle}>Details</h1>
-        <button
+        {/* Simple export button (commented out in favor of dropdown) */}
+        {/* <button
           className={`${styles.button} ${styles.buttonPrimary}`}
           onClick={handleExport}
           disabled={!results.length}
@@ -139,6 +207,7 @@ export default function EmailsBatchDetailsController() {
         </Popup>
       </div>
 
+      {/* Search input for filtering results */}
       <div className={styles.searchContainer}>
         <input
           type="text"
@@ -165,6 +234,7 @@ export default function EmailsBatchDetailsController() {
         </svg>
       </div>
 
+      {/* Statistics cards showing batch summary */}
       <div className={styles.detailsMeta}>
         <div className={styles.metaCard}>
           <div className={styles.metaLabel}>Total Emails</div>
@@ -235,6 +305,7 @@ export default function EmailsBatchDetailsController() {
         </div>
       </div>
 
+      {/* Results table */}
       <div className={styles.tableContainer}>
         <table className={styles.table}>
           <thead className={styles.tableHeader}>
@@ -262,6 +333,7 @@ export default function EmailsBatchDetailsController() {
         </table>
       </div>
 
+      {/* Pagination controls */}
       {totalPages > 1 && (
         <div className={styles.pagination}>
           <button

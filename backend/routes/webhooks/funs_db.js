@@ -38,8 +38,12 @@ async function handleSuccessfulPayment(userId, credits, sessionId) {
                 user_id: userId,
                 session_id: sessionId,
                 credits: credits,
-                status: 'completed',
-                created_at: new Date()
+                status: 'completed'
+            }).catch((error) => { err = error; });
+            await trx('Users_Credit_Balance_History').insert({
+                user_id: userId,
+                credits_used: credits,
+                event_typ: 'purchase'
             }).catch((error) => { err = error; });
 
             if (err) throw err;

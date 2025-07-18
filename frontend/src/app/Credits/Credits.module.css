@@ -1,74 +1,131 @@
 /* Container styles */
 .container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
+  margin: 0;
 }
 
 /* Typography */
 .title {
-  font-size: 1.5rem;
-  font-weight: 500;
-  margin-bottom: 1rem;
-  color: #fff;
+  margin: 0;
+  font-family: "Circular", "Geist", sans-serif;
+  font-size: 26px;
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  color: var(--black);
 }
 
 .availableCredits {
-  font-family: "Sohne Mono", monospace;
-  font-size: 64px;
+  margin: 0 0 -5px 0;
+  font-family: "PP Supply Mono", sans-serif;
+  font-size: 45px;
   font-weight: 400;
-  color: var(--main-hl);
-  margin-top: 1rem;
+  letter-spacing: -1px;
+  color: var(--black);
 }
 
 .verificationText {
-  color: #fff;
-  font-family: "Sohne", monospace;
+  margin: 0;
+  font-family: "Circular", "Geist", sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: -0.3px;
+  color: var(--txt-light);
 }
 
 .packagesButton {
+  width: 100%;
+  height: 40px;
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--txt-light-2);
+  border-radius: 6px;
+  font-size: 15px;
   font-family: "Sohne", sans-serif;
   background-color: var(--main-hl);
   color: var(--white);
-  border: none;
-  padding: 0.8rem 1.2rem;
-  /* margin-top: 8px; */
-  border-radius: 8px;
-  width: 100%;
   cursor: pointer;
   transition: 0.2s ease;
-  display: block;
   text-decoration: none;
-  font-size: 15px;
-  text-align: center;
-  margin-top: 5rem;
-  margin-bottom: 2rem;
 }
 
 .packagesButton:hover {
   filter: brightness(1.1);
 }
 
-.innerContainer {
+.balanceContainer {
   width: fit-content;
+  padding: 20px;
+  min-width: 350px;
   display: inline-block;
+  border: 1px dashed var(--txt-light-2);
+  border-radius: 6px;
 }
 
 .history_list {
-  font-family: "Sohne", sans-serif;
-  display: grid;
-  grid-template-columns: 1fr;
-  color: var(--black);
-  gap: 20px;
-  font-size: 1rem;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
 
 .history_card {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-  border-radius: 16px;
-  border: 1.5px solid var(--white);
-  padding: 0.5rem;
+  border-radius: 5px;
+  border: 1px solid var(--brd-light);
+  padding: 15px;
   cursor: pointer;
+}
+
+.history_card_left {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+.history_card_icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 3px;
+  background-color: var(--main-hl-fade);
+  color: var(--main-hl);
+}
+.history_card_icon svg {
+  margin: auto;
+  width: 20px;
+  height: 20px;
+}
+.history_card_title {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.history_card_title h5 {
+  margin: 0;
+  font-family: "Circular", "Geist", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--black);
+}
+.history_card_title p {
+  margin: -2px 0 0 0;
+  font-family: "Circular", "Geist", sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--txt-light);
+}
+.credits_used {
+  margin: auto 8px auto 0;
+  font-family: "PP Supply Mono", sans-serif;
+  font-size: 15px;
+  color: var(--fg-pos);
+}
+.negative {
+  color: var(--fg-neg);
 }

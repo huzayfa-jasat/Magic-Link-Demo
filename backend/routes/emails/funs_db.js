@@ -7,12 +7,70 @@ const knex = require('knex')(require('../../knexfile.js').development);
 // -------------------
 
 /**
+ * Check if user has sufficient credits and deduct them
+ * @param {number} user_id - The user ID
+ * @param {number} credits_needed - Number of credits required
+ * @param {object} trx - Knex transaction object
+ * @returns {Promise<[boolean, string|null]>} - [success, error_type]
+ */
+async function checkAndDeductCredits(user_id, credits_needed, trx) {
+	let err_code;
+	
+	// Get current balance
+	const balanceRow = await trx('Users_Credit_Balance')
+		.where('user_id', user_id)
+		.select('current_balance')
+		.first()
+		.catch(err => { if (err) err_code = err.code });
+	
+	if (err_code) return [false, 'db_error'];
+	
+	const current_balance = balanceRow ? balanceRow.current_balance : 0;
+	
+	// Check if user has enough credits
+	if (current_balance < credits_needed) {
+		return [false, 'insufficient_credits'];
+	}
+	
+	// Deduct credits
+	if (balanceRow) {
+		await trx('Users_Credit_Balance')
+			.where('user_id', user_id)
+			.decrement('current_balance', credits_needed)
+			.catch(err => { if (err) err_code = err.code });
+	} else {
+		// Create new balance row with negative balance (shouldn't happen normally)
+		await trx('Users_Credit_Balance')
+			.insert({ 
+				user_id: user_id, 
+				current_balance: -credits_needed 
+			})
+			.catch(err => { if (err) err_code = err.code });
+	}
+	
+	if (err_code) return [false, 'db_error'];
+	
+	// Record the usage in history with negative value
+	await trx('Users_Credit_Balance_History')
+		.insert({
+			user_id: user_id,
+			credits_used: -credits_needed,
+			event_typ: 'usage'
+		})
+		.catch(err => { if (err) err_code = err.code });
+	
+	if (err_code) return [false, 'db_error'];
+	
+	return [true, null];
+}
+
+/**
  * Create a new verification request or update an existing one
  * @param {number} user_id - The user ID
  * @param {string[]} emails - Array of emails to verify
  * @param {number|null} request_id - Optional existing request ID to update
  * @param {string|null} file_name - Optional file name
- * @returns {Promise<[boolean, number]>} - [success, request_id]
+ * @returns {Promise<[boolean, number|string]>} - [success, request_id or error_type]
  */
 async function db_createVerifyRequest(
   user_id,
@@ -22,70 +80,86 @@ async function db_createVerifyRequest(
 ) {
   let err_code;
 
-	// If request_id is provided, verify it exists and belongs to user
-	if (request_id !== null) {
-		const existing = await knex('Requests')
-			.where({
-				'request_id': request_id,
-				'user_id': user_id,
-				'request_status': 'pending'
-			})
-			.select('request_id', 'num_contacts', 'num_processed')
-			.limit(1)
-			.catch(err => { if (err) err_code = err.code });
+	// Use transaction for credit deduction and request creation
+	const result = await knex.transaction(async (trx) => {
+		// Number of credits needed equals number of emails
+		const credits_needed = emails.length;
 		
-		if (err_code || existing.length === 0) {
-			return [false, null];
+		// Check and deduct credits first
+		const [creditSuccess, creditError] = await checkAndDeductCredits(user_id, credits_needed, trx);
+		if (!creditSuccess) {
+			return [false, creditError];
+		}
+		
+		// If request_id is provided, verify it exists and belongs to user
+		if (request_id !== null) {
+			const existing = await trx('Requests')
+				.where({
+					'request_id': request_id,
+					'user_id': user_id,
+					'request_status': 'pending'
+				})
+				.select('request_id', 'num_contacts', 'num_processed')
+				.limit(1)
+				.catch(err => { if (err) err_code = err.code });
+			
+			if (err_code || existing.length === 0) {
+				return [false, 'request_not_found'];
+			}
+
+			// Update existing request with new contacts
+			const new_total = existing[0].num_contacts + emails.length;
+			await trx('Requests')
+				.where('request_id', request_id)
+				.update({
+					'num_contacts': new_total
+				})
+				.catch(err => { if (err) err_code = err.code });
+
+			if (err_code) return [false, 'db_error'];
+			return [true, request_id];
 		}
 
-    // Update existing request with new contacts
-    const new_total = existing[0].num_contacts + emails.length;
-		await knex('Requests')
-		.where('request_id', request_id)
-      	.update({
-				'num_contacts': new_total
-      })
-		.catch(err => { if (err) err_code = err.code });
+		// Create new request
+		const db_resp = await trx("Requests")
+			.insert({
+				user_id: user_id,
+				request_type: emails.length === 1 ? "single" : "bulk",
+				request_status: "pending",
+				num_contacts: emails.length,
+				num_processed: 0,
+				file_name: file_name,
+			})
+			.catch((err) => {
+				if (err) err_code = err.code;
+			});
 
-    if (err_code) return [false, null];
-    return [true, request_id];
-  }
+		if (err_code) return [false, 'db_error'];
 
-  // Create new request
-  const db_resp = await knex("Requests")
-    .insert({
-      user_id: user_id,
-      request_type: emails.length === 1 ? "single" : "bulk",
-      request_status: "pending",
-      num_contacts: emails.length,
-      num_processed: 0,
-      file_name: file_name,
-    })
-    .catch((err) => {
-      if (err) err_code = err.code;
-    });
+		// Insert into global table
+		await trx('Contacts_Global').insert(emails.map(email => ({
+			'email': email
+		}))).catch(err => { if (err) err_code = err.code });
+		if (err_code) return [false, 'db_error'];
+		
+		// Lookup again to get global ID's
+		const global_ids = await trx('Contacts_Global').whereIn('email', emails).select(
+			'global_id',
+			'email'
+		).catch(err => { if (err) err_code = err.code });
+		if (err_code) return [false, 'db_error'];
 
-	// Insert into global table
-	await knex('Contacts_Global').insert(emails.map(email => ({
-		'email': email
-	}))).catch(err => { if (err) err_code = err.code });
-	if (err_code) return [false, null];
+		// Insert contacts into request_contacts table
+		await trx('Requests_Contacts').insert(emails.map(email => ({
+			'request_id': db_resp[0],
+			'global_id': global_ids.find(id => id.email === email).global_id
+		}))).catch(err => { if (err) err_code = err.code });
+
+		if (err_code) return [false, 'db_error'];
+		return [true, db_resp[0]];
+	});
 	
-	// Lookup again tog et global ID's
-	const global_ids = await knex('Contacts_Global').whereIn('email', emails).select(
-		'global_id',
-		'email'
-	).catch(err => { if (err) err_code = err.code });
-	if (err_code) return [false, null];
-
-	// Insert contacts into request_contacts table
-	await knex('Requests_Contacts').insert(emails.map(email => ({
-		'request_id': db_resp[0],
-		'global_id': global_ids.find(id => id.email === email).global_id
-	}))).catch(err => { if (err) err_code = err.code });
-
-	if (err_code) return [false, null];
-	return [true, db_resp[0]];
+	return result;
 }
 
 

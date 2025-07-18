@@ -17,7 +17,7 @@ const {
 async function getBalance(req, res) {
 	try {
 		const [ok, resp] = await db_getCreditsBalance(req.user.id);
-		if (ok) return res.status(HttpStatus.SUCCESS_STATUS).json({'data': resp});
+		if (ok) return res.status(HttpStatus.SUCCESS_STATUS).json({'credit_balance': resp});
 		return res.status(HttpStatus.FAILED_STATUS).send("Failed to get balance");
 	} catch (err) {
 		console.log("MTE = ", err);

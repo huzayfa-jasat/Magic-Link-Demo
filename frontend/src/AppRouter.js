@@ -34,6 +34,7 @@ import {
   EmailsBatchDetails,
   PackagesHome,
   CreditsHome,
+  ReferralsHome,
 } from "./app";
 
 // Rule-based Router
@@ -139,6 +140,15 @@ export default function App() {
               element={
                 <AppLayout title="Credits">
                   <CreditsHome />
+                </AppLayout>
+              }
+            />
+            <Route
+              exact
+              path="/referrals"
+              element={
+                <AppLayout title="Referrals">
+                  <ReferralsHome />
                 </AppLayout>
               }
             />

@@ -1,0 +1,11 @@
+export { OMNI_LOGO } from "./omni_logo";
+export { UPLOAD_ICON } from "./upload_icon";
+export { SETTINGS_ICON } from "./settings_icon";
+export { SIDEBAR_OPEN } from "./sidebar_open";
+export { SIDEBAR_CLOSE } from "./sidebar_close";
+export { COINS_ICON } from "./coins_icon";
+export { HOME_ICON } from "./home_icon";
+export { PACKAGE_ICON } from "./package_icon";
+export { REFERRAL_ICON } from "./referral_icon";
+export { GIFT_ICON } from "./gift_icon";
+export { EMAIL_ICON } from "./emails_icon";

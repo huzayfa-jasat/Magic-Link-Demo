@@ -20,7 +20,7 @@ creditsRouter.get('/balance', getBalance);
 creditsRouter.get('/invite/code', getReferralInviteCode);
 creditsRouter.get('/invites/list', getReferralInviteList);
 creditsRouter.get('/credit-balance', getCreditBalance);
-creditsRouter.get('/credit-balance/history', getCreditBalanceHistory);
+creditsRouter.get('/history', getCreditBalanceHistory);
 
 // Export
 module.exports = creditsRouter;

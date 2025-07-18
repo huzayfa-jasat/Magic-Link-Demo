@@ -36,26 +36,6 @@ CREATE TABLE Users_Auth (
 	FOREIGN KEY (`user_id`) REFERENCES Users(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
--- Credits Tables
-
-DROP TABLE IF EXISTS `Users_Credits`;
-CREATE TABLE Users_Credits (
-	`user_id` int NOT NULL,
-	`credit_balance` int NOT NULL,
-	`created_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	PRIMARY KEY (`user_id`),
-	FOREIGN KEY (`user_id`) REFERENCES Users(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
-
-DROP TABLE IF EXISTS `Users_Credits_History`;
-CREATE TABLE Users_Credits_History (
-	`user_id` int NOT NULL,
-	`credits_change` int NOT NULL,
-	`change_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	PRIMARY KEY (`user_id`, `change_ts`),
-	FOREIGN KEY (`user_id`) REFERENCES Users(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
-
 DROP TABLE IF EXISTS `Referrals`;
 CREATE TABLE Referrals (
 	`referrer_id` int NOT NULL,
@@ -134,6 +114,7 @@ CREATE TABLE Users_Credit_Balance_History (
 	`user_id` int NOT NULL,
 	`credits_used` int NOT NULL,
 	`usage_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	`event_typ` enum('usage', 'refer_reward', 'purchase', 'signup') CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT 'purchase',
 	PRIMARY KEY (`user_id`, `usage_ts`),
 	FOREIGN KEY (`user_id`) REFERENCES Users(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
@@ -160,12 +141,12 @@ CREATE TABLE Stripe_Purchases (
 	FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE
 );
 
-DROP TABLE IF EXISTS 'PassReset_Codes';
+DROP TABLE IF EXISTS `PassReset_Codes`;
 CREATE TABLE PassReset_Codes (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`user_id` int NOT NULL,
 	`code` varchar(6) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
-    `expires_at` TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL 10 MINUTE) AFTER `created_ts`,
+    `expires_at` TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL 10 MINUTE),
     `created_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY (`code`),

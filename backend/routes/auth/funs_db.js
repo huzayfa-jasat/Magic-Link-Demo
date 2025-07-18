@@ -46,6 +46,16 @@ async function db_createUser(email, pass, early_access_code) {
 	}).catch((err)=>{if (err) err_code = err});
 	if (err_code) return [false, null];
 
+    // Record signup event
+    if (code_result.num_credits > 0) {
+        await knex('Users_Credit_Balance_History').insert({
+            'user_id': user_id,
+            'credits_used': code_result.num_credits,
+            'event_typ': 'signup'
+        }).catch((err)=>{if (err) err_code = err});
+        if (err_code) return false;
+    }
+
 	// Delete used early access code
 	await knex('Early_Access_Codes')
 		.where('txt_code', early_access_code)
