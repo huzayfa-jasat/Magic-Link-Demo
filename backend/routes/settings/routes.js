@@ -13,8 +13,6 @@ const {
     refreshApiKey,
     removeApiKey,
     updateProfileDetails,
-    updateProfileName,
-    updateProfilePicture,
 } = require('./controller.js');
 
 // Routes
@@ -24,8 +22,6 @@ settingsRouter.get('/api/keys/view', getApiKey);
 settingsRouter.post('/api/keys/new', createApiKey);
 settingsRouter.patch('/api/keys/refresh', refreshApiKey);
 settingsRouter.delete('/api/keys/rm', removeApiKey);
-settingsRouter.patch('/profile/name/touch', updateProfileName);
-settingsRouter.patch('/profile/profile_picture/touch', updateProfilePicture);
 settingsRouter.patch('/profile/:key/touch', updateProfileDetails);
 
 // Export

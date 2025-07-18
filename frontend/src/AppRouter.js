@@ -19,7 +19,7 @@ import ScrollToTop from "./utils/ScrollToTop";
 // Component Imports
 import NotFound404 from "./ui/ErrorCodes/404";
 import AppLayout from "./ui/Layouts/AppLayout/AppLayout.jsx";
-// import LoadingCircle from "./ui/Components/LoadingCircle/LoadingCircle.jsx";
+import { LoadingCircle } from "./ui/components/LoadingCircle.jsx";
 
 // API Imports
 import { getAuthStatus } from "./api/auth.js";
@@ -60,7 +60,7 @@ function RulesRouter({ rule }) {
   // Return
   switch (authStatus) {
     case -1: // Loading
-    // return <LoadingCircle />;
+      return <LoadingCircle />;
     case 0: // Not logged in
       if (rule === "public") return <Outlet />;
       else return <Navigate to="/login" />;
@@ -88,70 +88,47 @@ export default function App() {
           </Route>
           {/* Only logged-in users */}
           <Route element={<RulesRouter rule="private" />}>
-            <Route
-              exact
-              path="/home"
-              element={
-                <AppLayout title="Home">
-                  <EmailsHome />
-                </AppLayout>
-              }
+            <Route exact path="/" element={
+              <Navigate to="/home" />}
             />
-            <Route exact path="/" element={<Navigate to="/home" />} />
-            <Route
-              exact
-              path="/upload"
-              element={
-                <AppLayout title="Upload">
-                  <EmailsUpload />
-                </AppLayout>
-              }
-            />
-            <Route
-              exact
-              path="/:id/details"
-              element={
-                <AppLayout title="Batch Details">
-                  <EmailsBatchDetails />
-                </AppLayout>
-              }
-            />
-            <Route
-              exact
-              path="/packages"
-              element={
-                <AppLayout title="Packages">
-                  <PackagesHome />
-                </AppLayout>
-              }
-            />
-            <Route
-              exact
-              path="/settings"
-              element={
-                <AppLayout title="Settings">
-                  <Settings />
-                </AppLayout>
-              }
-            />
-            <Route
-              exact
-              path="/credits"
-              element={
-                <AppLayout title="Credits">
-                  <CreditsHome />
-                </AppLayout>
-              }
-            />
-            <Route
-              exact
-              path="/referrals"
-              element={
-                <AppLayout title="Referrals">
-                  <ReferralsHome />
-                </AppLayout>
-              }
-            />
+            <Route exact path="/home" element={
+              <AppLayout title="Home">
+                <EmailsHome />
+              </AppLayout>
+            } />
+            <Route exact path="/upload" element={
+              <AppLayout title="Upload">
+                <EmailsUpload />
+              </AppLayout>
+            } />
+            <Route exact path="/:id/details" element={
+              <AppLayout title="Batch Details">
+                <EmailsBatchDetails />
+              </AppLayout>
+            } />
+            <Route exact path="/packages" element={
+              <AppLayout title="Packages">
+                <PackagesHome />
+              </AppLayout>
+            } />
+            <Route exact path="/settings" element={
+              <AppLayout title="Settings">
+                <Settings />
+              </AppLayout>
+            } />
+            <Route exact path="/credits" element={
+              <AppLayout title="Credits">
+                <CreditsHome />
+              </AppLayout>
+            } />
+            <Route exact path="/referrals" element={
+              <AppLayout title="Referrals">
+                <ReferralsHome />
+              </AppLayout>
+            } />
+            <Route exact path="/payment/:result" element={
+              <Navigate to="/credits" />
+            } />
           </Route>
           {/* Public to everyone */}
           <Route path="/*" element={<NotFound404 />} />

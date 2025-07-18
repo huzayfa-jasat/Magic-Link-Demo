@@ -1,23 +1,28 @@
+// Dependencies
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+// API Imports
 import { verifyImportEmails } from '../../api/emails';
+
+// Icon Imports
+import { UPLOAD_ICON } from '../../assets/icons/upload_icon.jsx';
+
+// Style Imports
 import styles from './Emails.module.css';
 
+// Main Component
 export default function EmailsUploadController() {
-  // Functionality:
-  // - Accept a CSV file from the user
-  // - Display a preview of emails from the CSV file
-  // - When upload clicked, upload the emails to the server (take a look at the /backend/routes/emails/controller.js file to see how to upload the emails - in batches)
-  // - Assume CSV file is just one row of just emails (no headers)
-  // - When the upload is complete, navigate to the /:id/details page for the newly created verify request (batch)
-  
   const navigate = useNavigate();
+
+  // States
   const [file, setFile] = useState(null);
   const [emails, setEmails] = useState([]);
   const [error, setError] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Handle parsing CSV
   const parseCSV = useCallback((text) => {
     try {
       // Split by newlines and filter out empty lines
@@ -39,6 +44,7 @@ export default function EmailsUploadController() {
     }
   }, []);
 
+  // Handle file change
   const handleFileChange = useCallback(async (event) => {
     const selectedFile = event.target.files[0];
     if (!selectedFile) return;
@@ -66,16 +72,19 @@ export default function EmailsUploadController() {
     }
   }, [parseCSV]);
 
+  // Handle drag over
   const handleDragOver = useCallback((event) => {
     event.preventDefault();
     setIsDragging(true);
   }, []);
 
+  // Handle drag leave
   const handleDragLeave = useCallback((event) => {
     event.preventDefault();
     setIsDragging(false);
   }, []);
 
+  // Handle drop
   const handleDrop = useCallback((event) => {
     event.preventDefault();
     setIsDragging(false);
@@ -92,6 +101,7 @@ export default function EmailsUploadController() {
     handleFileChange(syntheticEvent);
   }, [handleFileChange]);
 
+  // Handle upload
   const handleUpload = async () => {
     if (!emails.length || !file) return;
 
@@ -110,12 +120,14 @@ export default function EmailsUploadController() {
     }
   };
 
+  // Handle remove file
   const handleRemoveFile = () => {
     setFile(null);
     setEmails([]);
     setError(null);
   };
 
+  // Render
   return (
     <div className={styles.uploadContainer}>
       <h1 className={styles.title}>Upload Emails</h1>
@@ -127,7 +139,9 @@ export default function EmailsUploadController() {
         onDrop={handleDrop}
         onClick={() => document.getElementById('fileInput').click()}
       >
-        <div className={styles.uploadIcon}>📁</div>
+        <div className={styles.uploadIcon}>
+          {UPLOAD_ICON}
+        </div>
         <p className={styles.uploadText}>
           {file ? file.name : 'Drag and drop your CSV file here'}
         </p>

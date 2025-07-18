@@ -1,5 +1,13 @@
+// Dependencies
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+
+// Context Imports
+import { useUsersContext } from "../../context/useUsersContext.js";
+
+// Component Imports
+import { LoadingCircle } from "../../ui/components/LoadingCircle.jsx";
+
+// API Imports
 import {
   getProfileDetails,
   updateProfileEmail,
@@ -7,48 +15,58 @@ import {
   updateProfileLogo
 } from "../../api/settings.js";
 import { logoutUser } from "../../api/auth.js";
-import { useUsersContext } from "../../context/useUsersContext.js";
 
-const updateFunctions = {
+// Style Imports
+import styles from "./Settings.module.css";
+
+// Constants
+const PROFILE_FIELDS = ["Email", "Name" /* , "ProfileImage" */];
+const UPDATE_FUNCTIONS = {
   Email: updateProfileEmail,
   Name: updateProfileName,
   ProfileImage: updateProfileLogo
 };
 
+// Main Component
 export default function SettingsController() {
-  const navigate = useNavigate();
   const { onChangeUser } = useUsersContext();
+
+  // States
+  const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState({ Email: "", Name: "", ProfileImage: "" });
   const [activeField, setActiveField] = useState(null);
   const [inputValue, setInputValue] = useState("");
-  const [loading, setLoading] = useState(true);
 
+  // Load profile details
+  async function loadProfile() {
+    try {
+      const { data } = await getProfileDetails();
+      setProfile({
+        Email: data?.data?.email || "",
+        Name: data?.data?.name || "",
+        ProfileImage: data?.data?.profileImage || ""
+      });
+    } catch (err) {
+      console.error("Fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
   useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await getProfileDetails();
-        setProfile({
-          Email: data?.data?.email || "",
-          Name: data?.data?.name || "",
-          ProfileImage: data?.data?.profileImage || ""
-        });
-      } catch (err) {
-        console.error("Fetch error:", err);
-      } finally {
-        setLoading(false);
-      }
-    })();
+    loadProfile();
   }, []);
 
+  // Handle edit click
   const handleEdit = (field) => {
     setActiveField(field);
     setInputValue(profile[field]);
   };
 
+  // Handle save
   const handleSave = async (e) => {
     if (e.key !== "Enter" || !activeField) return;
     try {
-      const updateFn = updateFunctions[activeField];
+      const updateFn = UPDATE_FUNCTIONS[activeField];
       const res = await updateFn(inputValue);
       if (res.status === 200) {
         setProfile((prev) => ({ ...prev, [activeField]: inputValue }));
@@ -60,52 +78,55 @@ export default function SettingsController() {
     setActiveField(null);
   };
 
+  // Handle logout
   const handleLogout = async () => {
     await logoutUser();
     window.location.reload();
   };
 
-  if (loading) return <div>Loading...</div>;
-
+  // Render
+  if (loading) return <LoadingCircle />;
   return (
-    <div style={{ maxWidth: 600, margin: "0 auto", padding: 20, color: "white" }}>
-      <h1>Settings</h1>
+    <div className={styles.container}>
+      <h1 className={styles.title}>Settings</h1>
 
-      {["ProfileImage", "Name", "Email"].map((field) => (
-        <div key={field} style={{ marginTop: 20, marginBottom: 20, border: "1px solid #ccc", borderRadius: 5, padding: 10 }}>
-          <h3 style={{ margin: 0 }}>{field}</h3>
-          
-            <div onClick={() => handleEdit(field)} style={{ cursor: "pointer" }}>
-              {profile[field] || `No ${field} set`}
-            </div>
-            {activeField === field && (
-              <div style={{ marginTop: 10, border : "1px solid #ccc", borderRadius: 5, padding: 10 }}>
-
-              <div>Edit {field}</div>
+      {PROFILE_FIELDS.map((field) => {
+        const fieldLabels = {
+          ProfileImage: "Profile Image",
+          Name: "Name",
+          Email: "Email"
+        };
+        
+        return (
+          <div key={field} className={styles.profileCard}>
+            <h3 className={styles.fieldTitle}>{fieldLabels[field]}</h3>
+            {activeField === field && field !== "Email" ? (
               <input
+                className={styles.editInput}
                 type={field === "Email" ? "email" : "text"}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleSave}
                 onBlur={() => setActiveField(null)}
                 autoFocus
+                placeholder={`Enter ${fieldLabels[field].toLowerCase()}`}
               />
+            ) : (
+              <div 
+                onClick={() => field !== "Email" && handleEdit(field)} 
+                className={`${styles.fieldValue} ${!profile[field] ? styles.noValue : ''} ${field === "Email" ? styles.uneditable : ''}`}
+                style={{ cursor: field === "Email" ? "default" : "pointer" }}
+              >
+                {profile[field] || `No ${fieldLabels[field].toLowerCase()} set`}
               </div>
             )}
-        </div>
-      ))}
+          </div>
+        );
+      })}
 
-      <button onClick={handleLogout} style={{ background: "#dc3545", color: "white", padding: 10, border: "none" }}>
+      <button onClick={handleLogout} className={styles.signOutButton}>
         Sign Out
       </button>
-
-      <div style={{ marginTop: 40, paddingTop: 20 }}>
-        <h3>Legal</h3>
-        <div style={{ display: "flex", gap: 20 }}>
-          <a href="https://example.com/terms" target="_blank" rel="noopener noreferrer">Terms</a>
-          <a href="https://example.com/privacy" target="_blank" rel="noopener noreferrer">Privacy</a>
-        </div>
-      </div>
     </div>
   );
 }

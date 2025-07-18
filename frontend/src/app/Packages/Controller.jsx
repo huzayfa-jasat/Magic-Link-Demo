@@ -1,23 +1,22 @@
+// Dependencies
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+
 // API Imports
-import { createCheckout } from "../../api/purchase";
+import { createCheckout, getPackages } from "../../api/purchase";
 
-// Constant Imports
-import { creditOptions } from "./creditOptions";
-
-// Icon Imports
-import { GIFT_ICON } from "../../assets/icons";
+// Component Imports
+import PackageCard from "./components/PackageCard";
 
 // Style Imports
-import styles from "./Packages.module.css";
+import styles from "./styles/Packages.module.css";
 
 // Wrapper Functions
 const handleBuyCredits = async (package_code) => {
   try {
-    const resp = await createCheckout(package_code).catch((err) =>
-      console.error("Could not fetch stripe url:", err)
-    );
+    const resp = await createCheckout(package_code);
     if (resp.status === 200) {
-      window.open(resp.data.stripe_url, "_blank");
+      window.open(resp.data.url, "_blank");
     } else {
       console.error("Could not fetch stripe url:", resp.data.error);
     }
@@ -28,79 +27,84 @@ const handleBuyCredits = async (package_code) => {
 
 // Main Component
 export default function PackagesController() {
-  // Basic Filters
-  const promotions = creditOptions.filter((option) => (option.bonus !== null));
-  const nonPromotions = creditOptions.filter((option) => (option.bonus === null));
+  // Get search params
+  const [searchParams, _setSearchParams] = useSearchParams();
+  const pageParam = searchParams.get("p");
+
+  // States
+  const [currPage, setCurrPage] = useState((pageParam === "catchall") ? "catchall" : "validate");
+  const [validatePromotions, setValidatePromotions] = useState([]);
+  const [validateNonPromotions, setValidateNonPromotions] = useState([]);
+  const [catchallPromotions, setCatchallPromotions] = useState([]);
+  const [catchallNonPromotions, setCatchallNonPromotions] = useState([]);
+
+  // Load packages
+  async function loadPackages() {
+    const resp = await getPackages();
+    if (resp.status === 200) {
+      const validate_packages = resp.data.validate;
+      const catchall_packages = resp.data.catchall;
+      setValidatePromotions(validate_packages.filter((option) => (option.bonus !== null)));
+      setValidateNonPromotions(validate_packages.filter((option) => (option.bonus === null)));
+      setCatchallPromotions(catchall_packages.filter((option) => (option.bonus !== null)));
+      setCatchallNonPromotions(catchall_packages.filter((option) => (option.bonus === null)));
+    } else {
+      console.error("Could not fetch packages:", resp.data.error);
+    }
+  }
+  useEffect(() => {
+    loadPackages();
+  }, []);
 
   // Render Promotions
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>Promotions</h1>
+      <h1 className={styles.title}>Get Credits</h1>
       <br/>
-      <div className={styles.creditGrid}>
-        {promotions.map(
-          ({ name, amount, price, bonus, total, package_code }) => (
-            <div className={styles.creditCard} key={name}>
-              <h1 className={styles.packageName}>{name}</h1>
-              <h2 className={styles.numCredits}>{amount}</h2>
-              <p className={styles.verificationText}>
-                Email Verification Credits
-              </p>
-              {total && (
-                <div className={styles.bonusContainer}>
-                  <h4 className={styles.bonus}>
-                    Omni Bonus Promotion
-                  </h4>
-                  <div className={styles.extraCredits}>
-                    {GIFT_ICON}
-                    <span>+{bonus} = {total}</span>
-                  </div>
-                </div>
-              )}
-              {/* <p className={styles.price}>Only {price} USD</p> */}
-              <button
-                className={`${styles.buyBtn} ${styles.premium}`}
-                onClick={() => handleBuyCredits(package_code)}
-              >
-                {/* Buy Credits */}
-                Only {price} USD
-              </button>
-            </div>
-          )
-        )}
+      <div className={styles.pageSelector}>
+        <button
+          className={`${styles.pageButton} ${(currPage === "validate") ? styles.active : ""}`}
+          onClick={() => setCurrPage("validate")}
+        >
+          Validate
+        </button>
+        <button
+          className={`${styles.pageButton} ${(currPage === "catchall") ? styles.active : ""}`}
+          onClick={() => setCurrPage("catchall")}
+        >
+          Catch-All
+        </button>
       </div>
       <br/><br/>
-      <h1 className={styles.title}>Packages</h1>
-      <br/>
       <div className={styles.creditGrid}>
-        {nonPromotions.map(
-          ({ name, amount, price, bonus, total, package_code }) => (
-            <div className={styles.creditCard} key={name}>
-              <h1 className={styles.packageName}>{name}</h1>
-              <h2 className={styles.numCredits}>{amount}</h2>
-              {total && (
-                <div>
-                  <h4 className={styles.bonus}>OMNI BONUS PROMOTION!!</h4>
-                  <div className={styles.extraCredits}>
-                    + {bonus} = {total}
-                  </div>
-                </div>
-              )}
-              <p className={styles.verificationText}>
-                Email Verification Credits
-              </p>
-              {/* <p className={styles.price}>Only {price} USD</p> */}
-              <button
-                className={styles.buyBtn}
-                onClick={() => handleBuyCredits(package_code)}
-              >
-                {/* Buy Credits */}
-                Only {price} USD
-              </button>
-            </div>
+        {((currPage === "catchall") ? catchallNonPromotions : validateNonPromotions).map(
+          ({ name, amount, price, bonus, total, id }) => (
+            <PackageCard
+              key={id}
+              name={name} amount={amount} price={price} bonus={bonus} total={total}
+              handleClick={() => handleBuyCredits(id)}
+            />
           )
         )}
       </div>
+      {((currPage === "catchall") ? catchallPromotions.length > 0 : validatePromotions.length > 0) && (
+        <>
+          <br/><br/>
+          <h1 className={styles.title}>Promotions</h1>
+          <br/>
+          <div className={styles.creditGrid}>
+            {((currPage === "catchall") ? catchallPromotions : validatePromotions).map(
+              ({ name, amount, price, bonus, total, id }) => (
+                <PackageCard
+                  key={id}
+                  name={name} amount={amount} price={price} bonus={bonus} total={total}
+                  handleClick={() => handleBuyCredits(id)}
+                />
+              )
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

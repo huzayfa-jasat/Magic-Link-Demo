@@ -1,79 +1,25 @@
 // Dependencies
-import { NavLink, useParams } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
 
 // API Imports
-import { getBalance, listAllTransactions } from "../../api/credits";
+import {
+  getBalance, getCatchallBalance,
+  listAllTransactions,
+} from "../../api/credits";
+
+// Component Imports
+import BalanceCard from "./components/BalanceCard";
+import TransactionCard from "./components/TransactionCard";
 
 // Style Imports
-import styles from "./Credits.module.css";
-
-// Icon Imports
-import { COINS_ICON, EMAIL_ICON, GIFT_ICON } from "../../assets/icons";
-
-// Helper Functions
-function formatTransactionDate(date) {
-  return new Date(date).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
-
-// Helper Component
-function TransactionCard({ transaction }) {
-
-  // Get event type
-  const eventIcon = () => {
-    switch (transaction.event_typ) {
-      case 'purchase':
-        return COINS_ICON;
-      case 'usage':
-        return EMAIL_ICON;
-      case 'refer_reward':
-        return GIFT_ICON;
-      case 'signup':
-        return GIFT_ICON;
-    }
-  }
-  const eventTitle = () => {
-    switch (transaction.event_typ) {
-      case 'usage':
-        return 'Verified Emails';
-      case 'refer_reward':
-        return 'Referral Reward';
-      case 'signup':
-        return 'Signup Bonus';
-      default:
-        return 'Purchase';
-    }
-  }
-
-  // Render
-  return (
-    <div className={styles.history_card}>
-      <div className={styles.history_card_left}>
-        <div className={styles.history_card_icon}>
-          {eventIcon()}
-        </div>
-        <div className={styles.history_card_title}>
-          <h5>{eventTitle()}</h5>
-          <p>{formatTransactionDate(transaction.usage_ts)}</p>
-        </div>
-      </div>
-      <div className={`${styles.credits_used} ${(transaction.credits_used < 0) ? styles.negative : ''}`}>
-        {(transaction.credits_used < 0) ? '-' : '+'}&nbsp;
-        {Math.abs(transaction.credits_used).toLocaleString()}
-      </div>
-    </div>
-  );
-}
+import styles from "./styles/Credits.module.css";
 
 // Functional Component
 export default function CreditsController() {
   // Data states
   const [transactions, setTransactions] = useState([]);
   const [currentBalance, setCurrentBalance] = useState(null);
+  const [catchallCurrentBalance, setCatchallCurrentBalance] = useState(null);
 
   // Fetch transactions
   const fetchTransactions = async () => {
@@ -95,8 +41,13 @@ export default function CreditsController() {
     const response = await getBalance();
     setCurrentBalance(response.data.credit_balance);
   };
+  const fetchCatchallCurrentBalance = async () => {
+    const response = await getCatchallBalance();
+    setCatchallCurrentBalance(response.data.credit_balance);
+  };
   useEffect(() => {
     fetchCurrentBalance();
+    fetchCatchallCurrentBalance();
   }, []);
 
   // Sort transactions by date descending
@@ -117,14 +68,19 @@ export default function CreditsController() {
       {/* Current Balance */}
       <h1 className={styles.title}>Credits</h1>
       <br />
-      <div className={styles.balanceContainer}>
-        <h2 className={styles.verificationText}>Balance</h2>
-        <div className={styles.availableCredits}>
-          {(currentBalance !== null) && (currentBalance.toLocaleString())}
-        </div>
-        <NavLink to="/packages" className={styles.packagesButton}>
-          Buy Credits
-        </NavLink>
+      <div className={styles.balanceRow}>
+        <BalanceCard
+          title="Validate"
+          balance={currentBalance}
+          buttonText="Buy Credits"
+          buttonLink="/packages?p=validate"
+        />
+        <BalanceCard
+          title="Catch-All"
+          balance={catchallCurrentBalance}
+          buttonText="Buy Credits"
+          buttonLink="/packages?p=catchall"
+        />
       </div>
       <br /><br /><br />
       {/* Activity */}

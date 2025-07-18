@@ -53,10 +53,16 @@
   filter: brightness(1.1);
 }
 
+.balanceRow {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+}
+
 .balanceContainer {
   width: fit-content;
   padding: 20px;
-  min-width: 350px;
+  min-width: 400px;
   display: inline-block;
   border: 1px dashed var(--txt-light-2);
   border-radius: 6px;
@@ -128,4 +134,15 @@
 }
 .negative {
   color: var(--fg-neg);
+}
+
+
+/* Responsiveness */
+@media screen and (max-width: 1220px) {
+  .balanceRow {
+    flex-direction: column;
+  }
+  .balanceContainer {
+    min-width: 100%;
+  }
 }

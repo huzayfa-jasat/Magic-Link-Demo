@@ -111,7 +111,7 @@
   font-size: 14px;
   font-family: "Circular", "Geist", sans-serif;
   font-weight: 400;
-  transition: all 0.2s ease-in-out;
+  transition: background-color 0.2s ease-in-out, opacity 0.2s ease-in-out, color 0.2s ease-in-out;
   cursor: pointer;
 }
 .topbar a:hover {
@@ -164,7 +164,7 @@
   padding: 8px 16px;
   border-radius: 20px;
   color: var(--black);
-  transition: background-color 0.2s;
+  transition: background-color 0.2s ease-in-out, opacity 0.2s ease-in-out, color 0.2s ease-in-out;
 }
 
 .settingsButton {
@@ -183,7 +183,7 @@
   padding: 8px 16px;
   border-radius: 20px;
   color: var(--black);
-  transition: background-color 0.2s;
+  transition: background-color 0.2s ease-in-out, opacity 0.2s ease-in-out, color 0.2s ease-in-out;
 }
 
 .settingsButton:hover {
@@ -211,6 +211,10 @@
   color: var(--black);
   text-decoration: none;
 }
+.sidebar.collapsed .creditsPill {
+  display: none;
+}
+
 .creditsPill .creditBalanceTop {
   display: flex;
   align-items: center;
@@ -232,7 +236,7 @@
   font-size: 14px;
   font-family: "Circular", "Geist", sans-serif;
   font-weight: 400;
-  transition: all 0.2s ease-in-out;
+  transition: background-color 0.2s ease-in-out, opacity 0.2s ease-in-out, color 0.2s ease-in-out;
   cursor: pointer;
 }
 .creditsPill .creditBalanceAmount {
@@ -270,10 +274,17 @@
   border-right: 1px solid var(--brd-light);
 }
 
+.sidebar.collapsed {
+  width: fit-content !important;
+}
+
 .topSection {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+.sidebar.collapsed .topSection {
+  gap: 10px;
 }
 
 .sidebar .navItem {
@@ -287,18 +298,29 @@
   border: none;
   border-radius: 5px;
   color: var(--txt-light);
-  font-size: 14px;
-  font-family: "Circular", "Geist", sans-serif;
-  font-weight: 400;
   background-color: transparent;
   text-decoration: none;
-  transition: all 0.2s ease-in-out;
+  transition: background-color 0.2s ease-in-out, opacity 0.2s ease-in-out, color 0.2s ease-in-out;
   cursor: pointer;
 }
 .sidebar .navItem.active,
 .sidebar .navItem:hover {
   color: var(--black);
   background-color: var(--brd-light);
+}
+.sidebar.collapsed .navItem {
+  padding: 0;
+  height: 40px;
+  width: 40px;
+}
+
+.sidebar .navItemText {
+  font-size: 14px;
+  font-family: "Circular", "Geist", sans-serif;
+  font-weight: 400;
+}
+.sidebar.collapsed .navItemText {
+  display: none;
 }
 
 .sidebar .navItemBadge {
@@ -312,6 +334,9 @@
   letter-spacing: -0.3px;
   text-transform: uppercase;
 }
+.sidebar.collapsed .navItemBadge {
+  display: none;
+}
 
 .sidebar .navIcon {
   width: 22px;
@@ -323,6 +348,11 @@
   border-radius: 3px;
   background-color: var(--brd-light);
 }
+.sidebar.collapsed .navIcon {
+  width: 100%;
+  height: 100%;
+  background-color: transparent;
+}
 .sidebar .navItem.active .navIcon {
   background-color: var(--main-hl-fade);
 }
@@ -330,6 +360,10 @@
 .sidebar .navIcon svg {
   width: 16px;
   height: 16px;
+}
+.sidebar.collapsed .navIcon svg {
+  width: 20px;
+  height: 20px;
 }
 .sidebar .navIcon svg path,
 .sidebar .navIcon svg circle,
@@ -369,8 +403,8 @@
 }
 
 .collapseButton {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   margin: 0 0 0 auto;
   display: flex;
   align-items: center;
@@ -380,9 +414,14 @@
   background-color: var(--brd-light-2);
   cursor: pointer;
 }
+.sidebar.collapsed .collapseButton {
+  width: 40px;
+  height: 40px;
+}
+
 .collapseButton svg {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
 }
 .collapseButton svg path,
 .collapseButton svg rect {

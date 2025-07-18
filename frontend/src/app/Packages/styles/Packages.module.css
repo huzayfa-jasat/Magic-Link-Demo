@@ -144,3 +144,34 @@
 .buyBtn.premium {
   background: linear-gradient(90deg, #c0eaff, #68cdff);
 }
+
+.pageSelector {
+  width: fit-content;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0px;
+  background-color: var(--brd-light);
+  border: none;
+  border-radius: 5px;
+}
+
+.pageButton {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  background-color: var(--brd-light);
+  font-family: "Circular", "Geist", sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: -0.3px;
+  color: var(--txt-light);
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.pageButton.active {
+  background-color: var(--main-hl);
+  color: var(--white);
+}

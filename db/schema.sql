@@ -21,6 +21,7 @@ CREATE TABLE Users (
 	`profile_image` LONGBLOB,
 	`referral_code` varchar(10) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
 	`api_key` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci UNIQUE,
+    `stripe_id` TEXT CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci,
 	`created_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (`id`),
 	UNIQUE KEY (`email`),
@@ -84,8 +85,6 @@ CREATE TABLE Requests (
 	`end_ts` TIMESTAMP NULL DEFAULT NULL,
 	`num_contacts` int NOT NULL,
 	`num_processed` int NOT NULL,
-
-
 	`file_name` varchar(125) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
 	PRIMARY KEY (`request_id`),
 	FOREIGN KEY (`user_id`) REFERENCES Users(`id`) ON DELETE CASCADE
@@ -122,24 +121,29 @@ CREATE TABLE Users_Credit_Balance_History (
 DROP TABLE IF EXISTS `Stripe_Products`;
 CREATE TABLE Stripe_Products (
 	id INT AUTO_INCREMENT PRIMARY KEY,
-	package_code VARCHAR(64) NOT NULL UNIQUE,
-	product_id VARCHAR(255) NOT NULL,
-	price_id VARCHAR(255) NOT NULL,
+	package_code VARCHAR(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL UNIQUE,
+	product_id VARCHAR(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
+	price_id VARCHAR(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
 	credits INT NOT NULL DEFAULT 0,
+    display_title VARCHAR(75) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
+    display_bonus VARCHAR(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci,
+    display_total VARCHAR(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci,
+    display_amount VARCHAR(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
+    display_price VARCHAR(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
 	is_live TINYINT(1) NOT NULL DEFAULT 0,
 	credit_type ENUM('default', 'catchall') NOT NULL DEFAULT 'default'
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
 DROP TABLE IF EXISTS `Stripe_Purchases`;
 CREATE TABLE Stripe_Purchases (
 	id INT AUTO_INCREMENT PRIMARY KEY,
 	user_id INT NOT NULL,
-	session_id VARCHAR(255) NOT NULL,
+	session_id VARCHAR(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
 	credits INT NOT NULL,
-	status VARCHAR(32) NOT NULL,
+	status VARCHAR(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
 	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
 DROP TABLE IF EXISTS `PassReset_Codes`;
 CREATE TABLE PassReset_Codes (
@@ -311,9 +315,9 @@ DROP TABLE IF EXISTS `Stripe_Catchall_Purchases`;
 CREATE TABLE Stripe_Catchall_Purchases (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    session_id VARCHAR(255) NOT NULL,
+    session_id VARCHAR(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
     credits INT NOT NULL,
-    status VARCHAR(32) NOT NULL,
+    status VARCHAR(32) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;

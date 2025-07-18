@@ -89,6 +89,7 @@ const verifyRoute = require('./routes/verify/routes.js');
 const catchallRoute = require('./routes/catchall/routes.js');
 const catchallCreditsRoute = require('./routes/catchall-credits/routes.js');
 const publicRoute = require('./routes/public/routes.js');
+const webhooksRoute = require('./routes/webhooks/routes.js');
 
 // Routes
 app.use(route_prefix+'/auth/', authRoute);
@@ -101,6 +102,7 @@ app.use(route_prefix+'/verify/', verifyRoute);
 app.use(route_prefix+'/catchall/', catchallRoute);
 app.use(route_prefix+'/catchall-credits/', catchallCreditsRoute);
 app.use(route_prefix+'/validate/', publicRoute);
+app.use(route_prefix+'/wh/', webhooksRoute);
 
 // Catch unhandled requests
 app.all('/*', (_, res) => { res.sendStatus(404); });

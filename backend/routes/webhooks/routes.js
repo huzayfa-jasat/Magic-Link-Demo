@@ -1,12 +1,21 @@
+// Dependencies
 const express = require('express');
-const router = express.Router();
-const { handleWebhook, handleResults, testWebhook } = require('./controller');
-const { checkIncomingResultsAuth } = require('../auth/funs_perms');
+const webhooksRouter = express.Router();
 
+// Controller Imports
+const {
+	handleStripeWebhook,
+	handleResults
+} = require('./controller');
 
-// Stripe webhook endpoint
-router.post('/stripe', express.raw({ type: 'application/json' }), handleWebhook);
-// Results endpoint
-router.post('/results', checkIncomingResultsAuth, handleResults);
+// Middleware Imports
+const {
+	checkIncomingResultsAuth
+} = require('../auth/funs_perms');
 
-module.exports = router; 
+// Routes
+webhooksRouter.post('/stripe', express.raw({ type: 'application/json' }), handleStripeWebhook);
+webhooksRouter.post('/results', checkIncomingResultsAuth, handleResults);
+
+// Export
+module.exports = webhooksRouter;

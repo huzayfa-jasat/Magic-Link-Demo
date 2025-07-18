@@ -15,14 +15,10 @@ const { generateApiKeys } = require('../../utils/generateApiKey.js');
 //Read profile name, email, profile picture, and API key
 async function db_getProfileDetails(user_id) {
 	let err_code;
-
-	const db_resp = await knex('Users')
-	.where('id',user_id)
-	.select(
+	const db_resp = await knex('Users').where('id',user_id).select(
 		'name AS name',
 		'email AS email',
 		'profile_image AS profileImage',
-		'api_key AS apiKey',
 	).limit(1).catch((err)=>{if (err) err_code = err.code});
 	if (err_code || db_resp.length <= 0) return [false, null];
 	return [true, db_resp[0]];

@@ -163,7 +163,7 @@
 .uploadArea {
   border: 1px dashed #52586690;
   border-radius: 8px;
-  padding: 2rem;
+  padding: 50px 20px;
   text-align: center;
   background-color: #282b3260;
   cursor: pointer;
@@ -181,23 +181,38 @@
 }
 
 .uploadIcon {
-  font-size: 2rem;
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 20px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 10px;
   color: #718096;
-  margin-bottom: 1rem;
+  background-color: var(--main-hl-fade2);
+}
+
+.uploadIcon svg {
+  width: 25px;
+  height: 25px;
+}
+.uploadIcon svg path {
+  stroke: var(--main-hl);
 }
 
 .uploadText {
-  font-family: "Sohne", sans-serif;
+  font-family: "Circular", sans-serif;
   font-size: 15px;
-  margin: 0;
+  margin: 0 auto 5px auto;
   color: #fff;
-  margin-bottom: 0.5rem;
 }
 
 .uploadSubtext {
   margin: 0;
-  color: #718096;
+  font-family: "Circular", sans-serif;
   font-size: 14px;
+  color: #718096;
 }
 
 .previewContainer {

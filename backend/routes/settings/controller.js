@@ -125,40 +125,6 @@ async function updateProfileDetails(req, res) {
 	}
 }
 
-/**
- * Update profile name
- */
-async function updateProfileName(req, res) {
-	try {
-		if (!req.body.name || typeof req.body.name !== 'string' || req.body.name.trim().length === 0) {
-			return res.status(HttpStatus.FAILED_STATUS).send("Invalid or missing 'name' in request body");
-		}
-		const ok = await db_updateProfileName(req.user.id, req.body.name);
-		if (ok) return res.sendStatus(HttpStatus.SUCCESS_STATUS);
-		return res.status(HttpStatus.FAILED_STATUS).send("Failed to update profile name");
-	} catch (err) {
-		console.log("MTE = ", err);
-		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
-	}
-}
-
-/**
- * Update profile picture
- */
-async function updateProfilePicture(req, res) {
-	try {
-		if (!('profile_picture' in req.body)) {
-			return res.status(HttpStatus.FAILED_STATUS).send("Missing 'profile_picture' in request body");
-		}	
-		const ok = await db_updateProfilePicture(req.user.id, req.body.profile_picture);
-		if (ok) return res.sendStatus(HttpStatus.SUCCESS_STATUS);
-		return res.status(HttpStatus.FAILED_STATUS).send("Failed to update profile picture");
-	} catch (err) {
-		console.log("MTE = ", err);
-		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
-	}
-}
-
 
 // Export
 module.exports = {
@@ -168,6 +134,4 @@ module.exports = {
 	refreshApiKey,
 	removeApiKey,
 	updateProfileDetails,
-	updateProfileName,
-	updateProfilePicture,
 };

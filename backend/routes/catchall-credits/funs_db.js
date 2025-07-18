@@ -38,53 +38,53 @@ async function db_getCatchallCreditBalanceHistory(user_id) {
 /**
  * Use catchall credits from user balance
  */
-async function db_useCatchallCredits(userId, credits, requestId = null) {
-	let err_code;
+// async function db_useCatchallCredits(userId, credits, requestId = null) {
+// 	let err_code;
 	
-	try {
-		await knex.transaction(async (trx) => {
-			// Get current balance
-			const balance = await trx('Users_Catchall_Credit_Balance')
-				.where('user_id', userId)
-				.select('current_balance')
-				.first();
+// 	try {
+// 		await knex.transaction(async (trx) => {
+// 			// Get current balance
+// 			const balance = await trx('Users_Catchall_Credit_Balance')
+// 				.where('user_id', userId)
+// 				.select('current_balance')
+// 				.first();
 			
-			const currentBalance = balance ? balance.current_balance : 0;
+// 			const currentBalance = balance ? balance.current_balance : 0;
 			
-			if (currentBalance < credits) {
-				throw new Error(`Insufficient catchall credits. Current: ${currentBalance}, Required: ${credits}`);
-			}
+// 			if (currentBalance < credits) {
+// 				throw new Error(`Insufficient catchall credits. Current: ${currentBalance}, Required: ${credits}`);
+// 			}
 			
-			// Update credit balance
-			await trx('Users_Catchall_Credit_Balance')
-				.where('user_id', userId)
-				.update({
-					current_balance: currentBalance - credits
-				});
+// 			// Update credit balance
+// 			await trx('Users_Catchall_Credit_Balance')
+// 				.where('user_id', userId)
+// 				.update({
+// 					current_balance: currentBalance - credits
+// 				});
 			
-			// Add usage history
-			await trx('Users_Catchall_Credit_Balance_History').insert({
-				user_id: userId,
-				credits_used: credits,
-				usage_ts: new Date()
-			});
-		});
+// 			// Add usage history
+// 			await trx('Users_Catchall_Credit_Balance_History').insert({
+// 				user_id: userId,
+// 				credits_used: credits,
+// 				usage_ts: new Date()
+// 			});
+// 		});
 		
-		// Return success response
-		return [true, {
-			message: 'Catchall credits used successfully',
-			creditsUsed: credits,
-			requestId: requestId,
-			newBalance: (await knex('Users_Catchall_Credit_Balance')
-				.where('user_id', userId)
-				.select('current_balance')
-				.first())?.current_balance || 0
-		}];
-	} catch (err) {
-		console.error('Error using catchall credits:', err);
-		return [false, err];
-	}
-}
+// 		// Return success response
+// 		return [true, {
+// 			message: 'Catchall credits used successfully',
+// 			creditsUsed: credits,
+// 			requestId: requestId,
+// 			newBalance: (await knex('Users_Catchall_Credit_Balance')
+// 				.where('user_id', userId)
+// 				.select('current_balance')
+// 				.first())?.current_balance || 0
+// 		}];
+// 	} catch (err) {
+// 		console.error('Error using catchall credits:', err);
+// 		return [false, err];
+// 	}
+// }
 
 // -------------------
 // DELETE Functions
@@ -92,7 +92,7 @@ async function db_useCatchallCredits(userId, credits, requestId = null) {
 
 // ----- Export -----
 module.exports = {
-	db_useCatchallCredits,
+	// db_useCatchallCredits,
 	db_getCatchallCreditBalance,
 	db_getCatchallCreditBalanceHistory,
 }; 

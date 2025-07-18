@@ -112,6 +112,57 @@ async function handleSuccessfulCatchallPayment(userId, credits, sessionId) {
 }
 
 /**
+ * Process a completed checkout session from Stripe webhook
+ * @param {Object} session - The Stripe checkout session object
+ * @returns {Promise<[boolean, object|string]>} Success status and result/error
+ */
+async function db_processCheckoutSession(stripe_session_id, stripe_customer_id, stripe_product_id) {
+    let err_code;
+
+    // Get the user ID matching the Stripe customer ID
+    const user = await knex('Users').where(
+        'stripe_id', stripe_customer_id
+    ).select(
+        'id'
+    ).first().catch((err) => { if (err) err_code = err.code; });
+    if (err_code || !user) return [false, null];
+    const userId = user.id;
+
+    // Get the product details from unified Stripe_Products table
+    const product = await knex('Stripe_Products').where({
+        product_id: stripe_product_id,
+        is_live: (process.env.NODE_ENV === 'development') ? 0 : 1
+    }).select(
+        'credits', 'credit_type'
+    ).first().catch((err) => { if (err) err_code = err.code; });
+    if (err_code || !product) return [false, null];
+    const isCatchall = product.credit_type === 'catchall';
+
+    // Update the purchase record with correct credits
+    await knex((isCatchall) ?
+        'Stripe_Catchall_Purchases' : 'Stripe_Purchases'
+    ).where(
+        'session_id', stripe_session_id
+    ).update({ 
+        credits: product.credits,
+        status: 'completed'
+    }).catch((err) => { if (err) err_code = err.code; });
+    if (err_code) return [false, null];
+
+    // Handle the payment based on type
+    if (isCatchall) await handleSuccessfulCatchallPayment(userId, product.credits, stripe_session_id);
+    else await handleSuccessfulPayment(userId, product.credits, stripe_session_id);
+
+    // Return
+    return [true, { 
+        userId, 
+        credits: product.credits, 
+        isCatchall,
+        message: `Successfully processed ${isCatchall ? 'catchall' : 'regular'} payment`
+    }];
+}
+
+/**
  * Handle incoming verification results (supports multiple results)
  * @param {number} id - Request ID
  * @param {Array} results - Array of result objects or single result object
@@ -178,6 +229,7 @@ async function handleIncomingResults(id, results) {
 
 
 module.exports = {
+    db_processCheckoutSession,
     handleSuccessfulPayment,
     handleSuccessfulCatchallPayment,
     handleIncomingResults

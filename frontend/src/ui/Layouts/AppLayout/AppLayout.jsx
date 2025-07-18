@@ -14,6 +14,19 @@ import s from "./AppLayout.module.css";
 // Icon Imports
 import { OMNI_LOGO, UPLOAD_ICON, SETTINGS_ICON, SIDEBAR_OPEN, SIDEBAR_CLOSE, COINS_ICON, HOME_ICON, PACKAGE_ICON, REFERRAL_ICON } from "../../../assets/icons";
 
+// Constants
+const NAV_TABS = [
+  { icon: HOME_ICON, text: "Home", link: "/home" },
+  { icon: UPLOAD_ICON, text: "Upload", link: "/upload" },
+  { icon: COINS_ICON, text: "Credits", link: "/credits" },
+  { icon: PACKAGE_ICON, text: "Packages", link: "/packages" },
+  { icon: REFERRAL_ICON, text: "Referrals", link: "/referrals", badge: "EARN CREDITS" },
+];
+
+
+// Helper Components
+
+
 // Functional Component
 export default function AppLayout({ title, children }) {
   const { user } = useUsersContext();
@@ -70,41 +83,17 @@ export default function AppLayout({ title, children }) {
         <div className={s.bottom}>
           <aside className={`${s.sidebar} ${(isCollapsed) ? s.collapsed : ""}`}>
             <div className={s.topSection}>
-              <NavLink to="/home" className={({ isActive }) => `${s.navItem} ${(isActive) ? s.active : ""}`}>
-                <div className={s.navIcon}>
-                  {HOME_ICON}
-                </div>
-                Home
-              </NavLink>
-
-              <NavLink to="/upload" className={({ isActive }) => `${s.navItem} ${(isActive) ? s.active : ""}`}>
-                <div className={s.navIcon}>
-                  {UPLOAD_ICON}
-                </div>
-                Upload
-              </NavLink>
-
-              <NavLink to="/credits" className={({ isActive }) => `${s.navItem} ${(isActive) ? s.active : ""}`}>
-                <div className={s.navIcon}>
-                  {COINS_ICON}
-                </div>
-                Credits
-              </NavLink>
-
-              <NavLink to="/packages" className={({ isActive }) => `${s.navItem} ${(isActive) ? s.active : ""}`}>
-                <div className={s.navIcon}>
-                  {PACKAGE_ICON}
-                </div>
-                Packages
-              </NavLink>
-
-              <NavLink to="/referrals" className={({ isActive }) => `${s.navItem} ${(isActive) ? s.active : ""}`}>
-                <div className={s.navIcon}>
-                  {REFERRAL_ICON}
-                </div>
-                Referrals
-                <span className={s.navItemBadge}>EARN CREDITS</span>
-              </NavLink>
+              {NAV_TABS.map((tab) => (
+                <NavLink key={`al-nav-${tab.link}`} to={tab.link} className={({ isActive }) => `${s.navItem} ${(isActive) ? s.active : ""}`}>
+                  <div className={s.navIcon}>
+                    {tab.icon}
+                  </div>
+                  <span className={s.navItemText}>{tab.text}</span>
+                  {(tab.badge) && (
+                    <span className={s.navItemBadge}>{tab.badge}</span>
+                  )}
+                </NavLink>
+              ))}
 
               {(!isLoading) && (
                 <NavLink to="/packages" className={s.creditsPill}>

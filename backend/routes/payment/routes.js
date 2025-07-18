@@ -1,9 +1,22 @@
+// Dependencies
 const express = require('express');
-const router = express.Router();
-const { createCheckout } = require('./controller');
+const paymentRouter = express.Router();
+
+// Middleware Imports
 const { checkUserAuth } = require('../auth/funs_perms');
 
-// Create checkout session
-router.post('/checkout', checkUserAuth, createCheckout);
+// Controller Imports
+const {
+	createCheckout,
+	getPackages
+} = require('./controller');
 
-module.exports = router; 
+// Middleware Setup
+paymentRouter.use(checkUserAuth);
+
+// Routes
+paymentRouter.post('/checkout', createCheckout);
+paymentRouter.get('/packages/list', getPackages);
+
+// Export router
+module.exports = paymentRouter; 

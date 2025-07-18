@@ -5,7 +5,7 @@ div.loading-circle-cont {
 	bottom: 0;
 	left: 0;
 	right: 0;
-	background-color: #fff;
+	background-color: var(--body);
 	overflow: hidden;
 
 	-webkit-user-select: none;
@@ -43,7 +43,7 @@ div.loading-circle-cont.rl > div {
 div.loading-circle-cont > div > div {
 	height: 100%;
 	width: 100%;
-	border: 2px solid black;
+	border: 2px solid var(--main-hl);
 	border-bottom-color: transparent;
 	border-radius: 20px;
 	display: inline-block;
