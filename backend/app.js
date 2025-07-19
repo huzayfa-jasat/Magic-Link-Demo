@@ -104,6 +104,13 @@ app.use(route_prefix+'/catchall-credits/', catchallCreditsRoute);
 app.use(route_prefix+'/validate/', publicRoute);
 app.use(route_prefix+'/wh/', webhooksRoute);
 
+// Test routes (development only)
+if (process.env.NODE_ENV === "development") {
+  const testRoute = require('./test/test-routes.js');
+  app.use(route_prefix+'/test/', testRoute);
+  console.log('Test routes enabled at /api/test/');
+}
+
 // Catch unhandled requests
 app.all('/*', (_, res) => { res.sendStatus(404); });
 
