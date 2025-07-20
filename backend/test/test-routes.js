@@ -285,6 +285,24 @@ router.post('/queue/control', async (req, res) => {
         let result;
         
         switch (action) {
+            case 'start':
+                if (!queueManager.isRunning) {
+                    await queueManager.start();
+                    result = { message: 'Queue manager started successfully' };
+                } else {
+                    result = { message: 'Queue manager is already running' };
+                }
+                break;
+                
+            case 'stop':
+                if (queueManager.isRunning) {
+                    await queueManager.stop();
+                    result = { message: 'Queue manager stopped successfully' };
+                } else {
+                    result = { message: 'Queue manager is not running' };
+                }
+                break;
+                
             case 'pause':
                 await queueManager.pauseQueue(queueName);
                 result = { message: `Queue ${queueName} paused` };
