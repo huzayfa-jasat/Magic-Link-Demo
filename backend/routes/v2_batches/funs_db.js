@@ -302,59 +302,26 @@ async function db_getBatchesList(user_id, page, limit, order, category, status) 
 	// Get metadata
 	let total_count = 0;
 	if (category === 'all') {
-		// Get total count for union query
-		let count_query;
-		switch (status) {
-			case 'processing':
-				const del_count_proc = knex('Batches_Deliverable').where({
-					'user_id': user_id,
-					'is_archived': 0,
-				}).whereIn('status', ['processing', 'queued']).count('* as count');
-				const cat_count_proc = knex('Batches_Catchall').where({
-					'user_id': user_id,
-					'is_archived': 0,
-				}).whereIn('status', ['processing', 'queued']).count('* as count');
-				const proc_counts = await Promise.all([del_count_proc, cat_count_proc]);
-				total_count = parseInt(proc_counts[0][0].count) + parseInt(proc_counts[1][0].count);
-				break;
-			case 'completed':
-				const del_count_comp = knex('Batches_Deliverable').where({
-					'user_id': user_id,
-					'is_archived': 0,
-				}).whereIn('status', ['completed']).count('* as count');
-				const cat_count_comp = knex('Batches_Catchall').where({
-					'user_id': user_id,
-					'is_archived': 0,
-				}).whereIn('status', ['completed']).count('* as count');
-				const comp_counts = await Promise.all([del_count_comp, cat_count_comp]);
-				total_count = parseInt(comp_counts[0][0].count) + parseInt(comp_counts[1][0].count);
-				break;
-			case 'failed':
-				const del_count_fail = knex('Batches_Deliverable').where({
-					'user_id': user_id,
-					'is_archived': 0,
-				}).whereIn('status', ['failed']).count('* as count');
-				const cat_count_fail = knex('Batches_Catchall').where({
-					'user_id': user_id,
-					'is_archived': 0,
-				}).whereIn('status', ['failed']).count('* as count');
-				const fail_counts = await Promise.all([del_count_fail, cat_count_fail]);
-				total_count = parseInt(fail_counts[0][0].count) + parseInt(fail_counts[1][0].count);
-				break;
-			default:
-				// No status filter - count all
-				const del_count_all = knex('Batches_Deliverable').where({
-					'user_id': user_id,
-					'is_archived': 0,
-				}).count('* as count');
-				const cat_count_all = knex('Batches_Catchall').where({
-					'user_id': user_id,
-					'is_archived': 0,
-				}).count('* as count');
-				const all_counts = await Promise.all([del_count_all, cat_count_all]);
-				total_count = parseInt(all_counts[0][0].count) + parseInt(all_counts[1][0].count);
-				break;
-		}
+		// Get total count for union query - create base queries
+		let del_count_query = knex('Batches_Deliverable').where({
+			'user_id': user_id,
+			'is_archived': 0,
+		});
+		let cat_count_query = knex('Batches_Catchall').where({
+			'user_id': user_id,
+			'is_archived': 0,
+		});
+		
+		// Apply status filters using the same logic as before
+		del_count_query = applyBatchStatusFilter(del_count_query, status_filter);
+		cat_count_query = applyBatchStatusFilter(cat_count_query, status_filter);
+		
+		// Execute count queries in parallel
+		const counts = await Promise.all([
+			del_count_query.count('* as count'),
+			cat_count_query.count('* as count')
+		]);
+		total_count = parseInt(counts[0][0].count) + parseInt(counts[1][0].count);
 	} else {
 		// Get total count for single table
 		let count_base_query;
