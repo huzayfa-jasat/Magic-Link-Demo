@@ -340,18 +340,8 @@ async function db_getBatchesList(user_id, page, limit, order, category, status) 
 				break;
 		}
 		
-		// Apply status filters to count query
-		switch (status) {
-			case 'processing':
-				count_base_query = count_base_query.whereIn('status', ['processing', 'queued']);
-				break;
-			case 'completed':
-				count_base_query = count_base_query.whereIn('status', ['completed']);
-				break;
-			case 'failed':
-				count_base_query = count_base_query.whereIn('status', ['failed']);
-				break;
-		}
+		// Apply status filters using same helper function
+		count_base_query = applyBatchStatusFilter(count_base_query, status_filter);
 		
 		const count_result = await count_base_query.count('* as count');
 		total_count = parseInt(count_result[0].count);
