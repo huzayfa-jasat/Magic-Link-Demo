@@ -59,6 +59,28 @@ const formatResultsByCheckType = (results, check_type) => {
 		}
 	});
 }
+const createBatchBaseQuery = (knex, tableName, categoryName, user_id, category) => {
+	return knex(tableName)
+		.select(
+			'id',
+			'title',
+			'status', 
+			'total_emails',
+			'created_ts',
+			'completed_ts',
+			...(category === 'all' ? [knex.raw(`'${categoryName}' as category`)] : [])
+		)
+		.where({
+			'user_id': user_id,
+			'is_archived': 0,
+		});
+}
+const applyBatchStatusFilter = (query, statusValues) => {
+	if (statusValues && statusValues.length > 0) {
+		return query.whereIn('status', statusValues);
+	}
+	return query;
+}
 
 // -------------------
 // CREATE Functions
@@ -84,7 +106,7 @@ async function db_createBatch(user_id, check_type, title, emails) {
 
 	// 1. Create batch entry
 	let err_code;
-	await knex(batch_table).insert({
+	const [batch_id] = await knex(batch_table).insert({
 		'user_id': user_id,
 		'title': title ?? 'Untitled',
 		'status': 'queued',
@@ -197,62 +219,77 @@ async function db_getBatchesList(user_id, page, limit, order, category, status) 
 			return [false, null];
 	}
 
-	// Create base query (handle table-level category filters)
-	let base_query;
-	switch (category) {
-		case 'all':
-			/*
-			TODO: union of deliverable and catchall batch tables but with same filters, etc. applied to each.
-			* And I want the sort to be applied to the union.
-			* The metadata should also be from the union.
-			* Each result should also have a "category" field added to it (it is not in the DB schema, we just need to know which table a given result came from)
-			*/
-			break;
-		case 'deliverable':
-			base_query = knex('Batches_Deliverable').where({
-				'user_id': user_id,
-				'is_archived': 0,
-			});
-			break;
-		case 'catchall':
-			base_query = knex('Batches_Catchall').where({
-				'user_id': user_id,
-				'is_archived': 0,
-			});
-			break;
-		default:
-			break;
-	};
+	// Create base queries for both tables
+	const deliverable_query = createBatchBaseQuery(knex, 'Batches_Deliverable', 'deliverable', user_id, category);
+	const catchall_query = createBatchBaseQuery(knex, 'Batches_Catchall', 'catchall', user_id, category);
 
-	// Handle column-level status filters
-	// TODO: Also needs to work for the union of the two tables.
+	let status_filter;
 	switch (status) {
 		case 'processing':
-			base_query = base_query.whereIn('status', ['processing', 'queued']);
+			status_filter = ['processing', 'queued'];
 			break;
 		case 'completed':
-			base_query = base_query.whereIn('status', ['completed']);
+			status_filter = ['completed'];
 			break;
 		case 'failed':
-			base_query = base_query.whereIn('status', ['failed']);
+			status_filter = ['failed'];
 			break;
 		default:
+			status_filter = null;
 			break;
 	}
 
+	const deliverable_filtered = applyBatchStatusFilter(deliverable_query, status_filter);
+	const catchall_filtered = applyBatchStatusFilter(catchall_query, status_filter);
+
+	// Create final base query based on category
+	let base_query;
+	switch (category) {
+		case 'all':
+			base_query = deliverable_filtered.union(catchall_filtered);
+			break;
+		case 'deliverable':
+			base_query = deliverable_filtered;
+			break;
+		case 'catchall':
+			base_query = catchall_filtered;
+			break;
+		default:
+			return [false, null];
+	}
+
+
 	// Get batches list
 	let err_code;
-	const batches = await base_query.select(
-		'id',
-		'title',
-		'status',
-		'total_emails AS emails',
-		'created_ts AS created',
-		'completed_ts AS completed',
-	)
-	.limit(limit).offset((page-1)*limit) // Apply pagination
-	.orderBy(order_column, order_direction) // Apply sorting
-	.catch((err)=>{if (err) err_code = err.code});
+	let batches;
+	if (category === 'all') {
+		// For union queries, we need to wrap in a subquery to apply sorting and pagination
+		batches = await knex.from(base_query.as('union_result'))
+			.select(
+				'id',
+				'title',
+				'status',
+				'total_emails AS emails',
+				'created_ts AS created',
+				'completed_ts AS completed',
+				'category'
+			)
+			.limit(limit).offset((page-1)*limit)
+			.orderBy(order_column, order_direction)
+			.catch((err)=>{if (err) err_code = err.code});
+	} else {
+		batches = await base_query.select(
+			'id',
+			'title',
+			'status',
+			'total_emails AS emails',
+			'created_ts AS created',
+			'completed_ts AS completed',
+		)
+		.limit(limit).offset((page-1)*limit)
+		.orderBy(order_column, order_direction)
+		.catch((err)=>{if (err) err_code = err.code});
+	}
 	if (err_code) return [false, null];
 
 	// Format batches list
@@ -262,11 +299,104 @@ async function db_getBatchesList(user_id, page, limit, order, category, status) 
 		status: (batch.status === 'queued') ? 'processing' : batch.status
 	}));
 
-	// TODO: Get metadata
+	// Get metadata
+	let total_count = 0;
+	if (category === 'all') {
+		// Get total count for union query
+		let count_query;
+		switch (status) {
+			case 'processing':
+				const del_count_proc = knex('Batches_Deliverable').where({
+					'user_id': user_id,
+					'is_archived': 0,
+				}).whereIn('status', ['processing', 'queued']).count('* as count');
+				const cat_count_proc = knex('Batches_Catchall').where({
+					'user_id': user_id,
+					'is_archived': 0,
+				}).whereIn('status', ['processing', 'queued']).count('* as count');
+				const proc_counts = await Promise.all([del_count_proc, cat_count_proc]);
+				total_count = parseInt(proc_counts[0][0].count) + parseInt(proc_counts[1][0].count);
+				break;
+			case 'completed':
+				const del_count_comp = knex('Batches_Deliverable').where({
+					'user_id': user_id,
+					'is_archived': 0,
+				}).whereIn('status', ['completed']).count('* as count');
+				const cat_count_comp = knex('Batches_Catchall').where({
+					'user_id': user_id,
+					'is_archived': 0,
+				}).whereIn('status', ['completed']).count('* as count');
+				const comp_counts = await Promise.all([del_count_comp, cat_count_comp]);
+				total_count = parseInt(comp_counts[0][0].count) + parseInt(comp_counts[1][0].count);
+				break;
+			case 'failed':
+				const del_count_fail = knex('Batches_Deliverable').where({
+					'user_id': user_id,
+					'is_archived': 0,
+				}).whereIn('status', ['failed']).count('* as count');
+				const cat_count_fail = knex('Batches_Catchall').where({
+					'user_id': user_id,
+					'is_archived': 0,
+				}).whereIn('status', ['failed']).count('* as count');
+				const fail_counts = await Promise.all([del_count_fail, cat_count_fail]);
+				total_count = parseInt(fail_counts[0][0].count) + parseInt(fail_counts[1][0].count);
+				break;
+			default:
+				// No status filter - count all
+				const del_count_all = knex('Batches_Deliverable').where({
+					'user_id': user_id,
+					'is_archived': 0,
+				}).count('* as count');
+				const cat_count_all = knex('Batches_Catchall').where({
+					'user_id': user_id,
+					'is_archived': 0,
+				}).count('* as count');
+				const all_counts = await Promise.all([del_count_all, cat_count_all]);
+				total_count = parseInt(all_counts[0][0].count) + parseInt(all_counts[1][0].count);
+				break;
+		}
+	} else {
+		// Get total count for single table
+		let count_base_query;
+		switch (category) {
+			case 'deliverable':
+				count_base_query = knex('Batches_Deliverable').where({
+					'user_id': user_id,
+					'is_archived': 0,
+				});
+				break;
+			case 'catchall':
+				count_base_query = knex('Batches_Catchall').where({
+					'user_id': user_id,
+					'is_archived': 0,
+				});
+				break;
+		}
+		
+		// Apply status filters to count query
+		switch (status) {
+			case 'processing':
+				count_base_query = count_base_query.whereIn('status', ['processing', 'queued']);
+				break;
+			case 'completed':
+				count_base_query = count_base_query.whereIn('status', ['completed']);
+				break;
+			case 'failed':
+				count_base_query = count_base_query.whereIn('status', ['failed']);
+				break;
+		}
+		
+		const count_result = await count_base_query.count('* as count');
+		total_count = parseInt(count_result[0].count);
+	}
+	
+	const total_pages = Math.ceil(total_count / limit);
+	const has_more = page < total_pages;
+	
 	const metadata = {
-		total_pages: 0,
-		total_count: 0,
-		has_more: false,
+		total_pages,
+		total_count,
+		has_more,
 	}
 
 	// Return data + metadata
@@ -406,11 +536,59 @@ async function db_getBatchResults(user_id, check_type, batch_id, page, limit, or
 	// Format results (by check type)
 	const formatted_results = formatResultsByCheckType(results, check_type);
 
-	// TODO: Get metadata
+	// Get metadata - count total results matching filters
+	let count_query = knex(results_table).join(
+		email_batch_association_table,
+		`${email_batch_association_table}.email_global_id`,
+		`${results_table}.email_global_id`
+	).where({
+		[`${email_batch_association_table}.batch_id`]: batch_id,
+	});
+
+	// Apply same filtering to count query
+	switch (filter) {
+		case 'all':
+			break;
+		case 'deliverable':
+			count_query = count_query.where({
+				[`${results_table}.status`]: 'deliverable',
+				[`${results_table}.is_catchall`]: 0,
+			});
+			break;
+		case 'catchall':
+			count_query = count_query.where({
+				[`${results_table}.status`]: 'risky',
+				[`${results_table}.reason`]: 'low_deliverability',
+			}).orWhere({
+				[`${results_table}.is_catchall`]: 1,
+			});
+			break;
+		case 'undeliverable':
+			count_query = count_query.whereNot(function () {
+				this.where({
+					[`${results_table}.status`]: 'deliverable',
+					[`${results_table}.is_catchall`]: 0,
+				}).orWhere({
+					[`${results_table}.status`]: 'risky',
+					[`${results_table}.reason`]: 'low_deliverability',
+				}).orWhere({
+					[`${results_table}.is_catchall`]: 1,
+				});
+			});
+			break;
+	}
+
+	const count_result = await count_query.count('* as count').catch((err)=>{if (err) err_code = err.code});
+	if (err_code) return [false, null];
+	
+	const total_count = parseInt(count_result[0].count);
+	const total_pages = Math.ceil(total_count / limit);
+	const has_more = page < total_pages;
+	
 	const metadata = {
-		total_pages: 0,
-		total_count: 0,
-		has_more: false,
+		total_pages,
+		total_count,
+		has_more,
 	}
 
 	// Return results + metadata
