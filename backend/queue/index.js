@@ -1,11 +1,9 @@
-// Queue System Entry Point
-// This file demonstrates how to integrate the queue system into the main application
-
+// Queue Imports
 const queueManager = require('./queue_manager');
 
 /**
  * Initialize the queue system
- * Call this during application startup
+ * - Called during application startup
  */
 async function initializeQueue() {
     console.log('🚀 Starting Bouncer Queue System...');
@@ -30,20 +28,18 @@ async function initializeQueue() {
 
 /**
  * Shutdown the queue system
- * Call this during application shutdown
+ * - Called during application shutdown
  */
 async function shutdownQueue() {
     console.log('🛑 Shutting down Bouncer Queue System...');
     
     try {
+        // Shutdown queue
         const success = await queueManager.shutdown();
+        if (success) console.log('✅ Bouncer Queue System shutdown successfully');
+        else console.error('❌ Error during queue system shutdown');
         
-        if (success) {
-            console.log('✅ Bouncer Queue System shutdown successfully');
-        } else {
-            console.error('❌ Error during queue system shutdown');
-        }
-        
+        // Return
         return success;
         
     } catch (error) {
@@ -54,6 +50,7 @@ async function shutdownQueue() {
 
 /**
  * Get current queue status for monitoring
+ * - Used for monitoring the queue system
  */
 async function getQueueStatus() {
     try {
@@ -65,7 +62,7 @@ async function getQueueStatus() {
     }
 }
 
-// Export functions for integration
+// Exports
 module.exports = {
     initializeQueue,
     shutdownQueue,

@@ -10,10 +10,11 @@ const express = require('express');
 var bodyParser = require('body-parser');
 var cors = require('cors');
 
+// Queue Imports
+const { initializeQueue, shutdownQueue } = require('./queue');
+
 // App Config
 const app = express();
-
-console.log('NODE_ENV:', process.env.NODE_ENV);
 
 // Webhook route needs raw body
 const webhookRoute = require('./routes/webhooks/routes.js');
@@ -40,11 +41,7 @@ app.use(cors({
     
     // Check if the origin is in our whitelist
     if (corsWL.indexOf(origin) !== -1) callback(null, true);
-    else {
-      // Optional: Log rejected origins for debugging
-      console.log(`CORS rejected origin: ${origin}`);
-      callback(null, false);
-    }
+    else callback(null, false);
   },
   methods: ['GET', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
   optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
@@ -104,19 +101,78 @@ app.use(route_prefix+'/catchall-credits/', catchallCreditsRoute);
 app.use(route_prefix+'/validate/', publicRoute);
 app.use(route_prefix+'/wh/', webhooksRoute);
 
-// Test routes (development only)
-if (process.env.NODE_ENV === "development") {
-  const testRoute = require('./test/test-routes.js');
-  app.use(route_prefix+'/test/', testRoute);
-  console.log('Test routes enabled at /api/test/');
-}
-
 // Catch unhandled requests
 app.all('/*', (_, res) => { res.sendStatus(404); });
 
 // Expose app
 const PORT = process.env.PORT || 5050;
-var server = app.listen(PORT, () => {
-	console.log(`listening to requests on port ${PORT}`);
+var server = app.listen(PORT, async () => {
+  console.log(`listening to requests on port ${PORT}`);
+  
+  // Initialize queue system after server starts
+  await startupQueue();
 });
 server.setTimeout(330000); // 5min 30s
+
+// Queue startup handling
+async function startupQueue() {
+  console.log('Starting Bouncer Queue System...');
+  try {
+    const queueStarted = await initializeQueue();
+    if (queueStarted) console.log('✅ Bouncer Queue System started successfully');
+    else console.log('⚠️ Failed to start Bouncer Queue System - continuing without queue');
+  } catch (error) {
+    console.error('❌ Error starting Bouncer Queue System:', error.message);
+    console.log('⚠️ Server will continue without queue system');
+  }
+}
+
+// Queue shutdown handling
+async function gracefulShutdown(signal) {
+  console.log(`\n🛑 Received ${signal}. Starting graceful shutdown...`);
+  
+  try {
+    // Close server first
+    console.log('Closing HTTP server...');
+    server.close(async () => {
+      console.log('✅ HTTP server closed');
+      
+      // Shutdown queue system
+      console.log('Shutting down queue system...');
+      try {
+        await shutdownQueue();
+        console.log('✅ Queue system shutdown complete');
+      } catch (error) {
+        console.error('❌ Error shutting down queue system:', error.message);
+      }
+      
+      console.log('🎯 Graceful shutdown complete');
+      process.exit(0);
+    });
+    
+    // Force exit after 10 seconds if graceful shutdown fails
+    setTimeout(() => {
+      console.error('⏰ Graceful shutdown timed out, forcing exit');
+      process.exit(1);
+    }, 10000);
+    
+  } catch (error) {
+    console.error('💥 Error during graceful shutdown:', error.message);
+    process.exit(1);
+  }
+}
+
+// Register shutdown handlers
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Handle uncaught exceptions and rejections
+process.on('uncaughtException', (error) => {
+  console.error('💥 Uncaught Exception:', error);
+  gracefulShutdown('uncaughtException');
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
+  gracefulShutdown('unhandledRejection');
+});

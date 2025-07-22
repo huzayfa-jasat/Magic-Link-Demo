@@ -1,156 +1,66 @@
 // Dependencies
 const knex = require('knex')(require('../../knexfile.js').development);
 
+// Function Imports
+const { getBatchTableName } = require('../batches/funs_db_utils.js');
+
 // -------------------
 // READ Functions
 // -------------------
+
+async function db_getUserIdFromApiKey(api_key) {
+    let err_code;
+    const user = await knex('Users').where('api_key', api_key).select('id').first().catch((err)=>{if (err) err_code = err.code});
+    if (err_code || !user) return [false, null];
+    return [true, user.id];
+}
 
 /**
  * Get user credit balance
  */
 async function db_getUserCredits(user_id) {
     let err_code;
-    const db_resp = await knex('Users_Credit_Balance')
-        .select('current_balance')
-        .where('user_id', user_id)
-        .first()
-        .catch((err) => { if (err) err_code = err.code });
-    
+
+    // Promise both queries at same time
+    const [db_resp_valid, db_resp_catchall] = await Promise.all([
+        knex('Users_Credit_Balance').where('user_id', user_id).select('current_balance').first().catch((err)=>{if (err) err_code = err.code}),
+        knex('Users_Catchall_Credit_Balance').where('user_id', user_id).select('current_balance').first().catch((err)=>{if (err) err_code = err.code})
+    ]);
     if (err_code) return [false, null];
-    return [true, db_resp?.current_balance || 0];
+    
+    // Format & return
+    return [true, {
+        deliverability: db_resp_valid?.current_balance || 0,
+        catchall: db_resp_catchall?.current_balance || 0
+    }];
 }
 
-/**
- * Validate emails and return results
- */
-async function db_validateEmails(user_id, emails) {
+async function db_getBatchStatus(batch_id, check_type) {
     let err_code;
+
+    // Get batch table name
+    const batch_table = getBatchTableName(check_type);
+    if (!batch_table) return [false, null];
     
-    // Check user has enough credits
-    const [creditsOk, currentBalance] = await db_getUserCredits(user_id);
-    if (!creditsOk) return [false, null];
-    
-    if (currentBalance < emails.length) {
-        return [false, { error: 'Insufficient credits', required: emails.length, available: currentBalance }];
-    }
+    // Get status
+    const resp = await knex(batch_table).where({
+        'id': batch_id
+    }).select('status').first().catch((err)=>{if (err) err_code = err.code});
+    if (err_code || !resp) return [false, null];
 
-    // Get existing results from Contacts_Global
-    const existingResults = await knex('Contacts_Global')
-        .whereIn('email', emails)
-        .select('email', 'latest_result', 'last_mail_server')
-        .catch((err) => { if (err) err_code = err.code });
-    
-    if (err_code) return [false, null];
+    // Mask 'queued' as 'processing'
+    const status = (resp.status === 'queued') ? 'processing' : resp.status;
 
-    // Create results map
-    const resultsMap = {};
-    existingResults.forEach(result => {
-        resultsMap[result.email] = {
-            email: result.email,
-            status: result.latest_result,
-            mail_server: result.last_mail_server
-        };
-    });
-
-    // Create array of unknown emails
-    const unknownEmails = emails.filter(email => !resultsMap[email]);
-    // TODO: Add to validator queue
-
-    // Add missing emails as 'unknown' status for response
-    unknownEmails.forEach(email => {
-        resultsMap[email] = {
-            email: email,
-            status: 'unknown',
-            mail_server: 'unknown'
-        };
-    });
-
-    // Deduct credits
-    await knex('Users_Credit_Balance')
-        .where('user_id', user_id)
-        .decrement('current_balance', emails.length)
-        .catch((err) => { if (err) err_code = err.code });
-    
-    if (err_code) return [false, null];
-
-    // Record usage in history
-    await knex('Users_Credit_Balance_History').insert({
-        user_id: user_id,
-        credits_used: emails.length,
-        usage_ts: new Date()
-    }).catch((err) => { if (err) err_code = err.code });
-    
-    if (err_code) return [false, null];
-
-    return [true, Object.values(resultsMap)];
+    // Return status
+    return [true, status];
 }
 
-/**
- * Validate emails for catchall detection
- */
-async function db_validateCatchall(user_id, emails) {
+async function db_downloadBatchResults(batch_id, check_type) {
     let err_code;
     
-    // Check user has enough credits (catchall detection costs more)
-    const [creditsOk, currentBalance] = await db_getUserCredits(user_id);
-    if (!creditsOk) return [false, null];
-    
-    const creditCost = emails.length * 2; // Catchall detection costs 2 credits per email
-    if (currentBalance < creditCost) {
-        return [false, { error: 'Insufficient credits', required: creditCost, available: currentBalance }];
-    }
+    // TODO
 
-    // Get existing results from Contacts_Global
-    const existingResults = await knex('Contacts_Global')
-        .whereIn('email', emails)
-        .select('email', 'latest_result', 'last_mail_server')
-        .catch((err) => { if (err) err_code = err.code });
-    
-    if (err_code) return [false, null];
-
-    // Create results map
-    const resultsMap = {};
-    existingResults.forEach(result => {
-        resultsMap[result.email] = {
-            email: result.email,
-            status: result.latest_result,
-            mail_server: result.last_mail_server,
-            is_catchall: result.latest_result === 'catch-all'
-        };
-    });
-
-    // Create array of unknown emails
-    const unknownEmails = emails.filter(email => !resultsMap[email]);
-    // TODO: Add to validator queue
-
-    // Add missing emails as 'unknown' status for response
-    unknownEmails.forEach(email => {
-        resultsMap[email] = {
-            email: email,
-            status: 'unknown',
-            mail_server: 'unknown',
-            is_catchall: false
-        };
-    });
-
-    // Deduct credits
-    await knex('Users_Credit_Balance')
-        .where('user_id', user_id)
-        .decrement('current_balance', creditCost)
-        .catch((err) => { if (err) err_code = err.code });
-    
-    if (err_code) return [false, null];
-
-    // Record usage in history
-    await knex('Users_Credit_Balance_History').insert({
-        user_id: user_id,
-        credits_used: creditCost,
-        usage_ts: new Date()
-    }).catch((err) => { if (err) err_code = err.code });
-    
-    if (err_code) return [false, null];
-
-    return [true, Object.values(resultsMap)];
+    return [false, null];
 }
 
 // -------------------
@@ -163,6 +73,7 @@ async function db_validateCatchall(user_id, emails) {
 
 // ----- Export -----
 module.exports = {
+    db_getUserIdFromApiKey,
     db_getUserCredits,
     db_validateEmails,
     db_validateCatchall

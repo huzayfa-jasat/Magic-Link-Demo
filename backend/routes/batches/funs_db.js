@@ -1,37 +1,15 @@
 // Dependencies
 const knex = require('knex')(require('../../knexfile.js').development);
 
+// Function Imports
+const {
+	getCreditTableName,
+	getBatchTableName,
+	getResultsTableName,
+	getEmailBatchAssociationTableName
+} = require('./funs_db_utils.js');
+
 // Helper Functions
-const getBatchTableName = (check_type) => {
-	switch (check_type) {
-		case 'deliverable':
-			return 'Batches_Deliverable';
-		case 'catchall':
-			return 'Batches_Catchall';
-		default:
-			return null;
-	}
-}
-const getResultsTableName = (check_type) => {
-	switch (check_type) {
-		case 'deliverable':
-			return 'Email_Deliverable_Results';
-		case 'catchall':
-			return 'Email_Catchall_Results';
-		default:
-			return null;
-	}
-}
-const getEmailBatchAssociationTableName = (check_type) => {
-	switch (check_type) {
-		case 'deliverable':
-			return 'Batch_Emails_Deliverable';
-		case 'catchall':
-			return 'Batch_Emails_Catchall';
-		default:
-			return null;
-	}
-}
 const formatResultsByCheckType = (results, check_type) => {
 	return results.map((result)=>{
 		let check_type_specific_result = {};
@@ -120,7 +98,6 @@ async function db_createBatch(user_id, check_type, title, emails) {
 		'batch_id': batch_id,
 		'email_global_id': email.global_id,
 		'email_nominal': email.email,
-		'used_cached': 0,
 	}))).catch((err)=>{if (err) err_code = err.code});
 	if (err_code) return [false, null];
 	
@@ -139,6 +116,7 @@ async function db_createBatch(user_id, check_type, title, emails) {
 		'email_global_id', existing_results
 	).update({
 		'used_cached': 1,
+		'did_complete': 1,
 	}).catch((err)=>{if (err) err_code = err.code});
 	if (err_code) return [false, null];
 
@@ -445,6 +423,7 @@ async function db_getBatchResults(user_id, check_type, batch_id, page, limit, or
 		`${results_table}.email_global_id`
 	).where({
 		[`${email_batch_association_table}.batch_id`]: batch_id,
+		[`${email_batch_association_table}.did_complete`]: 1,
 	});
 
 	// Handle filtering
@@ -500,6 +479,7 @@ async function db_getBatchResults(user_id, check_type, batch_id, page, limit, or
 		`${results_table}.email_global_id`
 	).where({
 		[`${email_batch_association_table}.batch_id`]: batch_id,
+		[`${email_batch_association_table}.did_complete`]: 1,
 	});
 
 	// Apply same filtering to count query
@@ -557,6 +537,56 @@ async function db_getBatchResults(user_id, check_type, batch_id, page, limit, or
 // UPDATE Functions
 // -------------------
 
+async function db_checkAndDeductCredits(user_id, check_type, num_emails) {
+	// Get table names
+	const credit_table = getCreditTableName(check_type);
+	const credit_history_table = getCreditHistoryTableName(check_type);
+	if (!credit_table || !credit_history_table) return false;
+	
+	// Transaction to check credit balance, deduct credits, and log usage
+	// - Automatically rolls back on any error
+	// - Row lock released after transaction completes
+	try {
+		const result = await knex.transaction(async (trx) => {
+			// Step 1: Check credit balance
+			const curr_balance = await trx(credit_table)
+				.where({ 'user_id': user_id })
+				.select('current_balance')
+				.forUpdate() // Row lock to prevent race conditions
+				.first();
+			
+			// Verify sufficient balance
+			if (!curr_balance || curr_balance.current_balance < num_emails) {
+				throw new Error('Insufficient credits');
+			}
+
+			// Step 2: Deduct credits
+			await trx(credit_table)
+				.where({ 'user_id': user_id })
+				.decrement('current_balance', num_emails);
+
+			// Step 3: Log usage in history
+			await trx(credit_history_table).insert({
+				'user_id': user_id,
+				'credits_used': num_emails,
+				'event_typ': 'usage',
+				'created_ts': new Date().toISOString()
+			});
+
+			// Transaction successful - return true
+			return true;
+		});
+
+		return result;
+
+	} catch (error) {
+		// Transaction automatically rolled back on any error
+		console.error('Credit deduction transaction failed:', error.message);
+		return false;
+	}
+}
+
+
 // -------------------
 // DELETE Functions
 // -------------------
@@ -588,5 +618,6 @@ module.exports = {
 	db_getBatchesList,
 	db_getBatchDetails,
 	db_getBatchResults,
+	db_checkAndDeductCredits,
 	db_removeBatch
 }

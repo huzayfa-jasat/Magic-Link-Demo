@@ -4,62 +4,24 @@ const HttpStatus = require('../../types/HttpStatus.js');
 // DB Function Imports
 const {
     db_getUserCredits,
-    db_validateEmails,
-    db_validateCatchall
+    db_getBatchStatus,
+    db_downloadBatchResults
 } = require('./funs_db.js');
 
-// Input validation helpers
-const validateEmailArray = (emails) => {
-    if (!Array.isArray(emails)) {
-        return { valid: false, error: 'Emails must be an array' };
-    }
-    
-    if (emails.length < 1) {
-        return { valid: false, error: 'At least 1 email required' };
-    }
-    
-    if (emails.length > 1000) {
-        return { valid: false, error: 'Maximum 1000 emails allowed per request' };
-    }
-    
-    // Filter out invalid emails and return valid ones
-    const validEmails = [];
-    for (let i = 0; i < emails.length; i++) {
-        const email = emails[i];
-        
-        if (!email || typeof email !== 'string') {
-            continue; // Skip invalid emails
-        }
-        
-        // Basic email validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (emailRegex.test(email)) {
-            validEmails.push(email);
-        }
-    }
-    
-    if (validEmails.length === 0) {
-        return { valid: false, error: 'No valid emails found' };
-    }
-    
-    return { valid: true, emails: validEmails };
-};
+// Controller Imports
+const {
+    createBatch,
+} = require('../batches/controller.js');
+
 
 /**
  * Get user credits
  */
 async function getCredits(req, res) {
     try {
-        const [ok, credits] = await db_getUserCredits(req.apiUser.id);
-        
-        if (!ok) {
-            return res.status(HttpStatus.FAILED_STATUS).send("Failed to retrieve credits");
-        }
-
-        return res.status(HttpStatus.SUCCESS_STATUS).json({
-            credits: credits,
-            //todo: return validation & catchall credits (when new PR ready)
-        });
+        const [ok, credits] = await db_getUserCredits(req.apiUser.user_id);
+        if (!ok) return res.status(HttpStatus.FAILED_STATUS).send("Failed to retrieve credits");
+        return res.status(HttpStatus.SUCCESS_STATUS).json({ credits });
 
     } catch (err) {
         console.log("MTE = ", err);
@@ -72,33 +34,12 @@ async function getCredits(req, res) {
  */
 async function validateEmails(req, res) {
     try {
-        const { emails } = req.body;
-        
-        // Validate emails array and get valid emails
-        const emailValidation = validateEmailArray(emails);
-        if (!emailValidation.valid) {
-            return res.status(HttpStatus.FAILED_STATUS).send(emailValidation.error);
-        }
-
-        // Sanitize emails (trim and lowercase)
-        const sanitizedEmails = emailValidation.emails.map(email => email.trim().toLowerCase());
-
-        // Validate emails
-        const [ok, result] = await db_validateEmails(req.apiUser.id, sanitizedEmails);
-        
-        if (!ok) {
-            if (result && result.error === 'Insufficient credits') {
-                return res.status(HttpStatus.FAILED_STATUS).send("Insufficient credits");
-            }
-            
-            return res.status(HttpStatus.FAILED_STATUS).send("Failed to validate emails");
-        }
-
-        return res.status(HttpStatus.SUCCESS_STATUS).json({
-            results: result,
-            processed: sanitizedEmails.length,
-            user_id: req.apiUser.id
-        });
+        // Use existing controller
+        return createBatch({
+            ...req,
+            user: { id: req.apiUser.user_id, },
+            params: { checkType: 'deliverable' }
+        }, res);
 
     } catch (err) {
         console.log("MTE = ", err);
@@ -111,33 +52,72 @@ async function validateEmails(req, res) {
  */
 async function validateCatchall(req, res) {
     try {
-        const { emails } = req.body;
-        
-        // Validate emails array and get valid emails
-        const emailValidation = validateEmailArray(emails);
-        if (!emailValidation.valid) {
-            return res.status(HttpStatus.FAILED_STATUS).send(emailValidation.error);
-        }
+        // Use existing controller
+        return createBatch({
+            ...req,
+            user: { id: req.apiUser.user_id, },
+            params: { checkType: 'catchall' }
+        }, res);
 
-        // Sanitize emails (trim and lowercase)
-        const sanitizedEmails = emailValidation.emails.map(email => email.trim().toLowerCase());
+    } catch (err) {
+        console.log("MTE = ", err);
+        return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+    }
+}
 
-        // Validate emails for catchall
-        const [ok, result] = await db_validateCatchall(req.apiUser.id, sanitizedEmails);
-        
-        if (!ok) {
-            if (result && result.error === 'Insufficient credits') {
-                return res.status(HttpStatus.FAILED_STATUS).send("Insufficient credits");
-            }
-            
-            return res.status(HttpStatus.FAILED_STATUS).send("Failed to validate emails for catchall");
-        }
+async function getDeliverableBatchStatus(req, res) {
+    try {
+        const { batchId } = req.params;
 
-        return res.status(HttpStatus.SUCCESS_STATUS).json({
-            results: result,
-            processed: sanitizedEmails.length,
-            user_id: req.apiUser.id
-        });
+        // Get batch status
+        const [ok, status] = await db_getBatchStatus(batchId, 'deliverable');
+        if (!ok) return res.status(HttpStatus.FAILED_STATUS).send("Failed to get batch status");
+        return res.status(HttpStatus.SUCCESS_STATUS).json({ status });
+
+    } catch (err) {
+        console.log("MTE = ", err);
+        return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+    }
+}
+
+async function getCatchallBatchStatus(req, res) {
+    try {
+        const { batchId } = req.params;
+
+        // Get batch status
+        const [ok, status] = await db_getBatchStatus(batchId, 'catchall');
+        if (!ok) return res.status(HttpStatus.FAILED_STATUS).send("Failed to get batch status");
+        return res.status(HttpStatus.SUCCESS_STATUS).json({ status });
+
+    } catch (err) {
+        console.log("MTE = ", err);
+        return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+    }
+}
+
+async function downloadDeliverableBatchResults(req, res) {
+    try {
+        const { batchId } = req.params;
+
+        // Get batch results
+        const [ok, results] = await db_downloadBatchResults(batchId, 'deliverable');
+        if (!ok) return res.status(HttpStatus.FAILED_STATUS).send("Failed to get batch results");
+        return res.status(HttpStatus.SUCCESS_STATUS).json({ results });
+
+    } catch (err) {
+        console.log("MTE = ", err);
+        return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+    }
+}
+
+async function downloadCatchallBatchResults(req, res) {
+    try {
+        const { batchId } = req.params;
+
+        // Get batch results
+        const [ok, results] = await db_downloadBatchResults(batchId, 'catchall');
+        if (!ok) return res.status(HttpStatus.FAILED_STATUS).send("Failed to get batch results");
+        return res.status(HttpStatus.SUCCESS_STATUS).json({ results });
 
     } catch (err) {
         console.log("MTE = ", err);
@@ -149,5 +129,9 @@ async function validateCatchall(req, res) {
 module.exports = {
     getCredits,
     validateEmails,
-    validateCatchall
+    validateCatchall,
+    getDeliverableBatchStatus,
+    getCatchallBatchStatus,
+    downloadDeliverableBatchResults,
+    downloadCatchallBatchResults
 }; 

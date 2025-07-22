@@ -1,0 +1,399 @@
+// Dependencies
+const knex = require('knex')(require('../knexfile.js').development);
+
+// Util Imports
+const { stripEmailModifiers } = require('../utils/processEmails.js');
+
+// Function Imports
+const {
+    getBatchTableName,
+    getResultsTableName,
+    getBouncerEmailTableName,
+    getEmailBatchAssociationTableName
+} = require('../routes/v2_batches/funs_db_utils.js');
+
+// Helper Functions
+
+// ==========================================
+// 1. GREEDY BATCH CREATION FUNCTIONS
+// ==========================================
+
+/**
+ * Count current outstanding bouncer batches and return available capacity for multi-batch creation
+ * @param {string} check_type - 'deliverable' or 'catchall'
+ * @returns {[boolean, number, number]} - [success, current_count, available_capacity]
+ */
+async function db_getOutstandingBouncerBatchCount(check_type) {
+    // Get table name
+    const batch_table = getBatchTableName(check_type);
+    if (!batch_table) return [false, 0, 0];
+
+    // Get current count
+    let err_code;
+    const result = await knex(batch_table)
+        .countDistinct('bouncer_batch_id as count')
+        .where('status', 'processing')
+        .whereNotNull('bouncer_batch_id')
+        .catch((err) => { if (err) err_code = err.code });
+    if (err_code) return [false, 0, 0];
+
+    // Get available capacity
+    const current_count = parseInt(result[0].count) || 0;
+    const available_capacity = Math.max(0, 15 - current_count);
+
+    // Return
+    return [true, current_count, available_capacity];
+}
+
+/**
+ * Greedily collect up to 10k emails from multiple user batches, ordered by timestamp (FIFO), with user batch splitting support
+ * @param {string} check_type - 'deliverable' or 'catchall'
+ * @param {number} max_emails - Maximum emails to collect (default 10000)
+ * @returns {[boolean, Array]} - [success, emails_data] where emails_data contains {email_global_id, email_stripped, user_batch_id}
+ */
+async function db_getEmailsForGreedyBatch(check_type, max_emails = 10000) {
+    // Get table names
+    const batch_table = getBatchTableName(check_type);
+    const batch_email_table = getEmailBatchAssociationTableName(check_type);
+    if (!batch_table || !batch_email_table) return [false, []];
+
+    // Get emails
+    let err_code;
+    const emails = await knex(batch_email_table + ' as bed')
+        .join('Emails_Global as eg', 'bed.email_global_id', 'eg.global_id')
+        .join(batch_table + ' as bd', 'bed.batch_id', 'bd.id')
+        .select(
+            'eg.global_id as email_global_id',
+            'eg.email_stripped',
+            'bed.batch_id as user_batch_id',
+            'bd.new_verifications as user_batch_total',
+            'bd.created_ts'
+        )
+        .where('bd.bouncer_batch_id', null)
+        .where('bd.new_verifications', '>', 0)
+        .where('bd.status', 'queued')
+        .where('bed.used_cached', 0)
+        .where('bed.did_complete', 0)
+        .orderBy('bd.created_ts', 'asc')
+        .orderBy('bed.email_global_id', 'asc')
+        .limit(max_emails)
+        .catch((err) => { if (err) err_code = err.code });
+    if (err_code) return [false, []];
+
+    // Return
+    return [true, emails || []];
+}
+
+/**
+ * Assign bouncer_batch_id to multiple user batches and create email tracking
+ * @param {string} bouncer_batch_id - ID from bouncer API
+ * @param {Array} batch_assignments - [{user_batch_id, email_global_ids, is_partial}]
+ * @param {string} check_type - 'deliverable' or 'catchall'
+ * @returns {[boolean, number]} - [success, affected_user_batches_count]
+ */
+async function db_assignBouncerBatchId(bouncer_batch_id, batch_assignments, check_type) {
+    // Get table names
+    const batch_table = getBatchTableName(check_type);
+    const bouncer_email_table = getBouncerEmailTableName(check_type);
+    if (!batch_table || !bouncer_email_table) return [false, 0];
+
+    // Create transaction
+    const trx = await knex.transaction();
+    try {
+        let affected_batches = 0;
+
+        // Process each batch assignment (in order)
+        for (const assignment of batch_assignments) {
+            const { user_batch_id, email_global_ids } = assignment;
+
+            // 1. Update user batch with bouncer_batch_id and set status to "processing"
+            await trx(batch_table)
+                .where('id', user_batch_id)
+                .update({
+                    bouncer_batch_id: bouncer_batch_id,
+                    status: 'processing'
+                });
+
+            // Increment affected batches
+            affected_batches++;
+
+            // 2. Create email tracking entries (for each email)
+            const tracking_entries = email_global_ids.map(email_global_id => ({
+                bouncer_batch_id: bouncer_batch_id,
+                email_global_id: email_global_id,
+                user_batch_id: user_batch_id
+            }));
+
+            // Insert email tracking entries
+            await trx(bouncer_email_table).insert(tracking_entries);
+
+            // 3. Handle partial batches - update new_verifications count if needed
+            // For now, assume all selected emails are processed (can be enhanced later)
+            // TODO: Implement partial batch handling
+        }
+
+        // Commit transaction
+        await trx.commit();
+
+        // Return
+        return [true, affected_batches];
+
+    } catch (err) {
+        // Rollback transaction
+        await trx.rollback();
+        return [false, 0];
+    }
+}
+
+// ==========================================
+// 2. STATUS CHECK FUNCTIONS
+// ==========================================
+
+/**
+ * Get ALL bouncer_batch_ids that need status checking
+ * @param {string} check_type - 'deliverable' or 'catchall'
+ * @returns {[boolean, Array]} - [success, bouncer_batch_ids_array]
+ */
+async function db_getOutstandingBouncerBatches(check_type) {
+    // Get table name
+    const batch_table = getBatchTableName(check_type);
+    if (!batch_table) return [false, []];
+
+    // Get bouncer batch ids
+    let err_code;
+    const result = await knex(batch_table)
+        .distinct('bouncer_batch_id')
+        .where('status', 'processing')
+        .whereNotNull('bouncer_batch_id')
+        .catch((err) => { if (err) err_code = err.code });
+    if (err_code) return [false, []];
+
+    // Return (flat array of bouncer batch id's)
+    const bouncer_batch_ids = result.map(row => row.bouncer_batch_id);
+    return [true, bouncer_batch_ids];
+}
+
+/**
+ * Mark ALL user batches with this bouncer_batch_id as failed
+ * @param {string} bouncer_batch_id - ID from bouncer API
+ * @param {string} check_type - 'deliverable' or 'catchall'
+ * @returns {[boolean, number]} - [success, affected_count]
+ */
+async function db_markBouncerBatchFailed(bouncer_batch_id, check_type) {
+    // Get table name
+    const batch_table = getBatchTableName(check_type);
+    if (!batch_table) return [false, 0];
+
+    // Mark as failed
+    let err_code;
+    const result = await knex(batch_table)
+        .where('bouncer_batch_id', bouncer_batch_id)
+        .update({ status: 'failed' })
+        .catch((err) => { if (err) err_code = err.code });
+    if (err_code) return [false, 0];
+
+    // Return
+    return [true, result || 0];
+}
+
+// ==========================================
+// 3. RESULT PROCESSING FUNCTIONS
+// ==========================================
+
+/**
+ * Process bouncer results using email stripping, update global results, complete user batches
+ * @param {string} bouncer_batch_id - ID from bouncer API
+ * @param {Array} results_array - Results from bouncer API
+ * @param {string} check_type - 'deliverable' or 'catchall'
+ * @returns {[boolean, number]} - [success, processed_count]
+ */
+async function db_processBouncerResults(bouncer_batch_id, results_array, check_type) {
+    let err_code;
+
+    // Get table names
+    const batch_table = getBatchTableName(check_type);
+    const results_table = getResultsTableName(check_type);
+    const bouncer_email_table = getBouncerEmailTableName(check_type);
+    const batch_email_table = getEmailBatchAssociationTableName(check_type);
+
+    // Check if table names are valid
+    if (!batch_table || !results_table || !bouncer_email_table || !batch_email_table) return [false, 0];
+
+    // 1. Retrieve all global email ID's (& user batch ID's) for results
+    const stripped_emails = results_array.map(result => stripEmailModifiers(result.email));
+    const email_ids = await knex('Emails_Global').join(
+        bouncer_email_table,
+        'Emails_Global.global_id',
+        `${bouncer_email_table}.email_global_id`
+    ).select(
+        'Emails_Global.global_id',
+        'Emails_Global.email_stripped',
+        `${bouncer_email_table}.user_batch_id`
+    ).where(
+        `${bouncer_email_table}.bouncer_batch_id`, bouncer_batch_id
+    ).whereIn(
+        'Emails_Global.email_stripped', stripped_emails
+    ).catch((err)=>{if (err) err_code = err.code});
+    if (err_code) return [false, 0];
+
+    // Construct dict for fast lookup
+    const email_ids_dict = {};
+    for (const email_id of email_ids) {
+        email_ids_dict[email_id.email_stripped] = {
+            global_id: email_id.global_id,
+            user_batch_id: email_id.user_batch_id
+        };
+    }
+
+    // Create global results update array
+    let global_results_update_array = [];
+    for (const result of results_array) {
+        const curr_stripped_email = stripEmailModifiers(result.email);
+        const curr_global_id = email_ids_dict[curr_stripped_email].global_id;
+
+        // Construct update object
+        let update_object = {
+            'email_global_id': curr_global_id,
+        }
+        switch (check_type) {
+            case 'deliverable':
+                update_object.status = result.status || 'unknown';
+                update_object.reason = result.reason || 'unknown';
+                update_object.is_catchall = result.is_catchall || 0;
+                update_object.score = result.score || 0;
+                break;
+            case 'catchall':
+                update_object.toxicity = result.toxicity || 0;
+                break;
+            default:
+                break;
+        }
+
+        // Add to array
+        global_results_update_array.push(update_object);
+    }
+
+    // Update global results
+    await knex(results_table)
+        .insert(global_results_update_array)
+        .onConflict()
+        .merge()
+        .catch((err)=>{if (err) err_code = err.code});
+    if (err_code) return [false, 0];
+
+    // Mark emails as processed in batch associations
+    await knex(batch_email_table).whereIn(
+        'email_global_id', global_results_update_array.map(result => result.email_global_id)
+    ).update({
+        did_complete: 1
+    }).catch((err)=>{if (err) err_code = err.code});
+    if (err_code) return [false, 0];
+
+    // Complete user batches (if all emails are processed)
+    const incomplete_batches = await knex(batch_table).join(
+        batch_email_table, `${batch_email_table}.batch_id`, `${batch_table}.id`
+    ).where({
+        [`${batch_table}.bouncer_batch_id`]: bouncer_batch_id,
+        [`${batch_table}.status`]: 'processing',
+        [`${batch_email_table}.did_complete`]: 0
+    }).select(
+        `${batch_email_table}.batch_id`,
+    ).distinct(
+        `${batch_email_table}.batch_id`
+    ).catch((err)=>{if (err) err_code = err.code});
+    if (err_code) return [false, 0];
+
+    // Update status to "completed" for newly -completed batches
+    await knex(batch_table).where({
+        [`${batch_table}.bouncer_batch_id`]: bouncer_batch_id,
+        [`${batch_table}.status`]: 'processing',
+    }).whereNotIn(
+        'id', incomplete_batches.map((b) => b.batch_id)
+    ).update({
+        status: 'completed',
+        completed_ts: knex.fn.now()
+    }).catch((err)=>{if (err) err_code = err.code});
+    if (err_code) return [false, 0];
+
+    // Return
+    return [true, global_results_update_array.length];
+}
+
+// ==========================================
+// 4. RATE LIMITING FUNCTIONS
+// ==========================================
+
+/**
+ * Check if we can make API request without exceeding rate limits (200/min - 180 buffer = 20 safety margin)
+ * @param {string} verification_type - 'deliverable' or 'catchall'
+ * @param {string} request_type - 'create_batch', 'check_status', 'download_results'
+ * @param {number} buffer_requests - Buffer to leave (default 180)
+ * @returns {[boolean, boolean, number]} - [success, can_make_request, current_count]
+ */
+async function db_checkRateLimit(verification_type, request_type, buffer_requests = 180) {
+    let err_code;
+
+    // Get current count
+    const result = await knex('Rate_Limit_Tracker').sum(
+        'request_count as total_requests'
+    ).where({
+        'verification_type': verification_type,
+        'request_type': request_type
+    }).where(
+        'window_start', '>=', knex.raw('DATE_SUB(NOW(), INTERVAL 1 MINUTE)')
+    ).catch((err) => { if (err) err_code = err.code });
+    if (err_code) return [false, false, 0];
+
+    // Get safety limit
+    const current_count = parseInt(result[0].total_requests) || 0;
+    const safety_limit = 200 - buffer_requests; // 20 requests with 180 buffer
+    const can_make_request = (current_count + 1) <= safety_limit;
+
+    // Return
+    return [true, can_make_request, current_count];
+}
+
+/**
+ * Record API request for rate limiting tracking
+ * @param {string} verification_type - 'deliverable' or 'catchall'
+ * @param {string} request_type - 'create_batch', 'check_status', 'download_results'
+ * @param {number} request_count - Number of requests to record (default 1)
+ * @returns {[boolean]} - [success]
+ */
+async function db_recordRateLimit(verification_type, request_type, request_count = 1) {
+    let err_code;
+
+    // Record request
+    await knex('Rate_Limit_Tracker').insert({
+        verification_type: verification_type,
+        request_type: request_type,
+        request_count: request_count,
+        window_start: knex.fn.now()
+    }).catch((err) => { if (err) err_code = err.code });
+    if (err_code) return [false];
+
+    // Return
+    return [true];
+}
+
+
+// ==========================================
+// EXPORTS
+// ==========================================
+module.exports = {
+    // Greedy Batch Creation
+    db_getOutstandingBouncerBatchCount,
+    db_getEmailsForGreedyBatch,
+    db_assignBouncerBatchId,
+    
+    // Status Checks (Simplified)
+    db_getOutstandingBouncerBatches,
+    db_markBouncerBatchFailed,
+    
+    // Result Processing (Fire-and-Forget)
+    db_processBouncerResults,
+    
+    // Rate Limiting
+    db_checkRateLimit,
+    db_recordRateLimit,
+};

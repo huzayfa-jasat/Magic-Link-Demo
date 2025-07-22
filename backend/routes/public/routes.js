@@ -9,24 +9,32 @@ const { checkApiKey } = require('./middleware.js');
 const {
     getCredits,
     validateEmails,
-    validateCatchall
+    validateCatchall,
+    getDeliverableBatchStatus,
+    getCatchallBatchStatus,
+    downloadDeliverableBatchResults,
+    downloadCatchallBatchResults
 } = require('./controller.js');
 
-// ------------
+// ------------------
 // Public API Routes
-// ------------
+// ------------------
 
 // Apply API key middleware to all routes
 publicRouter.use(checkApiKey);
 
-// Get user credits
+// General routes
 publicRouter.get('/credits', getCredits);
 
-// Validate emails for valid/invalid status
-publicRouter.post('/validate', validateEmails);
+// Deliverability/Verify routes
+publicRouter.post('/verify/bulk', validateEmails);
+publicRouter.get('/verify/batch/:batchId/status', getDeliverableBatchStatus);
+publicRouter.get('/verify/batch/:batchId/results', downloadDeliverableBatchResults);
 
-// Validate emails for catchall detection
-publicRouter.post('/catchall', validateCatchall);
+// Catchall routes
+publicRouter.post('/catchall/bulk', validateCatchall);
+publicRouter.get('/catchall/batch/:batchId/status', getCatchallBatchStatus);
+publicRouter.get('/catchall/batch/:batchId/results', downloadCatchallBatchResults);
 
-// Export routes
+// Export
 module.exports = publicRouter; 

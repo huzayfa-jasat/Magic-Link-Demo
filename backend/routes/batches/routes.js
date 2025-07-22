@@ -9,7 +9,7 @@ const {
 const {
 	checkValidCheckType,
 	checkUserBatchAccess
-} = require('./funs_middleware.js');
+} = require('./middleware.js');
 
 // Controller Imports
 const {

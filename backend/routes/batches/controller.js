@@ -9,6 +9,7 @@ const {
 	db_getEmailGlobalIds,
 	db_getBatchDetails,
 	db_getBatchResults,
+	db_checkAndDeductCredits,
 	db_removeBatch
 } = require('./funs_db.js');
 
@@ -102,6 +103,10 @@ async function createBatch(req, res) {
 			return acc;
 		}, {});
 
+		// Check & deduct credits
+		const ok_credits = await db_checkAndDeductCredits(req.user.id, checkType, emails_stripped.length);
+		if (!ok_credits) return returnBadRequest(res, 'Insufficient credits');
+
 		// Add global emails
 		const ok_global_insert = await db_addGlobalEmails(Object.keys(emails_stripped));
 		if (!ok_global_insert) return returnBadRequest(res, 'Failed to process emails');
@@ -114,10 +119,8 @@ async function createBatch(req, res) {
 		const [batch_ok, new_batch_id, fresh_email_ids] = await db_createBatch(req.user.id, checkType, title, global_emails);
 		if (!batch_ok) return returnBadRequest(res, 'Failed to create batch');
 
-		// TODO: Queue new emails for external verification (ignore for now)
-
 		// Return response
-		return res.status(HttpStatus.SUCCESS_STATUS).json({ id: new_batch_id });
+		return res.status(HttpStatus.SUCCESS_STATUS).json({ id: new_batch_id, count: emails_stripped.length });
 
 	} catch (err) {
 		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);

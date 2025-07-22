@@ -18,11 +18,8 @@ class QueueManager {
 
             // Setup Redis connection
             this.redisConnection = {
-                host: process.env.REDIS_HOST || 'localhost',
-                port: process.env.REDIS_PORT || 6379,
-                password: process.env.REDIS_PASSWORD || undefined,
-                // Use REDIS_URL if provided
-                ...(process.env.REDIS_URL && { url: process.env.REDIS_URL })
+                host: process.env.CACHE_SERVER_HOSTNAME || 'localhost',
+                port: process.env.CACHE_SERVER_PORT || 6379,
             };
 
             // Create main queue with simplified configuration
@@ -43,9 +40,6 @@ class QueueManager {
 
             // Schedule repeating jobs
             await this.scheduleJobs();
-
-            // Setup graceful shutdown handlers
-            this.setupGracefulShutdown();
 
             console.log('Bouncer Queue Manager initialized successfully');
             return true;
@@ -104,12 +98,14 @@ class QueueManager {
     }
 
     /**
-     * Schedule repeating jobs as defined in implementation plan
+     * Schedule repeating jobs
+     * - Batch Creator - Every 5 seconds for both deliverable and catchall
+     * - Status Checker - Every 30 seconds for both deliverable and catchall
      */
     async scheduleJobs() {
         console.log('Scheduling repeating jobs...');
 
-        // Batch Creator - Every 5 seconds for both deliverable and catchall
+        // Batch Creator
         await this.queue.add('greedy_batch_creator_deliverable', 
             { check_type: 'deliverable' }, 
             {
@@ -126,7 +122,7 @@ class QueueManager {
             }
         );
 
-        // Status Checker - Every 30 seconds for both types
+        // Status Checker
         await this.queue.add('status_checker_deliverable', 
             { check_type: 'deliverable' }, 
             {
@@ -146,39 +142,6 @@ class QueueManager {
         console.log('All repeating jobs scheduled successfully');
     }
 
-    /**
-     * Setup graceful shutdown handlers
-     */
-    setupGracefulShutdown() {
-        const shutdown = async (signal) => {
-            if (this.isShuttingDown) return;
-            this.isShuttingDown = true;
-
-            console.log(`\nReceived ${signal}. Gracefully shutting down queue system...`);
-
-            try {
-                // Close all workers gracefully
-                await Promise.all(this.workers.map(worker => worker.close()));
-                console.log('All workers closed');
-
-                // Close queue
-                if (this.queue) {
-                    await this.queue.close();
-                    console.log('Queue closed');
-                }
-
-                console.log('Queue Manager shutdown complete');
-                process.exit(0);
-
-            } catch (error) {
-                console.error('Error during shutdown:', error);
-                process.exit(1);
-            }
-        };
-
-        process.on('SIGTERM', () => shutdown('SIGTERM'));
-        process.on('SIGINT', () => shutdown('SIGINT'));
-    }
 
     /**
      * Shutdown method for programmatic shutdown
@@ -192,10 +155,7 @@ class QueueManager {
             await Promise.all(this.workers.map(worker => worker.close()));
             
             // Close queue
-            if (this.queue) {
-                await this.queue.close();
-            }
-
+            if (this.queue) await this.queue.close();
             console.log('Queue Manager shut down successfully');
             return true;
 

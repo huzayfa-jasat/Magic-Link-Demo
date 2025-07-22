@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "bullmq": "^5.56.5",
-    "redis": "^5.6.0"
-  }
-}

@@ -1,15 +1,16 @@
-// Dependencies
+// API Imports
 const BouncerAPI = require('../../external_apis/bouncer');
 
-// Database functions (will be implemented)
+// Function Imports
 const {
     db_getOutstandingBouncerBatches,
     db_markBouncerBatchFailed,
     db_processBouncerResults,
     db_checkRateLimit,
     db_recordRateLimit
-} = require('../../routes/v2_batches/funs_db_queue');
+} = require('../funs_db.js');
 
+// Status Checker Worker
 class StatusCheckerWorker {
     constructor() {
         this.bouncerAPI = new BouncerAPI();
@@ -71,39 +72,29 @@ class StatusCheckerWorker {
             return;
         }
 
+        // Check batch status (& download results if completed)
         let isCompleted = false;
-        let batchFailed = false;
-
         try {
-            // Check batch status via Bouncer API
-            if (check_type === 'deliverable') {
-                isCompleted = await this.bouncerAPI.checkDeliverabilityBatch(bouncerBatchId);
-            } else if (check_type === 'catchall') {
-                isCompleted = await this.bouncerAPI.checkCatchallBatch(bouncerBatchId);
-            } else {
-                throw new Error(`Invalid check_type: ${check_type}`);
-            }
+            if (check_type === 'deliverable') isCompleted = await this.bouncerAPI.checkDeliverabilityBatch(bouncerBatchId);
+            else if (check_type === 'catchall') isCompleted = await this.bouncerAPI.checkCatchallBatch(bouncerBatchId);
+            else throw new Error(`Invalid check_type: ${check_type}`);
 
             // Record rate limit usage
             await db_recordRateLimit(check_type, 'check_status');
+
+            // Log status
+            if (!isCompleted) console.log(`⏳ Batch ${bouncerBatchId} still processing`);
+            else console.log(`✅ Batch ${bouncerBatchId} is completed, downloading results immediately`);
+
+            // Download results
+            await this.downloadAndProcessResults(bouncerBatchId, check_type);
 
         } catch (error) {
             console.error(`❌ Failed to check status for batch ${bouncerBatchId}:`, error.message);
             
             // Mark batch as failed if API call fails
-            batchFailed = true;
             const [markFailedSuccess] = await db_markBouncerBatchFailed(bouncerBatchId, check_type);
-            if (markFailedSuccess) {
-                console.log(`💀 Marked batch ${bouncerBatchId} as failed`);
-            }
-            return;
-        }
-
-        if (isCompleted) {
-            console.log(`✅ Batch ${bouncerBatchId} is completed, downloading results immediately`);
-            await this.downloadAndProcessResults(bouncerBatchId, check_type);
-        } else {
-            console.log(`⏳ Batch ${bouncerBatchId} still processing`);
+            if (markFailedSuccess) console.log(`💀 Marked batch ${bouncerBatchId} as failed`);
         }
     }
 
@@ -123,41 +114,31 @@ class StatusCheckerWorker {
 
             // Download results via Bouncer API
             let results;
-            if (check_type === 'deliverable') {
-                results = await this.bouncerAPI.getDeliverabilityResults(bouncerBatchId);
-            } else if (check_type === 'catchall') {
-                results = await this.bouncerAPI.getCatchallResults(bouncerBatchId);
-            } else {
-                throw new Error(`Invalid check_type: ${check_type}`);
-            }
+            if (check_type === 'deliverable') results = await this.bouncerAPI.getDeliverabilityResults(bouncerBatchId);
+            else if (check_type === 'catchall') results = await this.bouncerAPI.getCatchallResults(bouncerBatchId);
+            else throw new Error(`Invalid check_type: ${check_type}`);
 
             // Record rate limit usage
             await db_recordRateLimit(check_type, 'download_results');
 
-            console.log(`📊 Downloaded ${results.length} results for batch ${bouncerBatchId}`);
-
             // Process results immediately (fire-and-forget)
+            console.log(`📊 Downloaded ${results.length} results for batch ${bouncerBatchId}`);
             const [processSuccess, processedCount] = await db_processBouncerResults(
                 bouncerBatchId, 
                 results, 
                 check_type
             );
 
-            if (processSuccess) {
-                console.log(`✅ Processed ${processedCount} results for batch ${bouncerBatchId}`);
-                console.log(`🎯 Batch ${bouncerBatchId} fully completed and processed`);
-            } else {
-                console.error(`❌ Failed to process results for batch ${bouncerBatchId}`);
-            }
+            // Log status
+            if (processSuccess) console.log(`✅ Processed ${processedCount} results for batch ${bouncerBatchId}`);
+            else console.error(`❌ Failed to process results for batch ${bouncerBatchId}`);
 
         } catch (error) {
             console.error(`💥 Error downloading/processing results for ${bouncerBatchId}:`, error.message);
             
             // Mark batch as failed if result processing fails
             const [markFailedSuccess] = await db_markBouncerBatchFailed(bouncerBatchId, check_type);
-            if (markFailedSuccess) {
-                console.log(`💀 Marked batch ${bouncerBatchId} as failed due to result processing error`);
-            }
+            if (markFailedSuccess) console.log(`💀 Marked batch ${bouncerBatchId} as failed due to result processing error`);
         }
     }
 
@@ -165,11 +146,10 @@ class StatusCheckerWorker {
      * Handle job filtering - only process status_checker jobs
      */
     static async processJob(job) {
-        // Only handle status checker jobs
-        if (!job.name.startsWith('status_checker_')) {
-            return; // Skip other job types
-        }
+        // Skip other job types
+        if (!job.name.startsWith('status_checker_')) return;
 
+        // Process job
         const worker = new StatusCheckerWorker();
         return await worker.processJob(job);
     }

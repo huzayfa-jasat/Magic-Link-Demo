@@ -1,45 +1,38 @@
-// Dependencies
-const knex = require('knex')(require('../../knexfile.js').development);
+// Type Imports
 const HttpStatus = require('../../types/HttpStatus.js');
+
+// Function Imports
+const { db_getUserIdFromApiKey } = require('./funs_db.js');
+
+// Helper Functions
+function sendApiKeyError(res) {
+    return res.status(HttpStatus.FAILED_STATUS).json({
+        error: 'Missing or invalid API key',
+        code: 'INVALID_API_KEY'
+    });
+}
 
 /**
  * Check API key middleware
  * Validates the x-api-key header against the database
  */
 async function checkApiKey(req, res, next) {
-    let err_code;
+    // Get API key from header
     const apiKey = req.header('x-api-key');
-    
-    if (!apiKey) {
-        return res.status(HttpStatus.FAILED_STATUS).json({
-            error: 'Missing or invalid API key',
-            code: 'INVALID_API_KEY'
-        });
-    }
+    if (!apiKey) return sendApiKeyError(res);
 
-    // Check if API key exists in database
-    const user = await knex('Users')
-        .where('api_key', apiKey)
-        .select('id', 'email')
-        .first()
-        .catch((err) => { if (err) err_code = err.code });
+    // Get user ID from API key
+    const [ok, user_id] = await db_getUserIdFromApiKey(apiKey);
+    if (!ok) return sendApiKeyError(res);
 
-    if (err_code || !user) {
-        return res.status(HttpStatus.FAILED_STATUS).json({
-            error: 'Missing or invalid API key',
-            code: 'INVALID_API_KEY'
-        });
-    }
+    // Attach user info to request
+    req.apiUser = { user_id };
 
-    // Attach user info to request for use in controllers
-    req.apiUser = {
-        id: user.id,
-        email: user.email
-    };
-
+    // Continue
     return next();
 }
 
+// Exports
 module.exports = {
     checkApiKey
-}; 
+};

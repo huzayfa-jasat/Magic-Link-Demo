@@ -1,15 +1,16 @@
-// Dependencies
+// API Imports
 const BouncerAPI = require('../../external_apis/bouncer');
 
-// Database functions (will be implemented)
+// Function Imports
 const {
     db_getOutstandingBouncerBatchCount,
     db_getEmailsForGreedyBatch,
     db_assignBouncerBatchId,
     db_checkRateLimit,
     db_recordRateLimit
-} = require('../../routes/v2_batches/funs_db_queue');
+} = require('../funs_db.js');
 
+// Batch Creator Worker
 class BatchCreatorWorker {
     constructor() {
         this.bouncerAPI = new BouncerAPI();
@@ -72,14 +73,10 @@ class BatchCreatorWorker {
 
                     // Create bouncer batch via API
                     let bouncerBatchId;
-                    if (check_type === 'deliverable') {
-                        bouncerBatchId = await this.bouncerAPI.createDeliverabilityBatch(emailList);
-                    } else if (check_type === 'catchall') {
-                        bouncerBatchId = await this.bouncerAPI.createCatchallBatch(emailList);
-                    } else {
-                        throw new Error(`Invalid check_type: ${check_type}`);
-                    }
-
+                    if (check_type === 'deliverable') bouncerBatchId = await this.bouncerAPI.createDeliverabilityBatch(emailList);
+                    else if (check_type === 'catchall') bouncerBatchId = await this.bouncerAPI.createCatchallBatch(emailList);
+                    else throw new Error(`Invalid check_type: ${check_type}`);
+                    
                     console.log(`🎯 Created bouncer batch ${bouncerBatchId} for ${check_type}`);
 
                     // Prepare batch assignments for database update
@@ -156,11 +153,10 @@ class BatchCreatorWorker {
      * Handle job filtering - only process greedy_batch_creator jobs
      */
     static async processJob(job) {
-        // Only handle greedy batch creator jobs
-        if (!job.name.startsWith('greedy_batch_creator_')) {
-            return; // Skip other job types
-        }
+        // Skip other job types
+        if (!job.name.startsWith('greedy_batch_creator_')) return;
 
+        // Process job
         const worker = new BatchCreatorWorker();
         return await worker.processJob(job);
     }
