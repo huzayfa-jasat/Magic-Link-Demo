@@ -19,9 +19,11 @@ export default function useBatchData(id) {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [resultsLoading, setResultsLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   
   // Debounced search query (0.5 second delay as per user preference)
@@ -42,10 +44,15 @@ export default function useBatchData(id) {
 
   // Fetch paginated results
   const fetchResults = useCallback(
-    async (page, search = "") => {
+    async (page, search = "", append = false) => {
       if (!details) return;
 
-      setResultsLoading(true);
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setResultsLoading(true);
+      }
+      
       try {
         const response = await getVerifyBatchResults(
           id,
@@ -57,33 +64,54 @@ export default function useBatchData(id) {
         );
         
         const resultData = response.data.results || [];
-        setResults(resultData);
+        
+        if (append) {
+          setResults(prev => [...prev, ...resultData]);
+        } else {
+          setResults(resultData);
+        }
         
         // Use metadata from new API for pagination
         if (response.data.metadata) {
           setTotalPages(response.data.metadata.total_pages);
+          setHasMore(response.data.metadata.has_more);
         } else {
           // Fallback calculation
           setTotalPages(Math.ceil(details.emails / ITEMS_PER_PAGE));
+          setHasMore(page < Math.ceil(details.emails / ITEMS_PER_PAGE));
         }
         
         return true;
       } catch (err) {
         setError("Failed to load results");
         console.error("Error fetching results:", err);
-        setResults([]);
+        if (!append) {
+          setResults([]);
+        }
         return false;
       } finally {
         setResultsLoading(false);
+        setLoadingMore(false);
         setLoading(false);
       }
     },
     [id, details]
   );
 
-  // Reset page when search changes
+  // Load more results for infinite scroll
+  const loadMore = useCallback(() => {
+    if (!loadingMore && hasMore && !resultsLoading) {
+      const nextPage = currentPage + 1;
+      setCurrentPage(nextPage);
+      fetchResults(nextPage, debouncedSearchQuery, true);
+    }
+  }, [currentPage, debouncedSearchQuery, fetchResults, hasMore, loadingMore, resultsLoading]);
+
+  // Reset page and results when search changes
   useEffect(() => {
     setCurrentPage(1);
+    setResults([]);
+    setHasMore(true);
   }, [debouncedSearchQuery]);
 
   // Load details on mount
@@ -135,6 +163,8 @@ export default function useBatchData(id) {
     results,
     loading,
     resultsLoading,
+    loadingMore,
+    hasMore,
     error,
     currentPage,
     totalPages,
@@ -144,6 +174,7 @@ export default function useBatchData(id) {
     // Handlers
     setCurrentPage,
     setSearchQuery,
+    loadMore,
     
     // Functions for potential external use
     refetchDetails: fetchDetails,

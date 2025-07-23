@@ -1,5 +1,5 @@
 // Dependencies
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import Popup from "reactjs-popup";
 
@@ -32,14 +32,32 @@ export default function EmailsBatchDetailsController() {
     results,
     loading,
     resultsLoading,
+    loadingMore,
+    hasMore,
     error,
-    currentPage,
-    totalPages,
     searchQuery,
     stats,
-    setCurrentPage,
     setSearchQuery,
+    loadMore,
   } = useBatchData(id);
+
+  // Infinite scroll detection
+  useEffect(() => {
+    const handleScroll = () => {
+      if (
+        window.innerHeight + document.documentElement.scrollTop >= 
+        document.documentElement.offsetHeight - 1000 && // 1000px before bottom
+        hasMore && 
+        !loadingMore && 
+        !resultsLoading
+      ) {
+        loadMore();
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [hasMore, loadingMore, resultsLoading, loadMore]);
 
   // Export current page results to CSV
   // const handleExport = useCallback(() => {
@@ -372,38 +390,17 @@ export default function EmailsBatchDetailsController() {
         )}
       </div>
 
-      {/* Pagination controls */}
-      {totalPages > 1 && (
-        <div className={styles.pagination}>
-          <button
-            className={`${styles.paginationButton} ${
-              currentPage === 1 ? styles.paginationButtonDisabled : ""
-            }`}
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-          >
-            Previous
-          </button>
-          {[...Array(totalPages)].map((_, i) => (
-            <button
-              key={i}
-              className={`${styles.paginationButton} ${
-                currentPage === i + 1 ? styles.paginationButtonActive : ""
-              }`}
-              onClick={() => setCurrentPage(i + 1)}
-            >
-              {i + 1}
-            </button>
-          ))}
-          <button
-            className={`${styles.paginationButton} ${
-              currentPage === totalPages ? styles.paginationButtonDisabled : ""
-            }`}
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </button>
+      {/* Infinite scroll loading indicator */}
+      {loadingMore && (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+          <LoadingCircle relative={true} />
+        </div>
+      )}
+      
+      {/* End of results indicator */}
+      {!hasMore && results.length > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem', color: '#666' }}>
+          <p>No more results to load</p>
         </div>
       )}
     </div>
