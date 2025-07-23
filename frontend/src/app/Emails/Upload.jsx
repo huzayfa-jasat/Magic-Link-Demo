@@ -109,6 +109,8 @@ export default function EmailsUploadController() {
     setError(null);
 
     try {
+      // TODO: New batches endpoint
+
       const response = await verifyImportEmails(emails, null, file.name);
       const requestId = response.data.data;
       navigate(`/${requestId}/details`);

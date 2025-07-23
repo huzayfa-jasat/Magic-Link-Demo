@@ -29,6 +29,8 @@ export default function useBatchData(id) {
   // Fetch batch details
   const fetchDetails = useCallback(async () => {
     try {
+      // TODO: New details endpoint
+
       const response = await getVerifyRequestDetails(id);
       setDetails(response.data.data);
       return true;
@@ -45,12 +47,14 @@ export default function useBatchData(id) {
       if (!details) return;
 
       try {
-        const response = await getPaginatedVerifyRequestResults(
-          id,
-          page,
-          ITEMS_PER_PAGE,
-          search
-        );
+        // TODO: New results endpoint
+
+        // const response = await getPaginatedVerifyRequestResults(
+        //   id,
+        //   page,
+        //   ITEMS_PER_PAGE,
+        //   search
+        // );
         const resultData = response.data.data || [];
         setResults(resultData);
         

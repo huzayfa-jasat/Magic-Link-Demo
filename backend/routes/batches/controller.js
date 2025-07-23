@@ -13,6 +13,11 @@ const {
 	db_removeBatch
 } = require('./funs_db.js');
 
+// External API Function Imports
+const {
+	sendLowCreditsEmail
+} = require('../../external_apis/resend.js');
+
 // Util Imports
 const {
 	removeInvalidEmails,
@@ -104,8 +109,16 @@ async function createBatch(req, res) {
 		}, {});
 
 		// Check & deduct credits
-		const ok_credits = await db_checkAndDeductCredits(req.user.id, checkType, emails_stripped.length);
+		const [ok_credits, remaining_balance] = await db_checkAndDeductCredits(req.user.id, checkType, emails_stripped.length);
 		if (!ok_credits) return returnBadRequest(res, 'Insufficient credits');
+
+		// Check if low credits email should be sent (only for deliverable checks)
+		if (checkType === 'deliverable' && remaining_balance < 1000 && req.user.email) {
+			// Send low credits notification asynchronously - don't wait for it
+			sendLowCreditsEmail(req.user.email, remaining_balance).catch(err => {
+				console.error('Failed to send low credits email:', err);
+			});
+		}
 
 		// Add global emails
 		const ok_global_insert = await db_addGlobalEmails(Object.keys(emails_stripped));

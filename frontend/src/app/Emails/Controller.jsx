@@ -17,7 +17,9 @@ export default function HomeController() {
   useEffect(() => {
     const fetchRequests = async () => {
       try {
-        const response = await listVerifyRequests();
+        // TODO: Use new batches endpoint
+        
+        // const response = await listVerifyRequests();
         setRequests(response.data.data);
         // console.log(requests);
       } catch (err) {
@@ -36,6 +38,9 @@ export default function HomeController() {
       let allResults = [];
       let page = 1;
       let done = false;
+
+      // TODO: Handle export
+      // - just download all pages & format once done
 
       while (!done) {
         const response = await exportBatchResultsCsv(

@@ -69,19 +69,24 @@ export default function EmailsBatchDetailsController() {
       let page = 1;
       let done = false;
 
+      // TODO: Handle export
+      // - just download all pages & format once done
+      // - fetch all filtered pages, then format
+
+
       // Fetch all pages of filtered results
-      while (!done) {
-        const response = await exportBatchResultsCsv(
-          id,
-          page,
-          ITEMS_PER_PAGE,
-          filter
-        );
-        const pageResults = response.data.data || [];
-        allResults = [...allResults, ...pageResults];
-        if (pageResults.length < ITEMS_PER_PAGE) done = true;
-        else page++;
-      }
+      // while (!done) {
+      //   const response = await exportBatchResultsCsv(
+      //     id,
+      //     page,
+      //     ITEMS_PER_PAGE,
+      //     filter
+      //   );
+      //   const pageResults = response.data.data || [];
+      //   allResults = [...allResults, ...pageResults];
+      //   if (pageResults.length < ITEMS_PER_PAGE) done = true;
+      //   else page++;
+      // }
 
       // Build CSV content from all filtered results
       const headers = ["Email", "Result", "Mail Server"];

@@ -4,6 +4,7 @@ const knex = require('knex')(require('../../knexfile.js').development);
 // Function Imports
 const {
 	getCreditTableName,
+	getCreditHistoryTableName,
 	getBatchTableName,
 	getResultsTableName,
 	getEmailBatchAssociationTableName
@@ -541,7 +542,7 @@ async function db_checkAndDeductCredits(user_id, check_type, num_emails) {
 	// Get table names
 	const credit_table = getCreditTableName(check_type);
 	const credit_history_table = getCreditHistoryTableName(check_type);
-	if (!credit_table || !credit_history_table) return false;
+	if (!credit_table || !credit_history_table) return [false, null];
 	
 	// Transaction to check credit balance, deduct credits, and log usage
 	// - Automatically rolls back on any error
@@ -573,8 +574,11 @@ async function db_checkAndDeductCredits(user_id, check_type, num_emails) {
 				'created_ts': new Date().toISOString()
 			});
 
-			// Transaction successful - return true
-			return true;
+			// Calculate new balance after deduction
+			const new_balance = curr_balance.current_balance - num_emails;
+
+			// Transaction successful - return true and new balance
+			return [true, new_balance];
 		});
 
 		return result;
@@ -582,7 +586,7 @@ async function db_checkAndDeductCredits(user_id, check_type, num_emails) {
 	} catch (error) {
 		// Transaction automatically rolled back on any error
 		console.error('Credit deduction transaction failed:', error.message);
-		return false;
+		return [false, null];
 	}
 }
 
