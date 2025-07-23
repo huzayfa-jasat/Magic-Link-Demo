@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import {
-  getVerifyRequestDetails,
-  getPaginatedVerifyRequestResults,
-} from "../../../api/emails";
+  getVerifyBatchDetails,
+  getVerifyBatchResults,
+} from "../../../api/batches";
 import  useDebounce  from "./useDebounce";
 
 const ITEMS_PER_PAGE = 50;
@@ -29,10 +29,8 @@ export default function useBatchData(id) {
   // Fetch batch details
   const fetchDetails = useCallback(async () => {
     try {
-      // TODO: New details endpoint
-
-      const response = await getVerifyRequestDetails(id);
-      setDetails(response.data.data);
+      const response = await getVerifyBatchDetails(id);
+      setDetails(response.data);
       return true;
     } catch (err) {
       setError("Failed to load batch details");
@@ -47,31 +45,33 @@ export default function useBatchData(id) {
       if (!details) return;
 
       try {
-        // TODO: New results endpoint
-
-        // const response = await getPaginatedVerifyRequestResults(
-        //   id,
-        //   page,
-        //   ITEMS_PER_PAGE,
-        //   search
-        // );
-        const resultData = response.data.data || [];
+        // Note: Search functionality is not available in new API
+        // Filtering by email content would need to be done client-side if needed
+        const response = await getVerifyBatchResults(
+          id,
+          page,
+          ITEMS_PER_PAGE,
+          'timehl',
+          'all'
+        );
+        
+        let resultData = response.data.results || [];
+        
+        // Apply client-side search filtering if search query exists
+        if (search && search.trim()) {
+          resultData = resultData.filter(item => 
+            item.email.toLowerCase().includes(search.toLowerCase())
+          );
+        }
+        
         setResults(resultData);
         
-        // If we're searching, calculate total pages based on whether we got full page
-        // If we got less than ITEMS_PER_PAGE, we're on the last page
-        if (search && search.trim()) {
-          if (resultData.length < ITEMS_PER_PAGE) {
-            // This is the last page for search results
-            setTotalPages(page);
-          } else {
-            // We don't know total pages yet, but there's at least one more page
-            // This is a limitation without backend total count for searches
-            setTotalPages(page + 1);
-          }
+        // Use metadata from new API for pagination
+        if (response.data.metadata) {
+          setTotalPages(response.data.metadata.total_pages);
         } else {
-          // No search - use the original total count
-          setTotalPages(Math.ceil(details.num_contacts / ITEMS_PER_PAGE));
+          // Fallback calculation
+          setTotalPages(Math.ceil(details.emails / ITEMS_PER_PAGE));
         }
         
         return true;
@@ -115,8 +115,16 @@ export default function useBatchData(id) {
   // Calculate result statistics
   const stats = (results || []).reduce(
     (acc, item) => {
-      const result = item?.result?.toLowerCase() || "pending";
-      acc[result] = (acc[result] || 0) + 1;
+      // Map new result format: 1=deliverable, 2=catchall, 0=undeliverable
+      if (item.result === 1) {
+        acc.valid = (acc.valid || 0) + 1;
+      } else if (item.result === 2) {
+        acc.catchall = (acc.catchall || 0) + 1;
+      } else if (item.result === 0) {
+        acc.invalid = (acc.invalid || 0) + 1;
+      } else {
+        acc.pending = (acc.pending || 0) + 1;
+      }
       return acc;
     },
     {
