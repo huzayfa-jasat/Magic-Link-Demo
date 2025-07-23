@@ -1,11 +1,20 @@
 import { useEffect, useState, useCallback } from "react";
 import { NavLink } from "react-router-dom";
-import { listVerifyRequests, exportBatchResultsCsv } from "../../api/emails";
+import { getBatchesList, getVerifyBatchResults } from "../../api/batches";
+import getMailServerDisplay from "./getMailServerDisplay";
 import styles from "./Emails.module.css";
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import Popup from "reactjs-popup";
 
 const ITEMS_PER_PAGE = 50;
+
+// Constants
+const FILTER_MAP = {
+  'valid': 'deliverable',
+  'invalid': 'undeliverable', 
+  'catch-all': 'catchall',
+  'all': 'all'
+};
 
 export default function HomeController() {
   const [requests, setRequests] = useState([]);
@@ -17,11 +26,8 @@ export default function HomeController() {
   useEffect(() => {
     const fetchRequests = async () => {
       try {
-        // TODO: Use new batches endpoint
-        
-        // const response = await listVerifyRequests();
-        setRequests(response.data.data);
-        // console.log(requests);
+        const response = await getBatchesList(1, 100, 'timehl', 'all', 'all');
+        setRequests(response.data.batches);
       } catch (err) {
         setError("Failed to load verify requests");
         console.error("Error fetching requests:", err);
@@ -39,33 +45,44 @@ export default function HomeController() {
       let page = 1;
       let done = false;
 
-      // TODO: Handle export
-      // - just download all pages & format once done
-
       while (!done) {
-        const response = await exportBatchResultsCsv(
+        const response = await getVerifyBatchResults(
           id,
           page,
           ITEMS_PER_PAGE,
-          filter
+          'timehl',
+          FILTER_MAP[filter] || 'all',
+          '' // No search for CSV export
         );
-        const pageResults = response.data.data || [];
+        
+        const pageResults = response.data.results || [];
         allResults = [...allResults, ...pageResults];
-        if (pageResults.length < ITEMS_PER_PAGE) done = true;
-        else page++;
+        
+        // Check if we have more pages using metadata
+        if (!response.data.metadata?.has_more) {
+          done = true;
+        } else {
+          page++;
+        }
       }
 
-      // Build and download CSV
+      // Build and download CSV - map new result format to old
       const headers = ["Email", "Result", "Mail Server"];
       const csvContent = [
         headers.join(","),
-        ...allResults.map((item) =>
-          [
+        ...allResults.map((item) => {
+          // Map result values: 1=deliverable, 2=catchall, 0=undeliverable
+          let resultText;
+          if (item.result === 1) resultText = "valid";
+          else if (item.result === 2) resultText = "catch-all";
+          else resultText = "invalid";
+          
+          return [
             item.email,
-            item.result || "pending",
-            item.mail_server || "",
-          ].join(",")
-        ),
+            resultText,
+            getMailServerDisplay(item.provider) || ""
+          ].join(",");
+        }),
       ].join("\n");
 
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -120,36 +137,45 @@ export default function HomeController() {
       <div className={styles.grid}>
         {requests.map((request, idx) => (
           <NavLink
-            key={request.request_id}
-            to={`/${request.request_id}/details`}
+            key={request.id}
+            to={`/${request.id}/details`}
             className={styles.link}
           >
             <div className={styles.card}>
               <div className={styles.cardHeader}>
                 <div className={styles.subtitle}>
-                  {request.request_type === "single"
-                    ? "Single Email"
-                    : `${request.num_contacts} Emails`}
+                  {request.title || `${request.emails} Emails`}
                 </div>
-                <div
-                  className={`${styles.statusBadge} ${
-                    request.num_processed === request.num_contacts
-                      ? styles.statusComplete
-                      : request.num_processed > 0
-                      ? styles.statusProcessing
-                      : styles.statusPending
-                  }`}
-                >
-                  {request.num_processed === request.num_contacts
-                    ? "Complete"
-                    : request.num_processed > 0
-                    ? "Processing"
-                    : "Pending"}
+                <div style={{display: 'flex', gap: '0.5rem'}}>
+                  <div
+                    className={`${styles.statusBadge} ${
+                      request.category === "deliverable"
+                        ? styles.statusComplete
+                        : styles.statusProcessing
+                    }`}
+                  >
+                    {request.category === "deliverable" ? "Verify" : "Catchall"}
+                  </div>
+                  <div
+                    className={`${styles.statusBadge} ${
+                      request.status === "completed"
+                        ? styles.statusComplete
+                        : request.status === "processing"
+                        ? styles.statusProcessing
+                        : styles.statusPending
+                    }`}
+                  >
+                    {request.status === "completed"
+                      ? "Complete"
+                      : request.status === "processing"
+                      ? "Processing"
+                      : "Pending"}
+                  </div>
                 </div>
               </div>
               <div className={styles.stats}>
                 <div className={styles.stat}>
-                  <span className={styles.statLabel}>Valid</span>
+                  <span className={styles.statLabel}>Total</span>
                   <span className={styles.statValue}>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -166,36 +192,13 @@ export default function HomeController() {
                         d="m15.75 9.5-5 5-2.5-2.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
                       />
                     </svg>
-                    {request.num_processed}
+                    {request.emails}
                   </span>
                 </div>
                 <div className={styles.stat}>
-                  <span className={styles.statLabel}>Invalid</span>
+                  <span className={styles.statLabel}>Created</span>
                   <div
-                    className={`${styles.metaValue} ${styles.resultInvalid}`}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke="#000"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="1.5"
-                        d="M9.172 14.828 12 12m0 0 2.828-2.828M12 12 9.172 9.172M12 12l2.828 2.828M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                      />
-                    </svg>
-                    {request.num_invalid}
-                  </div>
-                </div>
-                <div className={styles.stat}>
-                  <span className={styles.statLabel}>Catch-All</span>
-                  <div
-                    className={`${styles.metaValue} ${styles.resultCatchAll}`}
+                    className={`${styles.metaValue}`}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -212,7 +215,30 @@ export default function HomeController() {
                         d="M8 12h8m5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
                       />
                     </svg>
-                    {request.num_catch_all}
+                    {new Date(request.created).toLocaleDateString()}
+                  </div>
+                </div>
+                <div className={styles.stat}>
+                  <span className={styles.statLabel}>Status</span>
+                  <div
+                    className={`${styles.metaValue}`}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke="#000"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="1.5"
+                        d="M8 12h8m5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                      />
+                    </svg>
+                    {request.status}
                   </div>
                 </div>
                 {/* <div className={styles.stat}>

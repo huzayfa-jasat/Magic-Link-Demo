@@ -159,7 +159,7 @@ async function getBatchDetails(req, res) {
 async function getBatchResults(req, res) {
 	try {
 		const { checkType, batchId } = req.params;
-		const { page=1, limit=10, order='timehl', filter='all' } = req.query;
+		const { page=1, limit=10, order='timehl', filter='all', search='' } = req.query;
 
 		// Validate query params
 		if (page < 1) return returnBadRequest(res, 'Page must be at least 1');
@@ -168,7 +168,7 @@ async function getBatchResults(req, res) {
 		if (!VALID_BATCHRESULTS_FILTER_PARAMS.has(filter)) return returnBadRequest(res, 'Invalid filter');
 
 		// Get batch results
-		const [ok, data, metadata] = await db_getBatchResults(req.user.id, checkType, batchId, page, limit, order, filter);
+		const [ok, data, metadata] = await db_getBatchResults(req.user.id, checkType, batchId, page, limit, order, filter, search);
 		if (!ok) return returnBadRequest(res, 'Failed to get batch results');
 
 		// Return response

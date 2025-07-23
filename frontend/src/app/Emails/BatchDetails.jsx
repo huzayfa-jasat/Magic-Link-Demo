@@ -1,17 +1,26 @@
 // Dependencies
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import Popup from "reactjs-popup";
 
 // Component Imports
 import useBatchData from "./hooks/useBatchData";
 import getMailServerDisplay from "./getMailServerDisplay";
+import { LoadingCircle } from "../../ui/components/LoadingCircle";
 
 // API Imports
-import { exportBatchResultsCsv } from "../../api/emails";
+import { getVerifyBatchResults } from "../../api/batches";
 
 // Style Imports
 import styles from "./Emails.module.css";
+
+// Constants
+const FILTER_MAP = {
+  'valid': 'deliverable',
+  'invalid': 'undeliverable', 
+  'catch-all': 'catchall',
+  'all': 'all'
+};
 
 // Main Component
 export default function EmailsBatchDetailsController() {
@@ -22,14 +31,33 @@ export default function EmailsBatchDetailsController() {
     details,
     results,
     loading,
+    resultsLoading,
+    loadingMore,
+    hasMore,
     error,
-    currentPage,
-    totalPages,
     searchQuery,
     stats,
-    setCurrentPage,
     setSearchQuery,
+    loadMore,
   } = useBatchData(id);
+
+  // Infinite scroll detection
+  useEffect(() => {
+    const handleScroll = () => {
+      if (
+        window.innerHeight + document.documentElement.scrollTop >= 
+        document.documentElement.offsetHeight - 1000 && // 1000px before bottom
+        hasMore && 
+        !loadingMore && 
+        !resultsLoading
+      ) {
+        loadMore();
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [hasMore, loadingMore, resultsLoading, loadMore]);
 
   // Export current page results to CSV
   // const handleExport = useCallback(() => {
@@ -69,36 +97,45 @@ export default function EmailsBatchDetailsController() {
       let page = 1;
       let done = false;
 
-      // TODO: Handle export
-      // - just download all pages & format once done
-      // - fetch all filtered pages, then format
-
-
       // Fetch all pages of filtered results
-      // while (!done) {
-      //   const response = await exportBatchResultsCsv(
-      //     id,
-      //     page,
-      //     ITEMS_PER_PAGE,
-      //     filter
-      //   );
-      //   const pageResults = response.data.data || [];
-      //   allResults = [...allResults, ...pageResults];
-      //   if (pageResults.length < ITEMS_PER_PAGE) done = true;
-      //   else page++;
-      // }
+      while (!done) {
+        const response = await getVerifyBatchResults(
+          id,
+          page,
+          ITEMS_PER_PAGE,
+          'timehl',
+          FILTER_MAP[filter] || 'all',
+          '' // No search for CSV export
+        );
+        
+        const pageResults = response.data.results || [];
+        allResults = [...allResults, ...pageResults];
+        
+        // Check if we have more pages using metadata
+        if (!response.data.metadata?.has_more) {
+          done = true;
+        } else {
+          page++;
+        }
+      }
 
       // Build CSV content from all filtered results
       const headers = ["Email", "Result", "Mail Server"];
       const csvContent = [
         headers.join(","),
-        ...allResults.map((item) =>
-          [
-            item.email || item.global_id,
-            item.result || "pending",
-            getMailServerDisplay(item.mail_server) || "",
-          ].join(",")
-        ),
+        ...allResults.map((item) => {
+          // Map result values: 1=deliverable, 2=catchall, 0=undeliverable
+          let resultText;
+          if (item.result === 1) resultText = "valid";
+          else if (item.result === 2) resultText = "catch-all";
+          else resultText = "invalid";
+          
+          return [
+            item.email,
+            resultText,
+            getMailServerDisplay(item.provider) || "",
+          ].join(",");
+        }),
       ].join("\n");
 
       // Create and trigger download
@@ -243,7 +280,7 @@ export default function EmailsBatchDetailsController() {
       <div className={styles.detailsMeta}>
         <div className={styles.metaCard}>
           <div className={styles.metaLabel}>Total Emails</div>
-          <div className={styles.metaValue}>{details.num_contacts}</div>
+          <div className={styles.metaValue}>{details.emails}</div>
         </div>
         <div className={styles.metaCard}>
           <div className={styles.metaLabel}>Valid</div>
@@ -312,64 +349,58 @@ export default function EmailsBatchDetailsController() {
 
       {/* Results table */}
       <div className={styles.tableContainer}>
-        <table className={styles.table}>
-          <thead className={styles.tableHeader}>
-            <tr>
-              <th className={styles.tableHeaderCell}>Email</th>
-              <th className={styles.tableHeaderCell}>Result</th>
-              <th className={styles.tableHeaderCell}>Mail Server</th>
-            </tr>
-          </thead>
-          <tbody>
-            {results.map((item, index) => (
-              <tr key={index} className={styles.tableRow}>
-                <td className={styles.tableCell}>
-                  {item.email || item.global_id}
-                </td>
-                <td className={`${styles.tableCell} ${styles.tableCellResult}`}>
-                  {item.result || "Pending"}
-                </td>
-                <td className={styles.tableCell}>
-                  {getMailServerDisplay(item.mail_server)}
-                </td>
+        {resultsLoading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+            <LoadingCircle relative={true} />
+          </div>
+        ) : (
+          <table className={styles.table}>
+            <thead className={styles.tableHeader}>
+              <tr>
+                <th className={styles.tableHeaderCell}>Email</th>
+                <th className={styles.tableHeaderCell}>Result</th>
+                <th className={styles.tableHeaderCell}>Mail Server</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {results.map((item, index) => {
+                // Map result values: 1=deliverable, 2=catchall, 0=undeliverable
+                let resultText;
+                if (item.result === 1) resultText = "Valid";
+                else if (item.result === 2) resultText = "Catch-All";
+                else if (item.result === 0) resultText = "Invalid";
+                else resultText = "Pending";
+
+                return (
+                  <tr key={index} className={styles.tableRow}>
+                    <td className={styles.tableCell}>
+                      {item.email}
+                    </td>
+                    <td className={`${styles.tableCell} ${styles.tableCellResult}`}>
+                      {resultText}
+                    </td>
+                    <td className={styles.tableCell}>
+                      {getMailServerDisplay(item.provider)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
 
-      {/* Pagination controls */}
-      {totalPages > 1 && (
-        <div className={styles.pagination}>
-          <button
-            className={`${styles.paginationButton} ${
-              currentPage === 1 ? styles.paginationButtonDisabled : ""
-            }`}
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-          >
-            Previous
-          </button>
-          {[...Array(totalPages)].map((_, i) => (
-            <button
-              key={i}
-              className={`${styles.paginationButton} ${
-                currentPage === i + 1 ? styles.paginationButtonActive : ""
-              }`}
-              onClick={() => setCurrentPage(i + 1)}
-            >
-              {i + 1}
-            </button>
-          ))}
-          <button
-            className={`${styles.paginationButton} ${
-              currentPage === totalPages ? styles.paginationButtonDisabled : ""
-            }`}
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </button>
+      {/* Infinite scroll loading indicator */}
+      {loadingMore && (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+          <LoadingCircle relative={true} />
+        </div>
+      )}
+      
+      {/* End of results indicator */}
+      {!hasMore && results.length > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem', color: '#666' }}>
+          <p>No more results to load</p>
         </div>
       )}
     </div>

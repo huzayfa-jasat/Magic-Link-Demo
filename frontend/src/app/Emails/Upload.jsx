@@ -3,7 +3,7 @@ import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 // API Imports
-import { verifyImportEmails } from '../../api/emails';
+import { createVerifyBatch } from '../../api/batches';
 
 // Icon Imports
 import { UPLOAD_ICON } from '../../assets/icons/upload_icon.jsx';
@@ -62,6 +62,10 @@ export default function EmailsUploadController() {
         throw new Error('No valid emails found in the file');
       }
 
+      if (parsedEmails.length > 10000) {
+        throw new Error('Maximum of 10,000 emails allowed per batch. Please reduce the number of emails and try again.');
+      }
+
       setFile(selectedFile);
       setEmails(parsedEmails);
       setError(null);
@@ -109,11 +113,9 @@ export default function EmailsUploadController() {
     setError(null);
 
     try {
-      // TODO: New batches endpoint
-
-      const response = await verifyImportEmails(emails, null, file.name);
-      const requestId = response.data.data;
-      navigate(`/${requestId}/details`);
+      const response = await createVerifyBatch(emails, file.name);
+      const batchId = response.data.id;
+      navigate(`/${batchId}/details`);
     } catch (err) {
       setError('Failed to upload emails. Please try again.');
       console.error('Upload error:', err);

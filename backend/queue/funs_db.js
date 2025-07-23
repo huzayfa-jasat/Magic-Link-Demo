@@ -261,6 +261,7 @@ async function db_processBouncerResults(bouncer_batch_id, results_array, check_t
                 update_object.reason = result.reason || 'unknown';
                 update_object.is_catchall = result.is_catchall || 0;
                 update_object.score = result.score || 0;
+                update_object.provider = result.provider || null;
                 break;
             case 'catchall':
                 update_object.toxicity = result.toxicity || 0;
