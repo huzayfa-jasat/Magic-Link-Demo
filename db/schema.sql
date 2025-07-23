@@ -158,6 +158,7 @@ CREATE TABLE Email_Deliverable_Results (
     `reason` varchar(50) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT 'unknown',
     `is_catchall` TINYINT(1) NOT NULL DEFAULT 0,
     `score` int NOT NULL DEFAULT 0,
+    `provider` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL,
     `verified_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`email_global_id`),

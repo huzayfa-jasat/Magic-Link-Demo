@@ -392,7 +392,7 @@ async function db_getBatchResults(user_id, check_type, batch_id, page, limit, or
 	let results_columns;
 	switch (check_type) {
 		case 'deliverable':
-			results_columns = ['email_nominal', 'status', 'reason', 'is_catchall', 'score', 'updated_ts'];
+			results_columns = ['email_nominal', 'status', 'reason', 'is_catchall', 'score', 'provider', 'updated_ts'];
 			break;
 		case 'catchall':
 			results_columns = ['email_nominal', 'toxicity', 'updated_ts'];
