@@ -5,12 +5,21 @@ import Popup from "reactjs-popup";
 
 // Component Imports
 import useBatchData from "./hooks/useBatchData";
+import getMailServerDisplay from "./getMailServerDisplay";
 
 // API Imports
 import { getVerifyBatchResults } from "../../api/batches";
 
 // Style Imports
 import styles from "./Emails.module.css";
+
+// Constants
+const FILTER_MAP = {
+  'valid': 'deliverable',
+  'invalid': 'undeliverable', 
+  'catch-all': 'catchall',
+  'all': 'all'
+};
 
 // Main Component
 export default function EmailsBatchDetailsController() {
@@ -68,14 +77,6 @@ export default function EmailsBatchDetailsController() {
       let page = 1;
       let done = false;
 
-      // Map filter names to new API format
-      const filterMap = {
-        'valid': 'deliverable',
-        'invalid': 'undeliverable', 
-        'catch-all': 'catchall',
-        'all': 'all'
-      };
-
       // Fetch all pages of filtered results
       while (!done) {
         const response = await getVerifyBatchResults(
@@ -83,7 +84,7 @@ export default function EmailsBatchDetailsController() {
           page,
           ITEMS_PER_PAGE,
           'timehl',
-          filterMap[filter] || 'all'
+          FILTER_MAP[filter] || 'all'
         );
         
         const pageResults = response.data.results || [];
@@ -111,7 +112,7 @@ export default function EmailsBatchDetailsController() {
           return [
             item.email,
             resultText,
-            "", // mail_server not available in new format
+            getMailServerDisplay(item.provider) || "",
           ].join(",");
         }),
       ].join("\n");
@@ -353,7 +354,7 @@ export default function EmailsBatchDetailsController() {
                     {resultText}
                   </td>
                   <td className={styles.tableCell}>
-                    -
+                    {getMailServerDisplay(item.provider)}
                   </td>
                 </tr>
               );

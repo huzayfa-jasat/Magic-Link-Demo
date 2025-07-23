@@ -7,6 +7,14 @@ import Popup from "reactjs-popup";
 
 const ITEMS_PER_PAGE = 50;
 
+// Constants
+const FILTER_MAP = {
+  'valid': 'deliverable',
+  'invalid': 'undeliverable', 
+  'catch-all': 'catchall',
+  'all': 'all'
+};
+
 export default function HomeController() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,7 +25,7 @@ export default function HomeController() {
   useEffect(() => {
     const fetchRequests = async () => {
       try {
-        const response = await getBatchesList(1, 100, 'timehl', 'deliverable', 'all');
+        const response = await getBatchesList(1, 100, 'timehl', 'all', 'all');
         setRequests(response.data.batches);
       } catch (err) {
         setError("Failed to load verify requests");
@@ -36,21 +44,13 @@ export default function HomeController() {
       let page = 1;
       let done = false;
 
-      // Map filter names to new API format
-      const filterMap = {
-        'valid': 'deliverable',
-        'invalid': 'undeliverable', 
-        'catch-all': 'catchall',
-        'all': 'all'
-      };
-
       while (!done) {
         const response = await getVerifyBatchResults(
           id,
           page,
           ITEMS_PER_PAGE,
           'timehl',
-          filterMap[filter] || 'all'
+          FILTER_MAP[filter] || 'all'
         );
         
         const pageResults = response.data.results || [];
@@ -144,20 +144,31 @@ export default function HomeController() {
                 <div className={styles.subtitle}>
                   {request.title || `${request.emails} Emails`}
                 </div>
-                <div
-                  className={`${styles.statusBadge} ${
-                    request.status === "completed"
-                      ? styles.statusComplete
+                <div style={{display: 'flex', gap: '0.5rem'}}>
+                  <div
+                    className={`${styles.statusBadge} ${
+                      request.category === "deliverable"
+                        ? styles.statusComplete
+                        : styles.statusProcessing
+                    }`}
+                  >
+                    {request.category === "deliverable" ? "Verify" : "Catchall"}
+                  </div>
+                  <div
+                    className={`${styles.statusBadge} ${
+                      request.status === "completed"
+                        ? styles.statusComplete
+                        : request.status === "processing"
+                        ? styles.statusProcessing
+                        : styles.statusPending
+                    }`}
+                  >
+                    {request.status === "completed"
+                      ? "Complete"
                       : request.status === "processing"
-                      ? styles.statusProcessing
-                      : styles.statusPending
-                  }`}
-                >
-                  {request.status === "completed"
-                    ? "Complete"
-                    : request.status === "processing"
-                    ? "Processing"
-                    : "Pending"}
+                      ? "Processing"
+                      : "Pending"}
+                  </div>
                 </div>
               </div>
               <div className={styles.stats}>

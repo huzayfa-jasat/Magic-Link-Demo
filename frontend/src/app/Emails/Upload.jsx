@@ -62,6 +62,10 @@ export default function EmailsUploadController() {
         throw new Error('No valid emails found in the file');
       }
 
+      if (parsedEmails.length > 10000) {
+        throw new Error('Maximum of 10,000 emails allowed per batch. Please reduce the number of emails and try again.');
+      }
+
       setFile(selectedFile);
       setEmails(parsedEmails);
       setError(null);
