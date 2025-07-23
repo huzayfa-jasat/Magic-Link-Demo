@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { NavLink } from "react-router-dom";
 import { getBatchesList, getVerifyBatchResults } from "../../api/batches";
+import getMailServerDisplay from "./getMailServerDisplay";
 import styles from "./Emails.module.css";
 import { useParams } from "react-router-dom";
 import Popup from "reactjs-popup";
@@ -78,7 +79,7 @@ export default function HomeController() {
           return [
             item.email,
             resultText,
-            "", // mail_server not available in new format
+            getMailServerDisplay(item.provider) || ""
           ].join(",");
         }),
       ].join("\n");
