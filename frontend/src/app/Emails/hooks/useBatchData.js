@@ -18,6 +18,7 @@ export default function useBatchData(id) {
   const [details, setDetails] = useState(null);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [resultsLoading, setResultsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -44,26 +45,18 @@ export default function useBatchData(id) {
     async (page, search = "") => {
       if (!details) return;
 
+      setResultsLoading(true);
       try {
-        // Note: Search functionality is not available in new API
-        // Filtering by email content would need to be done client-side if needed
         const response = await getVerifyBatchResults(
           id,
           page,
           ITEMS_PER_PAGE,
           'timehl',
-          'all'
+          'all',
+          search
         );
         
-        let resultData = response.data.results || [];
-        
-        // Apply client-side search filtering if search query exists
-        if (search && search.trim()) {
-          resultData = resultData.filter(item => 
-            item.email.toLowerCase().includes(search.toLowerCase())
-          );
-        }
-        
+        const resultData = response.data.results || [];
         setResults(resultData);
         
         // Use metadata from new API for pagination
@@ -81,6 +74,7 @@ export default function useBatchData(id) {
         setResults([]);
         return false;
       } finally {
+        setResultsLoading(false);
         setLoading(false);
       }
     },
@@ -140,6 +134,7 @@ export default function useBatchData(id) {
     details,
     results,
     loading,
+    resultsLoading,
     error,
     currentPage,
     totalPages,

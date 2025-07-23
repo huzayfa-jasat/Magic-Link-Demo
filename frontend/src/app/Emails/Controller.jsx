@@ -51,7 +51,8 @@ export default function HomeController() {
           page,
           ITEMS_PER_PAGE,
           'timehl',
-          FILTER_MAP[filter] || 'all'
+          FILTER_MAP[filter] || 'all',
+          '' // No search for CSV export
         );
         
         const pageResults = response.data.results || [];

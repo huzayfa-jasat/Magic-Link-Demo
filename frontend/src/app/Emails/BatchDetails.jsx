@@ -6,6 +6,7 @@ import Popup from "reactjs-popup";
 // Component Imports
 import useBatchData from "./hooks/useBatchData";
 import getMailServerDisplay from "./getMailServerDisplay";
+import { LoadingCircle } from "../../ui/components/LoadingCircle";
 
 // API Imports
 import { getVerifyBatchResults } from "../../api/batches";
@@ -30,6 +31,7 @@ export default function EmailsBatchDetailsController() {
     details,
     results,
     loading,
+    resultsLoading,
     error,
     currentPage,
     totalPages,
@@ -84,7 +86,8 @@ export default function EmailsBatchDetailsController() {
           page,
           ITEMS_PER_PAGE,
           'timehl',
-          FILTER_MAP[filter] || 'all'
+          FILTER_MAP[filter] || 'all',
+          '' // No search for CSV export
         );
         
         const pageResults = response.data.results || [];
@@ -328,39 +331,45 @@ export default function EmailsBatchDetailsController() {
 
       {/* Results table */}
       <div className={styles.tableContainer}>
-        <table className={styles.table}>
-          <thead className={styles.tableHeader}>
-            <tr>
-              <th className={styles.tableHeaderCell}>Email</th>
-              <th className={styles.tableHeaderCell}>Result</th>
-              <th className={styles.tableHeaderCell}>Mail Server</th>
-            </tr>
-          </thead>
-          <tbody>
-            {results.map((item, index) => {
-              // Map result values: 1=deliverable, 2=catchall, 0=undeliverable
-              let resultText;
-              if (item.result === 1) resultText = "Valid";
-              else if (item.result === 2) resultText = "Catch-All";
-              else if (item.result === 0) resultText = "Invalid";
-              else resultText = "Pending";
+        {resultsLoading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+            <LoadingCircle relative={true} />
+          </div>
+        ) : (
+          <table className={styles.table}>
+            <thead className={styles.tableHeader}>
+              <tr>
+                <th className={styles.tableHeaderCell}>Email</th>
+                <th className={styles.tableHeaderCell}>Result</th>
+                <th className={styles.tableHeaderCell}>Mail Server</th>
+              </tr>
+            </thead>
+            <tbody>
+              {results.map((item, index) => {
+                // Map result values: 1=deliverable, 2=catchall, 0=undeliverable
+                let resultText;
+                if (item.result === 1) resultText = "Valid";
+                else if (item.result === 2) resultText = "Catch-All";
+                else if (item.result === 0) resultText = "Invalid";
+                else resultText = "Pending";
 
-              return (
-                <tr key={index} className={styles.tableRow}>
-                  <td className={styles.tableCell}>
-                    {item.email}
-                  </td>
-                  <td className={`${styles.tableCell} ${styles.tableCellResult}`}>
-                    {resultText}
-                  </td>
-                  <td className={styles.tableCell}>
-                    {getMailServerDisplay(item.provider)}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                return (
+                  <tr key={index} className={styles.tableRow}>
+                    <td className={styles.tableCell}>
+                      {item.email}
+                    </td>
+                    <td className={`${styles.tableCell} ${styles.tableCellResult}`}>
+                      {resultText}
+                    </td>
+                    <td className={styles.tableCell}>
+                      {getMailServerDisplay(item.provider)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {/* Pagination controls */}

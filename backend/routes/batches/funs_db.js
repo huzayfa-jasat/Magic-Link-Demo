@@ -370,7 +370,7 @@ async function db_getBatchDetails(user_id, check_type, batch_id) {
 	return [true, batch_details];
 }
 
-async function db_getBatchResults(user_id, check_type, batch_id, page, limit, order, filter) {
+async function db_getBatchResults(user_id, check_type, batch_id, page, limit, order, filter, search = '') {
 	let err_code;
 
 	// Get table names
@@ -462,6 +462,11 @@ async function db_getBatchResults(user_id, check_type, batch_id, page, limit, or
 			break;
 	}
 
+	// Handle search
+	if (search && search.trim()) {
+		base_query = base_query.where(`${results_table}.email_nominal`, 'like', `%${search.toLowerCase()}%`);
+	}
+
 	// Get batch results
 	const results = await base_query.select(
 		results_columns
@@ -514,6 +519,11 @@ async function db_getBatchResults(user_id, check_type, batch_id, page, limit, or
 				});
 			});
 			break;
+	}
+
+	// Apply same search filter to count query
+	if (search && search.trim()) {
+		count_query = count_query.where(`${results_table}.email_nominal`, 'like', `%${search.toLowerCase()}%`);
 	}
 
 	const count_result = await count_query.count('* as count').catch((err)=>{if (err) err_code = err.code});

@@ -22,9 +22,9 @@ async function handler_getBatchDetails(checkType, batchId) {
     withCredentials: true,
   });
 };
-async function handler_getBatchResults(checkType, batchId, page, limit, order, filter) {
+async function handler_getBatchResults(checkType, batchId, page, limit, order, filter, search) {
   return await http.get(`${MODULE_PREFIX}/${checkType}/batch/${batchId}/results`, {
-    query: { page, limit, order, filter },
+    query: { page, limit, order, filter, search },
     withCredentials: true,
   });
 };
@@ -57,11 +57,11 @@ export async function getCatchallBatchDetails(batchId) {
   return await handler_getBatchDetails('catchall', batchId);
 };
 
-export async function getVerifyBatchResults(batchId, page, limit, order, filter) {
-  return await handler_getBatchResults('deliverable', batchId, page, limit, order, filter);
+export async function getVerifyBatchResults(batchId, page, limit, order, filter, search) {
+  return await handler_getBatchResults('deliverable', batchId, page, limit, order, filter, search);
 };
-export async function getCatchallBatchResults(batchId, page, limit, order, filter) {
-  return await handler_getBatchResults('catchall', batchId, page, limit, order, filter);
+export async function getCatchallBatchResults(batchId, page, limit, order, filter, search) {
+  return await handler_getBatchResults('catchall', batchId, page, limit, order, filter, search);
 };
 
 export async function removeVerifyBatch(batchId) {
