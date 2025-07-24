@@ -4,6 +4,35 @@ const knex = require('knex')(require('../../knexfile.js').development);
 // Function Imports
 const { getBatchTableName } = require('../batches/funs_db_utils.js');
 
+// Helper Functions
+const formatResultsByCheckType = (results, check_type) => {
+    return results.map((result)=>{
+        let check_type_specific_result = {};
+
+        // Handle check_type specific results
+        switch (check_type) {
+            case 'deliverable':
+                // Handle "deliverable" type results (translate fields into "result")
+                if (result.status === 'deliverable' && result.is_catchall === 0) check_type_specific_result.result = 1;
+                else if ((result.is_catchall === 1) || (result.status === 'risky' && result.reason === 'low_deliverability')) check_type_specific_result.result = 2;
+                else check_type_specific_result.result = 0;
+                break;
+            case 'catchall':
+                // Handle "catchall" type results (translate fields into deliverability score)
+                check_type_specific_result.score = result.toxicity;
+                break;
+            default:
+                break;
+        }
+
+        // Return
+        return {
+            'email': result.email_nominal,
+            ...check_type_specific_result
+        }
+    });
+}
+
 // -------------------
 // READ Functions
 // -------------------
@@ -91,35 +120,7 @@ async function db_downloadBatchResults(batch_id, check_type) {
     
     if (err_code) return [false, null];
 
-    // Format results based on check_type (using existing helper)
-    const formatResultsByCheckType = (results, check_type) => {
-        return results.map((result)=>{
-            let check_type_specific_result = {};
-
-            // Handle check_type specific results
-            switch (check_type) {
-                case 'deliverable':
-                    // Handle "deliverable" type results (translate fields into "result")
-                    if (result.status === 'deliverable' && result.is_catchall === 0) check_type_specific_result.result = 1;
-                    else if ((result.is_catchall === 1) || (result.status === 'risky' && result.reason === 'low_deliverability')) check_type_specific_result.result = 2;
-                    else check_type_specific_result.result = 0;
-                    break;
-                case 'catchall':
-                    // Handle "catchall" type results (translate fields into deliverability score)
-                    check_type_specific_result.score = result.toxicity;
-                    break;
-                default:
-                    break;
-            }
-
-            // Return
-            return {
-                'email': result.email_nominal,
-                ...check_type_specific_result
-            }
-        });
-    }
-
+    // Format results based on check_type
     const formatted_results = formatResultsByCheckType(results, check_type);
 
     return [true, formatted_results];
