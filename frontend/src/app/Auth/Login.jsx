@@ -3,7 +3,7 @@ import { NavLink } from "react-router-dom";
 import { useForm } from "react-hook-form";
 
 // API Imports
-import { loginUser, sendOtpCode } from "../../api/auth.js";
+import { loginUser } from "../../api/auth.js";
 
 // Style Imports
 import s from "./styles.module.css";
@@ -31,18 +31,6 @@ export default function Login() {
     }
   }
 
-  // OTP wrapper
-  async function handleOtpClick(data) {
-    try {
-      const resp = await sendOtpCode(data.email);
-      if (resp.status !== 200) console.error("Failed to send OTP");
-      else {
-        // TODO: Success message
-      }
-    } catch (error) {
-      console.log(error.message);
-    }
-  }
 
   // Return layout
   return (
@@ -82,9 +70,9 @@ export default function Login() {
           <div className={s.or}>
             <span>or</span>
           </div>
-          <button className={`${s.button} ${s.otp}`} type="button" onClick={handleOtpClick}>
+          <NavLink to="/loginotp" className={`${s.button} ${s.otp}`}>
             Email me a One-Time Password
-          </button>
+          </NavLink>
         </div>
         {/* <NavLink to="/register" className={s.register}>Don't have an account? <span>Sign Up Now</span></NavLink> */}
       </form>
