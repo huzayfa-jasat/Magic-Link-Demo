@@ -100,6 +100,39 @@
 .section.nmb {
   margin-bottom: 0;
 }
+
+.txMessage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 25px 12px;
+  border: 1px dashed var(--brd-light);
+  border-radius: 8px;
+  background-color: var(--brd-light-2);
+}
+.txMessage.txError {
+  color: var(--fg-neg);
+  background-color: var(--bg-neg);
+}
+.txMessage.txSuccess {
+  color: var(--main-hl);
+  border-color: var(--main-hl-fade);
+  background-color: var(--main-hl-fade2);
+}
+.txMessage > svg {
+  height: 20px;
+  width: auto;
+  margin: auto 0;
+}
+.txMessage > p {
+  margin: auto 0;
+  font-family: "Circular", "Geist", sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  color: var(--black);
+}
+
 .top {
   margin: 0 auto 10px 0;
   display: flex;

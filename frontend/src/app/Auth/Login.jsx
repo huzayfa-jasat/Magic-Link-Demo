@@ -3,7 +3,7 @@ import { NavLink } from "react-router-dom";
 import { useForm } from "react-hook-form";
 
 // API Imports
-import { loginUser } from "../../api/auth.js";
+import { loginUser, sendOtpCode } from "../../api/auth.js";
 
 // Style Imports
 import s from "./styles.module.css";
@@ -32,9 +32,9 @@ export default function Login() {
   }
 
   // OTP wrapper
-  async function handleOtpClick() {
+  async function handleOtpClick(data) {
     try {
-      const resp = await sendOtp(data.email);
+      const resp = await sendOtpCode(data.email);
       if (resp.status !== 200) console.error("Failed to send OTP");
       else {
         // TODO: Success message

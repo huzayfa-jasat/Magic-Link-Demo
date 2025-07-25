@@ -162,18 +162,22 @@ function logoutUser(req, res, _next) {
 async function requestPasswordReset(req, res) {
     try {
         const { email } = req.body;
-        if (!email) {
-            return res.status(HttpStatus.FAILED_STATUS).json({ error: 'Email is required' });
-        }
 
+        // Validate body
+        if (!email) return res.status(HttpStatus.FAILED_STATUS).json({ error: 'Email is required' });
+
+        // Create password reset code
         const [ok,result] = await db_createPasswordResetCode(email);
-        if (!ok) {
-            return res.status(HttpStatus.FAILED_STATUS).json({ error: 'User not found' });
-        }
-        const resetLink = `${process.env.FRONTEND_URL_PREFIX}/forgot-password?email=${encodeURIComponent(email)}&code=${result.code}`;
-        await sendPasswordResetEmail(email, resetLink);
 
+        // Don't leak existence / non-existence of users
+        // - Same return status even if user DNE
+        if (ok) {
+            // Send password reset email
+            const resetLink = `${process.env.FRONTEND_URL_PREFIX}/forgot-password?email=${encodeURIComponent(email)}&code=${result.code}`;
+            await sendPasswordResetEmail(email, resetLink);
+        }
         return res.sendStatus(HttpStatus.SUCCESS_STATUS);
+        
     } catch (err) {
         return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
     }

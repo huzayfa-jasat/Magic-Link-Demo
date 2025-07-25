@@ -10,7 +10,10 @@ import { sendForgotPasswordEmail, validateForgotPasswordReset } from "../../api/
 import s from "./styles.module.css";
 
 // Icon Imports
-import { OMNI_LOGO, BACK_ICON } from "../../assets/icons";
+import {
+  OMNI_LOGO, BACK_ICON,
+  COMPLETE_CHECK_ICON, FAILED_ICON,
+} from "../../assets/icons";
 
 // Functional Component
 export default function ForgotPassword() {
@@ -46,7 +49,7 @@ export default function ForgotPassword() {
         setMessage("Something went wrong. Please try again.");
         setIsError(true);
       } else {
-        setMessage("Check your email for password reset instructions.");
+        setMessage("Check your email for password reset instructions!");
         setIsError(false);
         setIsSuccess(true);
       }
@@ -120,22 +123,24 @@ export default function ForgotPassword() {
             </h2>
             <div className={s.section}>
               <h3 className={s.subtitle}>Email</h3>
-              <input {...register("email", { required: true })} type="email" placeholder="you@omniverifier.com" />
+              <input {...register("email", { required: true })} type="email" placeholder="you@omniverifier.com" disabled={isSuccess} />
             </div>
-            <div className={s.buttons}>
-              <button className={s.button} type="submit" disabled={isSuccess}>
-                Send Reset Link
-              </button>
-            </div>
+            
+            {(message) && (
+              <div className={`${s.section} ${s.txMessage} ${(isError) ? s.txError : s.txSuccess}`}>
+                {(isError) ? FAILED_ICON : COMPLETE_CHECK_ICON}
+                <p>{message}</p>
+              </div>
+            )}
+            
+            {!isSuccess && (
+              <div className={s.buttons}>
+                <button className={s.button} type="submit">
+                  Send Reset Link
+                </button>
+              </div>
+            )}
           </>
-        )}
-        
-        {message && (
-          <div className={s.section}>
-            <p style={{ color: isError ? 'red' : 'green', textAlign: 'center' }}>
-              {message}
-            </p>
-          </div>
         )}
       </form>
     </div>
