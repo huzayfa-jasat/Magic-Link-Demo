@@ -49,6 +49,15 @@ CREATE TABLE PassReset_Codes (
     FOREIGN KEY (`user_id`) REFERENCES Users(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
+DROP TABLE IF EXISTS `OTP_Codes`;
+CREATE TABLE OTP_Codes (
+	`user_id` int NOT NULL,
+	`code` varchar(6) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
+    `expires_at` TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL 10 MINUTE),
+    PRIMARY KEY (`user_id`),
+    FOREIGN KEY (`user_id`) REFERENCES Users(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+
 DROP TABLE IF EXISTS `Referrals`;
 CREATE TABLE Referrals (
 	`referrer_id` int NOT NULL,

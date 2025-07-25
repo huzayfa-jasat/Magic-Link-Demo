@@ -34,8 +34,8 @@ authRouter.post('/otp/send', sendOtpCode);
 authRouter.post('/otp/verify', verifyOtpCode);
 authRouter.patch('/pw/touch', checkUserAuth, changePassword);
 authRouter.get('/logout', checkUserAuth, logoutUser);
-authRouter.post('/password-reset/request', requestPasswordReset);
-authRouter.post('/password-reset/validate', validatePasswordReset);
+authRouter.post('/forgot-password/send', requestPasswordReset);
+authRouter.post('/forgot-password/validate', validatePasswordReset);
 
 // Export routes
 module.exports = authRouter; 

@@ -69,6 +69,14 @@ export const updatePassword = async (new_password) => {
   );
 };
 
+export const validateForgotPasswordReset = async (email, code, newPassword) => {
+  return await http.post(
+    "/auth/forgot-password/validate",
+    { email, code, newPassword },
+    { withCredentials: true }
+  );
+};
+
 export const logoutUser = async () => {
   return await http.get("/auth/logout", { withCredentials: true });
 };
