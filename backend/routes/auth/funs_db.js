@@ -117,6 +117,54 @@ async function db_createPasswordResetCode(email) {
     }
 }
 
+async function db_createOtpCode(email) {
+    try {
+        const [user] = await knex('Users').where({email}).select('id');
+        if (!user) return [false, null];
+
+        const code = generateCode();
+
+        await knex('OTP_Codes')
+            .insert({
+                user_id: user.id,
+                code: code,
+            })
+            .onConflict('user_id')
+            .merge(['code', 'expires_at']);
+
+        return [true, code];
+    } catch (err) {
+        console.error("Error creating OTP code:", err);
+        return [false, null];
+    }
+}
+
+async function db_validateOtpCode(email, code) {
+    try {
+        const [user] = await knex('Users').where({email}).select('id');
+        if (!user) return false;
+
+        const [otpCode] = await knex('OTP_Codes')
+            .where({
+                user_id: user.id,
+                code
+            })
+            .where('expires_at', '>', knex.fn.now())
+            .select('user_id');
+
+        if (!otpCode) return false;
+
+        await knex('OTP_Codes')
+            .where({user_id: user.id})
+            .del();
+
+        return user.id;
+    } catch (err) {
+        console.error("Error validating OTP code:", err);
+        return false;
+    }
+}
+
 
 // -------------------
 // READ Functions
@@ -220,5 +268,7 @@ module.exports = {
 	db_createUser,
 	db_changePassword, db_createPassword,
     db_createPasswordResetCode,
-    db_validatePassResetCode
+    db_validatePassResetCode,
+    db_createOtpCode,
+    db_validateOtpCode
 };  
