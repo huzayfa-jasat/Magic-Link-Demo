@@ -158,7 +158,7 @@ async function db_validateOtpCode(email, code) {
             .where({user_id: user.id})
             .del();
 
-        return user.id;
+        return { id: user.id, username: email };
     } catch (err) {
         console.error("Error validating OTP code:", err);
         return false;

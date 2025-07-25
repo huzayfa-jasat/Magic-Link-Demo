@@ -115,11 +115,11 @@ async function verifyOtpCode(req, res) {
         if (!email || !code) return res.status(HttpStatus.FAILED_STATUS).send("Missing required fields");
 
         // Validate email and code
-        const user_id = await db_validateOtpCode(email, code);
-        if (!user_id) return res.status(HttpStatus.UNAUTHORIZED_STATUS).send("Invalid or expired OTP code");
+        const user = await db_validateOtpCode(email, code);
+        if (!user) return res.status(HttpStatus.UNAUTHORIZED_STATUS).send("Invalid or expired OTP code");
 
         // Login user using passport login
-        req.logIn({ id: user_id }, function(err) {
+        req.logIn(user, function(err) {
             if (err) {
                 return res.status(HttpStatus.MISC_ERROR_STATUS).send("Login failed");
             }
