@@ -30,9 +30,9 @@ batchesRouter.use(checkUserAuth);
 // Routes
 batchesRouter.get('/list', getBatchesList);
 batchesRouter.post('/:checkType/new', checkValidCheckType, createBatch);
-batchesRouter.get('/:checkType/:batchId/details', checkValidCheckType, checkUserBatchAccess, getBatchDetails);
-batchesRouter.get('/:checkType/:batchId/results', checkValidCheckType, checkUserBatchAccess, getBatchResults);
-batchesRouter.delete('/:checkType/:batchId/rm', checkValidCheckType, checkUserBatchAccess, removeBatch);
+batchesRouter.get('/:checkType/batch/:batchId/details', checkValidCheckType, checkUserBatchAccess, getBatchDetails);
+batchesRouter.get('/:checkType/batch/:batchId/results', checkValidCheckType, checkUserBatchAccess, getBatchResults);
+batchesRouter.delete('/:checkType/batch/:batchId/rm', checkValidCheckType, checkUserBatchAccess, removeBatch);
 
 // Export routes
 module.exports = batchesRouter; 

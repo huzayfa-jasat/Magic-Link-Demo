@@ -6,13 +6,13 @@ const queueManager = require('./queue_manager');
  * - Called during application startup
  */
 async function initializeQueue() {
-    console.log('🚀 Starting Bouncer Queue System...');
+    // console.log('🚀 Starting Bouncer Queue System...');
     
     try {
         const success = await queueManager.initialize();
         
         if (success) {
-            console.log('✅ Bouncer Queue System started successfully');
+            // console.log('✅ Bouncer Queue System started successfully');
             console.log('📊 Queue Status:', await queueManager.getStatus());
             return true;
         } else {
@@ -31,7 +31,7 @@ async function initializeQueue() {
  * - Called during application shutdown
  */
 async function shutdownQueue() {
-    console.log('🛑 Shutting down Bouncer Queue System...');
+    // console.log('🛑 Shutting down Bouncer Queue System...');
     
     try {
         // Shutdown queue

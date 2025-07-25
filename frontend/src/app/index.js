@@ -1,6 +1,7 @@
 /* Auth */
 export { default as Login } from "../app/Auth/Login.jsx";
 export { default as Register } from "../app/Auth/Register.jsx";
+export { default as ForgotPassword } from "../app/Auth/ForgotPassword.jsx";
 
 /* Emails */
 export { default as EmailsHome } from "../app/Emails/Controller.jsx";

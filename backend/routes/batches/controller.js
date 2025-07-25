@@ -109,7 +109,7 @@ async function createBatch(req, res) {
 		}, {});
 
 		// Check & deduct credits
-		const [ok_credits, remaining_balance] = await db_checkAndDeductCredits(req.user.id, checkType, emails_stripped.length);
+		const [ok_credits, remaining_balance] = await db_checkAndDeductCredits(req.user.id, checkType, Object.keys(emails_stripped).length);
 		if (!ok_credits) return returnBadRequest(res, 'Insufficient credits');
 
 		// Check if low credits email should be sent (only for deliverable checks)
@@ -125,8 +125,10 @@ async function createBatch(req, res) {
 		if (!ok_global_insert) return returnBadRequest(res, 'Failed to process emails');
 
 		// Get global emails
-		const [ok_global_ids, global_emails] = await db_getEmailGlobalIds(Object.keys(emails_stripped));
+		const [ok_global_ids, global_emails] = await db_getEmailGlobalIds(emails_stripped);
 		if (!ok_global_ids) return returnBadRequest(res, 'Failed to get global emails');
+
+		// console.log("GLOBAL EMAILS = ", global_emails);
 
 		// Create batch
 		const [batch_ok, new_batch_id, fresh_email_ids] = await db_createBatch(req.user.id, checkType, title, global_emails);
@@ -136,6 +138,7 @@ async function createBatch(req, res) {
 		return res.status(HttpStatus.SUCCESS_STATUS).json({ id: new_batch_id, count: emails_stripped.length });
 
 	} catch (err) {
+		console.error("MTE = ", err);
 		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
 	}
 }
@@ -152,6 +155,7 @@ async function getBatchDetails(req, res) {
 		return res.status(HttpStatus.SUCCESS_STATUS).json(data);
 
 	} catch (err) {
+		console.error("GET BATCH DETAILS ERR = ", err);
 		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
 	}
 }

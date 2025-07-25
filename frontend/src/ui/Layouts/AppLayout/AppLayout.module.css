@@ -272,6 +272,10 @@
   gap: 50px;
   background-color: var(--brd-light-2);
   border-right: 1px solid var(--brd-light);
+  user-select: none;
+  user-drag: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
 }
 
 .sidebar.collapsed {

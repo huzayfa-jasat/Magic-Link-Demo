@@ -83,8 +83,10 @@ class StatusCheckerWorker {
             await db_recordRateLimit(check_type, 'check_status');
 
             // Log status
-            if (!isCompleted) console.log(`⏳ Batch ${bouncerBatchId} still processing`);
-            else console.log(`✅ Batch ${bouncerBatchId} is completed, downloading results immediately`);
+            if (!isCompleted) {
+                console.log(`⏳ Batch ${bouncerBatchId} still processing`);
+                return;
+            } else console.log(`✅ Batch ${bouncerBatchId} is completed, downloading results immediately`);
 
             // Download results
             await this.downloadAndProcessResults(bouncerBatchId, check_type);
@@ -146,8 +148,13 @@ class StatusCheckerWorker {
      * Handle job filtering - only process status_checker jobs
      */
     static async processJob(job) {
+        console.log(`📋 StatusCheckerWorker received job: ${job.name} with data:`, job.data);
+        
         // Skip other job types
-        if (!job.name.startsWith('status_checker_')) return;
+        if (!job.name.startsWith('status_checker_')) {
+            console.log(`⏭️  Skipping non-status-checker job: ${job.name}`);
+            return;
+        }
 
         // Process job
         const worker = new StatusCheckerWorker();

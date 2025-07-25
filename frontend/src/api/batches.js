@@ -24,7 +24,7 @@ async function handler_getBatchDetails(checkType, batchId) {
 };
 async function handler_getBatchResults(checkType, batchId, page, limit, order, filter, search) {
   return await http.get(`${MODULE_PREFIX}/${checkType}/batch/${batchId}/results`, {
-    query: { page, limit, order, filter, search },
+    params: { page, limit, order, filter, search },
     withCredentials: true,
   });
 };
@@ -38,7 +38,7 @@ async function handler_removeBatch(checkType, batchId) {
 
 export async function getBatchesList(page, limit, order, category, status) {
   return await http.get(`${MODULE_PREFIX}/list`, {
-    query: { page, limit, order, category, status },
+    params: { page, limit, order, category, status },
     withCredentials: true,
   });
 };

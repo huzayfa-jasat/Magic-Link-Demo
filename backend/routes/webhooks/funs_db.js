@@ -92,7 +92,7 @@ async function handleSuccessfulCatchallPayment(userId, credits, sessionId) {
                 session_id: sessionId,
                 credits: credits,
                 status: 'completed',
-                created_at: new Date()
+                created_at: knex.fn.now()
             }).catch((error) => { err = error; });
 
             if (err) throw err;
@@ -159,7 +159,4 @@ async function db_processCheckoutSession(stripe_session_id, stripe_customer_id, 
 
 module.exports = {
     db_processCheckoutSession,
-    handleSuccessfulPayment,
-    handleSuccessfulCatchallPayment,
-    handleIncomingResults
 }; 

@@ -22,6 +22,8 @@ const formatResultsByCheckType = (results, check_type) => {
 				if (result.status === 'deliverable' && result.is_catchall === 0) check_type_specific_result.result = 1;
 				else if ((result.is_catchall === 1) || (result.status === 'risky' && result.reason === 'low_deliverability')) check_type_specific_result.result = 2;
 				else check_type_specific_result.result = 0;
+				// Add provider
+				check_type_specific_result.provider = result.provider;
 				break;
 			case 'catchall':
 				// Handle "catchall" type results (translate fields into deliverability score)
@@ -70,8 +72,11 @@ async function db_addGlobalEmails(emails_stripped) {
 	let err_code;
 	await knex('Emails_Global').insert(emails_stripped.map((email_stripped)=>({
 		'email_stripped': email_stripped,
-	}))).catch((err)=>{if (err) err_code = err.code});
-	if (err_code) return false;
+	}))).onConflict().ignore().catch((err)=>{if (err) err_code = err.code});
+	if (err_code) {
+		console.log("EMAILS_GLOBAL INSERT ERROR = ", err_code);
+		return false;
+	}
 	return true;
 }
 
@@ -85,14 +90,23 @@ async function db_createBatch(user_id, check_type, title, emails) {
 
 	// 1. Create batch entry
 	let err_code;
-	const [batch_id] = await knex(batch_table).insert({
+	const insert_result = await knex(batch_table).insert({
 		'user_id': user_id,
 		'title': title ?? 'Untitled',
 		'status': 'queued',
 		'total_emails': emails.length,
-		'created_ts': new Date().toISOString(),
+		'created_ts': knex.fn.now(),
 	}).catch((err)=>{if (err) err_code = err.code});
-	if (err_code) return [false, null];
+	if (err_code) {
+		console.log("BATCH INSERT ERR 1 = ", err_code);
+		return [false, null];
+	}
+	
+	// MySQL typically returns an array with insertId
+	const [batch_id] = insert_result;
+	console.log('batch_id after destructuring:', batch_id);
+	
+	if (!batch_id) return [false, null];
 
 	// 2. Create batch emails association table entries
 	await knex(email_batch_association_table).insert(emails.map((email)=>({
@@ -100,7 +114,10 @@ async function db_createBatch(user_id, check_type, title, emails) {
 		'email_global_id': email.global_id,
 		'email_nominal': email.email,
 	}))).catch((err)=>{if (err) err_code = err.code});
-	if (err_code) return [false, null];
+	if (err_code) {
+		console.log("BATCH INSERT ERR 2 = ", err_code);
+		return [false, null];
+	}
 	
 	// 3. Check cached results for existing results
 
@@ -110,7 +127,10 @@ async function db_createBatch(user_id, check_type, title, emails) {
 	).pluck(
 		'email_global_id'
 	).catch((err)=>{if (err) err_code = err.code});
-	if (err_code) return [false, null];
+	if (err_code) {
+		console.log("BATCH INSERT ERR 3 = ", err_code);
+		return [false, null];
+	}
 
 	// - Update batch emails association table entries with cached results
 	await knex(email_batch_association_table).whereIn(
@@ -119,7 +139,10 @@ async function db_createBatch(user_id, check_type, title, emails) {
 		'used_cached': 1,
 		'did_complete': 1,
 	}).catch((err)=>{if (err) err_code = err.code});
-	if (err_code) return [false, null];
+	if (err_code) {
+		console.log("BATCH INSERT ERR 4 = ", err_code);
+		return [false, null];
+	}
 
 	// 4. Get "fresh" email ID's (not cached / need to be verified)
 	const existing_results_set = new Set(existing_results);
@@ -339,6 +362,47 @@ async function db_getBatchesList(user_id, page, limit, order, category, status) 
 	return [true, formatted_batches, metadata];
 }
 
+async function db_getDeliverableBatchStats(batch_id) {
+	let err_code;
+
+	// Get table names
+	const results_table = getResultsTableName('deliverable');
+	const email_batch_association_table = getEmailBatchAssociationTableName('deliverable');
+	if (!results_table || !email_batch_association_table) return [false, null];
+
+	// Get stats
+	const [stats] = await knex(results_table).join(
+		email_batch_association_table,
+		`${email_batch_association_table}.email_global_id`,
+		`${results_table}.email_global_id`
+	).where({
+		[`${email_batch_association_table}.batch_id`]: batch_id,
+		[`${email_batch_association_table}.did_complete`]: 1,
+	}).select(
+		knex.raw(`SUM(CASE WHEN ${results_table}.status = 'deliverable' AND ${results_table}.is_catchall = 0 THEN 1 ELSE 0 END) as valid`),
+		knex.raw(`SUM(CASE 
+			WHEN ${results_table}.is_catchall = 1 OR (${results_table}.status = 'risky' AND ${results_table}.reason = 'low_deliverability') THEN 1 
+			ELSE 0 
+		END) as catchall`),
+		knex.raw(`SUM(CASE 
+			WHEN (${results_table}.is_catchall = 0 OR ${results_table}.is_catchall IS NULL) 
+			AND (${results_table}.status = 'undeliverable' OR (${results_table}.status = 'risky' AND ${results_table}.reason != 'low_deliverability')) THEN 1 
+			ELSE 0 
+		END) as invalid`)
+	).catch((err)=>{if (err) err_code = err});
+	if (err_code || !stats) {
+		console.log("DELIVERABLE BATCH STATS ERR = ", err_code);
+		return [false, null];
+	}
+	
+	// Return
+	return [true, {
+		valid: stats.valid ?? 0,
+		invalid: stats.invalid ?? 0,
+		catchall: stats.catchall ?? 0,
+	}];
+}
+
 async function db_getBatchDetails(user_id, check_type, batch_id) {
 	// Get batch table name
 	const batch_table = getBatchTableName(check_type);
@@ -361,9 +425,17 @@ async function db_getBatchDetails(user_id, check_type, batch_id) {
 
 	// Format batch details
 	// - Mask "queued" as "processing"
-	const batch_details = {
+	let batch_details = {
 		...batch[0],
 		status: (batch[0].status === 'queued') ? 'processing' : batch[0].status
+	}
+
+	// If completed "deliverable" batch, get stats
+	if (check_type === 'deliverable' && batch[0].status === 'completed') {
+		// Get stats
+		const [stats_ok, stats_dict] = await db_getDeliverableBatchStats(batch_id);
+		if (!stats_ok) return [false, null];
+		batch_details.stats = stats_dict;
 	}
 
 	// Return batch details
@@ -377,7 +449,7 @@ async function db_getBatchResults(user_id, check_type, batch_id, page, limit, or
 	const batch_table = getBatchTableName(check_type);
 	const results_table = getResultsTableName(check_type);
 	const email_batch_association_table = getEmailBatchAssociationTableName(check_type);
-	if (!results_table || !email_batch_association_table) return [false, null];
+	if (!batch_table || !results_table || !email_batch_association_table) return [false, null];
 
 	// Ensure batch is completed (and not archived)
 	const batch = await knex(batch_table).where({
@@ -464,7 +536,7 @@ async function db_getBatchResults(user_id, check_type, batch_id, page, limit, or
 
 	// Handle search
 	if (search && search.trim()) {
-		base_query = base_query.where(`${results_table}.email_nominal`, 'like', `%${search.toLowerCase()}%`);
+		base_query = base_query.where(`${email_batch_association_table}.email_nominal`, 'like', `%${search.toLowerCase()}%`);
 	}
 
 	// Get batch results
@@ -523,7 +595,7 @@ async function db_getBatchResults(user_id, check_type, batch_id, page, limit, or
 
 	// Apply same search filter to count query
 	if (search && search.trim()) {
-		count_query = count_query.where(`${results_table}.email_nominal`, 'like', `%${search.toLowerCase()}%`);
+		count_query = count_query.where(`${email_batch_association_table}.email_nominal`, 'like', `%${search.toLowerCase()}%`);
 	}
 
 	const count_result = await count_query.count('* as count').catch((err)=>{if (err) err_code = err.code});
@@ -581,7 +653,7 @@ async function db_checkAndDeductCredits(user_id, check_type, num_emails) {
 				'user_id': user_id,
 				'credits_used': num_emails,
 				'event_typ': 'usage',
-				'created_ts': new Date().toISOString()
+				'usage_ts': knex.fn.now()
 			});
 
 			// Calculate new balance after deduction

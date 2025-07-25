@@ -66,6 +66,10 @@ class QueueManager {
             console.log(`⏳ Job ${job.name} stalled:`, job.id);
         });
 
+        this.queue.on('active', (job) => {
+            console.log(`🏃 Job ${job.name} started:`, job.id, new Date().toISOString());
+        });
+
         this.queue.on('error', (error) => {
             console.error('Queue error:', error);
         });
@@ -84,15 +88,13 @@ class QueueManager {
             maxStalledCount: 1
         };
 
-        // Initialize Batch Creator Worker
-        const BatchCreatorWorker = require('./workers/batch_creator_worker');
-        const batchWorker = new Worker('bouncer-queue', BatchCreatorWorker.processJob, workerConfig);
-        this.workers.push(batchWorker);
+        // Initialize Unified Worker that handles all job types
+        const UnifiedWorker = require('./workers/unified_worker');
+        const unifiedWorker = new Worker('bouncer-queue', UnifiedWorker.processJob, workerConfig);
+        this.workers.push(unifiedWorker);
 
-        // Initialize Status Checker Worker  
-        const StatusCheckerWorker = require('./workers/status_checker_worker');
-        const statusWorker = new Worker('bouncer-queue', StatusCheckerWorker.processJob, workerConfig);
-        this.workers.push(statusWorker);
+        // Log worker info
+        console.log('🔧 Unified Worker initialized (handles both batch creation and status checking)');
 
         console.log(`Initialized ${this.workers.length} workers`);
     }

@@ -31,6 +31,19 @@ export default function Login() {
     }
   }
 
+  // OTP wrapper
+  async function handleOtpClick() {
+    try {
+      const resp = await sendOtp(data.email);
+      if (resp.status !== 200) console.error("Failed to send OTP");
+      else {
+        // TODO: Success message
+      }
+    } catch (error) {
+      console.log(error.message);
+    }
+  }
+
   // Return layout
   return (
     <div className={s.container}>
@@ -69,7 +82,7 @@ export default function Login() {
           <div className={s.or}>
             <span>or</span>
           </div>
-          <button className={`${s.button} ${s.otp}`} type="button">
+          <button className={`${s.button} ${s.otp}`} type="button" onClick={handleOtpClick}>
             Email me a One-Time Password
           </button>
         </div>

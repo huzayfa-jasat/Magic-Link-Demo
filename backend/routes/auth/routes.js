@@ -11,10 +11,12 @@ const {
     loginSuccess, loginFailure,
     getUserStatus,
     registerUser,
+    sendOtpCode,
+    verifyOtpCode,
     changePassword,
     logoutUser,
     requestPasswordReset,
-    validatePasswordReset
+    validatePasswordReset,
 } = require('./controller.js');
 
 // ------------
@@ -28,6 +30,8 @@ authRouter.post('/login', authPass.authenticate('local', {failureMessage: true, 
 
 authRouter.get('/status', checkUserAuth, getUserStatus);
 authRouter.post('/register', registerUser);
+authRouter.post('/otp/send', sendOtpCode);
+authRouter.post('/otp/verify', verifyOtpCode);
 authRouter.patch('/pw/touch', checkUserAuth, changePassword);
 authRouter.get('/logout', checkUserAuth, logoutUser);
 authRouter.post('/password-reset/request', requestPasswordReset);

@@ -28,6 +28,7 @@ import { getAuthStatus } from "./api/auth.js";
 import {
   Login,
   Register,
+  ForgotPassword,
   Settings,
   EmailsHome,
   EmailsUpload,
@@ -84,6 +85,7 @@ export default function App() {
           <Route element={<RulesRouter rule="public" />}>
             <Route exact path="/login" element={<Login />} />
             <Route exact path="/register" element={<Register />} />
+            <Route exact path="/forgot-password" element={<ForgotPassword />} />
             <Route exact path="/" element={<Navigate to="/login" />} />
           </Route>
           {/* Only logged-in users */}
@@ -101,9 +103,14 @@ export default function App() {
                 <EmailsUpload />
               </AppLayout>
             } />
-            <Route exact path="/:id/details" element={
-              <AppLayout title="Batch Details">
-                <EmailsBatchDetails />
+            <Route exact path="/verify/:id/details" element={
+              <AppLayout title="Verify Emails Details">
+                <EmailsBatchDetails checkTyp="verify" />
+              </AppLayout>
+            } />
+            <Route exact path="/catchall/:id/details" element={
+              <AppLayout title="Catchall Details">
+                <EmailsBatchDetails checkTyp="catchall" />
               </AppLayout>
             } />
             <Route exact path="/packages" element={

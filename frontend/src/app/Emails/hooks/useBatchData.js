@@ -1,19 +1,28 @@
+// Dependencies
 import { useState, useEffect, useCallback } from "react";
+
+// API Imports
 import {
   getVerifyBatchDetails,
   getVerifyBatchResults,
+  getCatchallBatchDetails,
+  getCatchallBatchResults,
 } from "../../../api/batches";
-import  useDebounce  from "./useDebounce";
 
-const ITEMS_PER_PAGE = 50;
+// Hook Imports
+import useDebounce from "./useDebounce";
+
+// Constants
+const ITEMS_PER_PAGE = 100;
 
 /**
  * Custom hook for managing batch data, pagination, and search
  * @param {string} id - The batch ID
+ * @param {string} checkType - The type of check (verify or catchall)
  * @returns {object} - Object containing state and handlers
  */
 
-export default function useBatchData(id) {
+export default function useBatchData(id, checkType) {
   // State
   const [details, setDetails] = useState(null);
   const [results, setResults] = useState([]);
@@ -32,44 +41,49 @@ export default function useBatchData(id) {
   // Fetch batch details
   const fetchDetails = useCallback(async () => {
     try {
-      const response = await getVerifyBatchDetails(id);
+      let response;
+      if (checkType === 'verify') response = await getVerifyBatchDetails(id);
+      else if (checkType === 'catchall') response = await getCatchallBatchDetails(id);
       setDetails(response.data);
       return true;
+
     } catch (err) {
       setError("Failed to load batch details");
       console.error("Error fetching details:", err);
       return false;
     }
-  }, [id]);
+  }, [id, checkType]);
+
+  // Load details on mount
+  const loadDetails = async () => {
+    setLoading(true);
+    setError(null);
+    const success = await fetchDetails();
+    if (!success) setLoading(false);
+  };
+  useEffect(() => {
+    loadDetails();
+  }, [fetchDetails]);
 
   // Fetch paginated results
   const fetchResults = useCallback(
     async (page, search = "", append = false) => {
       if (!details) return;
-
-      if (append) {
-        setLoadingMore(true);
-      } else {
-        setResultsLoading(true);
-      }
+      if (append) setLoadingMore(true);
+      else setResultsLoading(true);
       
       try {
-        const response = await getVerifyBatchResults(
-          id,
-          page,
-          ITEMS_PER_PAGE,
-          'timehl',
-          'all',
-          search
-        );
-        
+        // Get response
+        let response;
+        if (checkType === 'verify') response = await getVerifyBatchResults(id, page, ITEMS_PER_PAGE, 'timehl', 'all', search);
+        else if (checkType === 'catchall') response = await getCatchallBatchResults(id, page, ITEMS_PER_PAGE, 'timehl', 'all', search);
+
+        // Get results
         const resultData = response.data.results || [];
-        
-        if (append) {
-          setResults(prev => [...prev, ...resultData]);
-        } else {
-          setResults(resultData);
-        }
+
+        // Set results
+        if (append) setResults(prev => [...prev, ...resultData]);
+        else setResults(resultData);
         
         // Use metadata from new API for pagination
         if (response.data.metadata) {
@@ -80,22 +94,23 @@ export default function useBatchData(id) {
           setTotalPages(Math.ceil(details.emails / ITEMS_PER_PAGE));
           setHasMore(page < Math.ceil(details.emails / ITEMS_PER_PAGE));
         }
-        
+
+        // Return success
         return true;
+
       } catch (err) {
         setError("Failed to load results");
         console.error("Error fetching results:", err);
-        if (!append) {
-          setResults([]);
-        }
+        if (!append) setResults([]);
         return false;
+
       } finally {
         setResultsLoading(false);
         setLoadingMore(false);
         setLoading(false);
       }
     },
-    [id, details]
+    [id, details, checkType]
   );
 
   // Load more results for infinite scroll
@@ -114,19 +129,6 @@ export default function useBatchData(id) {
     setHasMore(true);
   }, [debouncedSearchQuery]);
 
-  // Load details on mount
-  useEffect(() => {
-    const loadDetails = async () => {
-      setLoading(true);
-      setError(null);
-      const success = await fetchDetails();
-      if (!success) {
-        setLoading(false);
-      }
-    };
-    loadDetails();
-  }, [fetchDetails]);
-
   // Load results when details are loaded and page or search changes
   useEffect(() => {
     if (details && !error) {
@@ -134,29 +136,7 @@ export default function useBatchData(id) {
     }
   }, [details, currentPage, debouncedSearchQuery, fetchResults, error]);
 
-  // Calculate result statistics
-  const stats = (results || []).reduce(
-    (acc, item) => {
-      // Map new result format: 1=deliverable, 2=catchall, 0=undeliverable
-      if (item.result === 1) {
-        acc.valid = (acc.valid || 0) + 1;
-      } else if (item.result === 2) {
-        acc.catchall = (acc.catchall || 0) + 1;
-      } else if (item.result === 0) {
-        acc.invalid = (acc.invalid || 0) + 1;
-      } else {
-        acc.pending = (acc.pending || 0) + 1;
-      }
-      return acc;
-    },
-    {
-      valid: 0,
-      invalid: 0,
-      catchall: 0,
-      pending: 0,
-    }
-  );
-
+  // Return hooks
   return {
     // State
     details,
@@ -169,7 +149,6 @@ export default function useBatchData(id) {
     currentPage,
     totalPages,
     searchQuery,
-    stats,
     
     // Handlers
     setCurrentPage,

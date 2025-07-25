@@ -37,6 +37,30 @@ export const registerUser = async (email, pass, name, invite_code, pfp = null) =
   );
 };
 
+export const sendForgotPasswordEmail = async (email) => {
+  return await http.post(
+    "/auth/forgot-password/send",
+    { email },
+    { withCredentials: true }
+  );
+};
+
+export const sendOtpCode = async (email) => {
+  return await http.post(
+    "/auth/otp/send",
+    { email },
+    { withCredentials: true }
+  );
+};
+
+export const verifyOtpCode = async (email, code) => {
+  return await http.post(
+    "/auth/otp/verify",
+    { email, code },
+    { withCredentials: true }
+  );
+};
+
 export const updatePassword = async (new_password) => {
   return await http.patch(
     "/auth/pw/touch",

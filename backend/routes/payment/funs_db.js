@@ -136,7 +136,7 @@ async function db_recordPendingPurchase(userId, sessionId, isCatchall) {
             session_id: sessionId,
             credits: 0, // Will be updated by webhook
             status: 'pending',
-            created_at: new Date()
+            created_at: knex.fn.now()
         }).catch((error) => { err = error; });
 
         if (err) return [false, 'Failed to record purchase attempt'];

@@ -153,7 +153,6 @@ CREATE TABLE Emails_Global (
 DROP TABLE IF EXISTS `Email_Deliverable_Results`;
 CREATE TABLE Email_Deliverable_Results (
     `email_global_id` int NOT NULL,
-    `email_nominal` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
     `status` enum('deliverable', 'risky', 'undeliverable', 'unknown') NOT NULL DEFAULT 'unknown',
     `reason` varchar(50) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT 'unknown',
     `is_catchall` TINYINT(1) NOT NULL DEFAULT 0,
@@ -169,7 +168,6 @@ CREATE TABLE Email_Deliverable_Results (
 DROP TABLE IF EXISTS `Email_Catchall_Results`;
 CREATE TABLE Email_Catchall_Results (
     `email_global_id` int NOT NULL,
-    `email_nominal` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
     `toxicity` int NOT NULL,
     `verified_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -217,6 +215,7 @@ DROP TABLE IF EXISTS `Batch_Emails_Deliverable`;
 CREATE TABLE Batch_Emails_Deliverable (
     `batch_id` int NOT NULL,
     `email_global_id` int NOT NULL,
+    `email_nominal` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
     `used_cached` TINYINT(1) NOT NULL DEFAULT 0, -- 1 if result was from cache
     `did_complete` TINYINT(1) NOT NULL DEFAULT 0, -- 1 if email was processed
     PRIMARY KEY (`batch_id`, `email_global_id`),
@@ -228,6 +227,7 @@ DROP TABLE IF EXISTS `Batch_Emails_Catchall`;
 CREATE TABLE Batch_Emails_Catchall (
     `batch_id` int NOT NULL,
     `email_global_id` int NOT NULL,
+    `email_nominal` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
     `used_cached` TINYINT(1) NOT NULL DEFAULT 0, -- 1 if result was from cache
     `did_complete` TINYINT(1) NOT NULL DEFAULT 0, -- 1 if email was processed
     PRIMARY KEY (`batch_id`, `email_global_id`),

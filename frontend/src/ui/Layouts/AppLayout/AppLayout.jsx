@@ -16,7 +16,7 @@ import { OMNI_LOGO, UPLOAD_ICON, SETTINGS_ICON, SIDEBAR_OPEN, SIDEBAR_CLOSE, COI
 
 // Constants
 const NAV_TABS = [
-  { icon: HOME_ICON, text: "Home", link: "/home" },
+  { icon: HOME_ICON, text: "Validate", link: "/home" },
   { icon: UPLOAD_ICON, text: "Upload", link: "/upload" },
   { icon: COINS_ICON, text: "Credits", link: "/credits" },
   { icon: PACKAGE_ICON, text: "Packages", link: "/packages" },

@@ -90,8 +90,8 @@ export function getMailServerDisplay(mail_server) {
               y2="1.9982"
               gradientTransform="matrix(1 0 0 -1 0 1705.3334)"
             >
-              <stop offset="0" style="stop-color:#35B8F1" />
-              <stop offset="1" style="stop-color:#28A8EA" />
+              <stop offset="0" style={{stopColor: "#35B8F1"}} />
+              <stop offset="1" style={{stopColor: "#28A8EA"}} />
             </linearGradient>
             <path
               fill="url(#SVGID_1_)"
@@ -100,7 +100,7 @@ export function getMailServerDisplay(mail_server) {
             <path
               opacity="0.5"
               fill="#0A2767"
-              enable-background="new    "
+              enableBackground="new    "
               d="M1797.017,891.397v44.287l-663.448,456.791L446.699,906.301  c0-0.235-0.191-0.426-0.426-0.426l0,0l-63.023-37.899v-31.938l25.976-0.426l54.932,31.512l1.277,0.426l4.684,2.981  c0,0,645.563,368.346,647.267,369.197l24.698,14.478c2.129-0.852,4.258-1.703,6.813-2.555  c1.278-0.852,640.879-360.681,640.879-360.681L1797.017,891.397z"
             />
             <path
@@ -109,12 +109,12 @@ export function getMailServerDisplay(mail_server) {
             />
             <path
               opacity="0.1"
-              enable-background="new    "
+              enableBackground="new    "
               d="M1185.52,1279.629l-9.496,5.323c-2.752,1.752-5.595,3.359-8.517,4.812  c-10.462,5.135-21.838,8.146-33.47,8.857l241.405,285.479l421.107,101.476c11.539-8.716,20.717-20.178,26.7-33.343L1185.52,1279.629  z"
             />
             <path
               opacity="0.05"
-              enable-background="new    "
+              enableBackground="new    "
               d="M1228.529,1255.442l-52.505,29.51c-2.752,1.752-5.595,3.359-8.517,4.812  c-10.462,5.135-21.838,8.146-33.47,8.857l113.101,311.838l549.538,74.989c21.649-16.254,34.394-41.743,34.407-68.815v-9.326  L1228.529,1255.442z"
             />
             <path
@@ -123,22 +123,22 @@ export function getMailServerDisplay(mail_server) {
             />
             <path
               opacity="0.1"
-              enable-background="new    "
+              enableBackground="new    "
               d="M1022,418.722v908.303c-0.076,31.846-19.44,60.471-48.971,72.392  c-9.148,3.931-19,5.96-28.957,5.962H425.833V383.25H511v-42.583h433.073C987.092,340.83,1021.907,375.702,1022,418.722z"
             />
             <path
               opacity="0.2"
-              enable-background="new    "
+              enableBackground="new    "
               d="M979.417,461.305v908.302c0.107,10.287-2.074,20.469-6.388,29.808  c-11.826,29.149-40.083,48.273-71.54,48.417H425.833V383.25h475.656c12.356-0.124,24.533,2.958,35.344,8.943  C962.937,405.344,979.407,432.076,979.417,461.305z"
             />
             <path
               opacity="0.2"
-              enable-background="new    "
+              enableBackground="new    "
               d="M979.417,461.305v823.136c-0.208,43-34.928,77.853-77.927,78.225H425.833V383.25  h475.656c12.356-0.124,24.533,2.958,35.344,8.943C962.937,405.344,979.407,432.076,979.417,461.305z"
             />
             <path
               opacity="0.2"
-              enable-background="new    "
+              enableBackground="new    "
               d="M936.833,461.305v823.136c-0.046,43.067-34.861,78.015-77.927,78.225H425.833  V383.25h433.072c43.062,0.023,77.951,34.951,77.927,78.013C936.833,461.277,936.833,461.291,936.833,461.305z"
             />
             <linearGradient
@@ -150,9 +150,9 @@ export function getMailServerDisplay(mail_server) {
               y2="324.2592"
               gradientTransform="matrix(1 0 0 -1 0 1705.3334)"
             >
-              <stop offset="0" style="stop-color:#1784D9" />
-              <stop offset="0.5" style="stop-color:#107AD5" />
-              <stop offset="1" style="stop-color:#0A63C9" />
+              <stop offset="0" style={{stopColor: "#1784D9"}} />
+              <stop offset="0.5" style={{stopColor: "#107AD5"}} />
+              <stop offset="1" style={{stopColor: "#0A63C9"}} />
             </linearGradient>
             <path
               fill="url(#SVGID_2_)"
@@ -200,12 +200,12 @@ export function getMailServerDisplay(mail_server) {
               />
               <linearGradient id="linearGradient1070">
                 <stop
-                  style="stop-color:#3e82f4;stop-opacity:1"
+                  style={{stopColor: "#3e82f4", stopOpacity: 1}}
                   offset="0"
                   id="stop1066"
                 />
                 <stop
-                  style="stop-color:#93dcf7;stop-opacity:1"
+                  style={{stopColor: "#93dcf7", stopOpacity: 1}}
                   offset="1"
                   id="stop1068"
                 />
@@ -215,10 +215,10 @@ export function getMailServerDisplay(mail_server) {
             <g
               id="#2acbffff-4"
               transform="matrix(0.74035173,0,0,0.75447038,-840.95699,-775.15387)"
-              style="fill:#00ff00"
+              style={{fill: "#00ff00"}}
             />
             <path
-              style="opacity:1;fill:url(#linearGradient1072);fill-opacity:1;stroke:none;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+              style={{opacity: 1, fill: "url(#linearGradient1072)", fillOpacity: 1, stroke: "none", strokeWidth: 0, strokeMiterlimit: 4, strokeDasharray: "none", strokeOpacity: 1}}
               d="M 45.864371,0.751258 A 21.518704,21.518704 0 0 0 27.127725,11.764594 11.804325,11.804325 0 0 0 21.976186,10.573131 11.804325,11.804325 0 0 0 10.35494,20.48888 16.255137,16.255137 0 0 0 0.37795502,35.481798 16.255137,16.255137 0 0 0 16.640956,51.721206 16.255137,16.255137 0 0 0 18.679799,51.57426 h 45.187983 a 15.130063,15.202083 0 0 0 0.712824,0.03447 15.130063,15.202083 0 0 0 0.679264,-0.03447 h 1.082164 V 51.49383 A 15.130063,15.202083 0 0 0 79.703385,36.406573 V 36.3774 A 15.130063,15.202083 0 0 0 67.386251,21.477308 21.518704,21.518704 0 0 0 45.864371,0.751258 Z"
               id="rect955"
             />

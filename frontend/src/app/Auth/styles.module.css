@@ -13,10 +13,37 @@
   align-items: center;
 }
 
+.backToLogin {
+  margin: -40px auto 70px -6px;
+  padding: 8px 12px 8px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--brd-light);
+  border-radius: 6px;
+  font-family: "Circular", "Geist", sans-serif;
+  font-size: 14px;
+  color: var(--txt-light);
+  background-color: var(--brd-light-2);
+  text-decoration: none;
+  transition: all 0.2s ease-in-out;
+}
+.backToLogin svg {
+  width: 16px;
+  height: 16px;
+}
+.backToLogin:hover {
+  background-color: var(--brd-light);
+}
+
 .logo {
   height: auto;
   width: 40px;
   margin: 0 auto 50px 0;
+}
+.logo svg {
+  height: 20px;
+  width: auto;
 }
 .title {
   margin: 0 auto 15px 0;
@@ -157,7 +184,7 @@
 
 .button:hover,
 .buttons > button.button:hover {
-  background-color: var(--main-hl-hover);
+  filter: brightness(1.2);
 }
 
 button.otp,

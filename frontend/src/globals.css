@@ -161,7 +161,15 @@
   --main-hl-fade: #99d6f040;
   --main-hl-fade2: #99d6f020;
   --fg-pos: #07D28B;
+  --fg-neu: #e3d10e;
   --fg-neg: #F58680;
+  --bg-neg: #692a27;
+  --result-valid: #50f5ac;
+  --result-valid-fade: #50f5ac20;
+  --result-invalid: #ea3b59;
+  --result-invalid-fade: #ea3b5920;
+  --result-catchall: #f0dc2b;
+  --result-catchall-fade: #f0dc2b20;
 }
 
 

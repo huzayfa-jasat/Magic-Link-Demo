@@ -53,9 +53,9 @@ export default function TransactionCard({
 					<p>{formatTransactionDate(transaction.usage_ts)}</p>
 				</div>
 			</div>
-			<div className={`${styles.credits_used} ${(transaction.credits_used < 0) ? styles.negative : ''}`}>
-				{(transaction.credits_used < 0) ? '-' : '+'}&nbsp;
-				{Math.abs(transaction.credits_used).toLocaleString()}
+			<div className={`${styles.credits_used} ${(transaction.event_typ === 'usage') ? styles.negative : ''}`}>
+				{(transaction.event_typ === 'usage') ? '-' : '+'}&nbsp;
+				{Math.abs(transaction.credits_used).toLocaleString()} Credits
 			</div>
 		</div>
 	);

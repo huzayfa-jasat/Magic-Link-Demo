@@ -1,5 +1,4 @@
 // Dependencies
-import { NavLink, useParams } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
 
 // API Imports

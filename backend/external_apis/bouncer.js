@@ -105,10 +105,10 @@ class BouncerAPI {
             body: requestBody,
             apiKey: this.deliverableApiKey
         });
-        if (!response.requestId) throw new Error('Invalid response from Bouncer API: missing requestId');
+        if (!response.batchId) throw new Error('Invalid response from Bouncer API: missing batchId');
 
 		// Return new batch ID
-        return response.requestId;
+        return response.batchId;
     }
 
     /**
@@ -176,6 +176,7 @@ class BouncerAPI {
 			reason: result.reason,
 			is_catchall: result.domain.acceptAll,
             score: result.score,
+            provider: result.provider,
 		}));
     }
 

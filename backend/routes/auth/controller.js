@@ -14,6 +14,7 @@ const {
 // Transactional Email Function Imports
 const {
     sendWelcomeEmail,
+    sendOtpEmail,
     sendPasswordResetEmail
 } = require('../../external_apis/resend.js');
 
@@ -68,6 +69,59 @@ async function registerUser(req, res) {
         await sendWelcomeEmail(req.body.em);
         return res.status(HttpStatus.SUCCESS_STATUS).send("User registered successfully");
 
+    } catch (err) {
+        return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+    }
+}
+
+/**
+ * Send OTP code
+ */
+async function sendOtpCode(req, res) {
+    try {
+        const { email } = req.body;
+
+        // Validate body
+        if (!email) return res.status(HttpStatus.FAILED_STATUS).send("Missing required fields");
+
+        // Send OTP code
+        const [ok, otp_code] = await db_createOtpCode(email);
+        
+        // Send OTP email
+        if (ok) {
+            const otp_link = `${process.env.FRONTEND_URL_PREFIX}/login?em=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp_code)}`;
+            sendOtpEmail(email, otp_link);
+        }
+
+        // Don't leak existence / non-existence of users
+        // - Same return status even if user DNE
+        return res.sendStatus(HttpStatus.SUCCESS_STATUS);
+
+    } catch (err) {
+        return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+    }
+}
+
+/**
+ * Verify OTP code
+ */
+async function verifyOtpCode(req, res) {
+    try {
+        const { email, code } = req.body;
+
+        // Validate body
+        if (!email || !code) return res.status(HttpStatus.FAILED_STATUS).send("Missing required fields");
+
+        // Validate email and code
+        const ok = await db_validateOtpCode(email, code);
+        if (!ok) return res.status(HttpStatus.UNAUTHORIZED_STATUS).send("Invalid or expired OTP code");
+
+        // Login user
+        // TODO
+
+        // Return success
+        return res.status(HttpStatus.SUCCESS_STATUS).send("OTP code verified successfully");
+        
     } catch (err) {
         return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
     }
@@ -139,6 +193,7 @@ async function validatePasswordReset(req, res) {
         return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
     }
 }
+
 // Export controllers
 module.exports = {
     authPass,
@@ -146,6 +201,8 @@ module.exports = {
     loginFailure,
     getUserStatus,
     registerUser,
+    sendOtpCode,
+    verifyOtpCode,
     changePassword,
     logoutUser,
     requestPasswordReset,
