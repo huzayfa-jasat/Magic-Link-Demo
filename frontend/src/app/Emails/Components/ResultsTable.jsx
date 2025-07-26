@@ -38,6 +38,23 @@ const getResultDisplay = (result) => {
 		</div>
 	);
 }
+const getScoreDisplay = (score) => {
+	if (score === undefined || score === null) return <></>;
+
+	// Get score "category" (just match up with colors from resutls map)
+	let score_category;
+	if (score >= 70) score_category = 1;
+	else if (score >= 50) score_category = 2;
+	else score_category = 0;
+	
+	// Return
+	return (
+		<div className={`${styles.tableCellResult} ${RESULT_DISPLAY_MAP[score_category].className}`}>
+			{RESULT_DISPLAY_MAP[score_category].icon}
+			{score} / 100
+		</div>
+	)
+}
 
 // Component
 export default function ResultsTable({
@@ -50,8 +67,13 @@ export default function ResultsTable({
 			<thead className={styles.tableHeader}>
 				<tr>
 					<th className={styles.tableHeaderCell}>Email</th>
-					<th className={styles.tableHeaderCell}>Status</th>
-					<th className={styles.tableHeaderCell}>Mail Server</th>
+					{(typ === 'verify') && (<>
+						<th className={styles.tableHeaderCell}>Status</th>
+						<th className={styles.tableHeaderCell}>Mail Server</th>
+					</>)}
+					{(typ === 'catchall') && (
+						<th className={styles.tableHeaderCell}>Deliverability Score</th>
+					)}
 				</tr>
 			</thead>
 			<tbody>
@@ -61,12 +83,19 @@ export default function ResultsTable({
 							<td className={styles.tableCell}>
 								{item.email}
 							</td>
-							<td className={`${styles.tableCell} ${styles.tableCellResult}`}>
-								{getResultDisplay(item.result)}
-							</td>
-							<td className={styles.tableCell}>
-								{getMailServerDisplay(item.provider)}
-							</td>
+							{(typ === 'verify') && (<>
+								<td className={`${styles.tableCell} ${styles.tableCellResult}`}>
+									{getResultDisplay(item.result)}
+								</td>
+								<td className={styles.tableCell}>
+									{getMailServerDisplay(item.provider)}
+								</td>
+							</>)}
+							{(typ === 'catchall') && (
+								<td className={`${styles.tableCell} ${styles.tableCellResult}`}>
+									{getScoreDisplay(item.score)}
+								</td>
+							)}
 						</tr>
 					);
 				})}

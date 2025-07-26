@@ -66,13 +66,13 @@ export default function PackagesController() {
           className={`${styles.pageButton} ${(currPage === "validate") ? styles.active : ""}`}
           onClick={() => setCurrPage("validate")}
         >
-          Validate
+          Validate Emails
         </button>
         <button
           className={`${styles.pageButton} ${(currPage === "catchall") ? styles.active : ""}`}
           onClick={() => setCurrPage("catchall")}
         >
-          Catch-All
+          Test Catch-All's
         </button>
       </div>
       <br/><br/>

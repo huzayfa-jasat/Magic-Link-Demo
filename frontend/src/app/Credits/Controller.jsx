@@ -70,13 +70,13 @@ export default function CreditsController() {
       <br />
       <div className={styles.balanceRow}>
         <BalanceCard
-          title="Validate"
+          title="Validate Emails"
           balance={currentBalance}
           buttonText="Buy Credits"
           buttonLink="/packages?p=validate"
         />
         <BalanceCard
-          title="Catch-All"
+          title="Test Catch-All's"
           balance={catchallCurrentBalance}
           buttonText="Buy Credits"
           buttonLink="/packages?p=catchall"

@@ -95,33 +95,49 @@ export default function BatchCard({
 		[request.id, request.category]
 	);
 	
+	// Check if batch is completed
+	const isCompleted = request.status === 'completed' || request.status === 'complete';
+	
 	// Render
-	return (
-		<NavLink
-			key={request.id}
-			to={details_link}
-			className={styles.link}
-		>
-			<div className={styles.card}>
-				<div className={styles.cardHeader}>
-					<div className={styles.subtitle}>
-						{request.title || `New Request`}
-					</div>
-					{getValidateTypeDisplay(request.category)}
+	const cardContent = (
+		<div className={styles.card}>
+			<div className={styles.cardHeader}>
+				<div className={styles.subtitle}>
+					{request.title || `New Request`}
 				</div>
-				<div className={styles.stats}>
-					<div className={styles.stat}>
-						<span className={styles.statLabel}>Emails</span>
-						<span className={styles.statValue}>
-							{request.emails}
-						</span>
-					</div>
-					<div className={styles.stat}>
-						<span className={styles.statLabel}>Status</span>
-						{getStatusDisplay(request.status)}
-					</div>
+				{getValidateTypeDisplay(request.category)}
+			</div>
+			<div className={styles.stats}>
+				<div className={styles.stat}>
+					<span className={styles.statLabel}>Emails</span>
+					<span className={styles.statValue}>
+						{request.emails}
+					</span>
+				</div>
+				<div className={styles.stat}>
+					<span className={styles.statLabel}>Status</span>
+					{getStatusDisplay(request.status)}
 				</div>
 			</div>
-		</NavLink>
+		</div>
 	);
+
+	// Return clickable NavLink only if completed, otherwise just the card
+	if (isCompleted) {
+		return (
+			<NavLink
+				key={request.id}
+				to={details_link}
+				className={styles.link}
+			>
+				{cardContent}
+			</NavLink>
+		);
+	} else {
+		return (
+			<div key={request.id} className={styles.link} style={{ cursor: 'default' }}>
+				{cardContent}
+			</div>
+		);
+	}
 }

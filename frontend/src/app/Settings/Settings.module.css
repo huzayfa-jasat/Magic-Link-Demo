@@ -112,7 +112,8 @@
 
 .apiKeyActions {
   display: flex;
-  gap: 12px;
+  margin-top: 5px;
+  justify-content: space-between;
 }
 
 .generateButton, .regenerateButton, .deleteButton {
@@ -130,6 +131,10 @@
   text-decoration: none;
 }
 
+.generateButton {
+  margin-top: 15px;
+}
+
 .generateButton, .regenerateButton {
   border: 1px solid var(--main-hl);
   background-color: var(--main-hl);
@@ -141,9 +146,9 @@
 }
 
 .deleteButton {
-  border: 1px solid #dc3545;
-  background-color: #dc3545;
-  color: var(--white);
+  border: 1px solid var(--fg-neg);
+  background-color: var(--bg-neg);
+  color: var(--fg-neg);
 }
 
 .deleteButton:hover {
@@ -175,7 +180,7 @@
 .modal {
   background-color: var(--white);
   border-radius: 8px;
-  padding: 24px;
+  padding: 30px;
   max-width: 500px;
   width: 90%;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
@@ -198,21 +203,22 @@
 }
 
 .apiKeyDisplay {
-  background-color: var(--bg-light);
+  background-color: var(--body);
   border: 1px solid var(--brd-light);
   border-radius: 6px;
   padding: 16px;
   font-family: "PP Supply Mono", monospace;
-  font-size: 14px;
+  font-size: 16px;
   word-break: break-all;
   margin: 0 0 20px 0;
   color: var(--black);
 }
 
 .modalActions {
+  width: 100%;
   display: flex;
   gap: 12px;
-  justify-content: flex-end;
+  justify-content: space-between;
 }
 
 .copyButton, .closeButton {

@@ -143,7 +143,7 @@ export default function SettingsController() {
 
   // Handle delete API key
   const handleDeleteApiKey = async () => {
-    if (!confirm("Are you sure you want to delete your API key? This action cannot be undone.")) {
+    if (!window.confirm("Are you sure you want to delete your API key? This action cannot be undone.")) {
       return;
     }
     
@@ -213,7 +213,7 @@ export default function SettingsController() {
             </>
           ) : (
             <>
-              <div className={styles.fieldValue + ' ' + styles.noValue}>No API key generated</div>
+              {/* <div className={styles.fieldValue + ' ' + styles.noValue}>No API key generated</div> */}
               <button onClick={handleGenerateApiKey} className={styles.generateButton}>
                 Generate API Key
               </button>
@@ -238,15 +238,15 @@ export default function SettingsController() {
               {newApiKey}
             </div>
             <div className={styles.modalActions}>
+              <button onClick={handleCloseModal} className={styles.closeButton}>
+                Close
+              </button>
               <button 
                 onClick={handleCopyApiKey} 
-                className={copySuccess ? styles.copySuccess : styles.copyButton}
+                className={`${styles.copyButton} ${copySuccess ? styles.copySuccess : ''}`}
               >
                 {copySuccess && COMPLETE_CHECK_ICON}
                 {copySuccess ? "Copied!" : "Copy"}
-              </button>
-              <button onClick={handleCloseModal} className={styles.closeButton}>
-                Close
               </button>
             </div>
           </div>

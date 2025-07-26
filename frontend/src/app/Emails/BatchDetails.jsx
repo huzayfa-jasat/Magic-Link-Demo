@@ -1,6 +1,6 @@
 // Dependencies
 import { useCallback, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import Popup from "reactjs-popup";
 
 // API Imports
@@ -38,6 +38,7 @@ export default function EmailsBatchDetailsController({
   checkTyp,
 }) {
   const { id } = useParams();
+  const navigate = useNavigate();
 
   // Use custom hook for all batch data management
   const {
@@ -52,6 +53,13 @@ export default function EmailsBatchDetailsController({
     setSearchQuery,
     loadMore,
   } = useBatchData(id, checkTyp);
+
+  // Check if batch is completed and navigate back if not
+  useEffect(() => {
+    if (details && details.status !== 'completed' && details.status !== 'complete') {
+      navigate('/home');
+    }
+  }, [details, navigate]);
 
   // Infinite scroll detection
   const handleScroll = () => {
@@ -167,43 +175,45 @@ export default function EmailsBatchDetailsController({
       {/* Page header with title and export dropdown */}
       <div className={styles.detailsHeader}>
         <h1 className={styles.detailsTitle}>{details.title ?? "Details"}</h1>
-        <Popup
-          position="bottom right"
-          arrow={false}
-          on={["click"]}
-          closeOnDocumentClick
-          trigger={
-            <button className={`${styles.button} ${styles.buttonPrimary}`}>
-              {EXPORT_ICON}
-              Export
+        {(checkTyp === 'verify') && (
+          <Popup
+            position="bottom right"
+            arrow={false}
+            on={["click"]}
+            closeOnDocumentClick
+            trigger={
+              <button className={`${styles.button} ${styles.buttonPrimary}`}>
+                {EXPORT_ICON}
+                Export
+              </button>
+            }
+          >
+            <div className={styles.exportMenu}>
+            <button onClick={() => handleExportFiltered("all")}>
+              {EMAIL_ICON}
+              All Emails
             </button>
-          }
-        >
-          <div className={styles.exportMenu}>
-          <button onClick={() => handleExportFiltered("all")}>
-            {EMAIL_ICON}
-            All Emails
-          </button>
-            {(details.stats.valid > 0) && (
-              <button className={styles.valid} onClick={() => handleExportFiltered("valid")}>
-                {VERIFY_VALID_ICON}
-                Only Valid
-              </button>
-            )}
-            {(details.stats.invalid > 0) && (
-              <button className={styles.invalid} onClick={() => handleExportFiltered("invalid")}>
-                {VERIFY_INVALID_ICON}
-                Only Invalid
-              </button>
-            )}
-            {(details.stats.catchall > 0) && (
-              <button className={styles.catchall} onClick={() => handleExportFiltered("catch-all")}>
-                {VERIFY_CATCHALL_ICON}
-                Only Catch-All
-              </button>
-            )}
-          </div>
-        </Popup>
+              {(details.stats.valid > 0) && (
+                <button className={styles.valid} onClick={() => handleExportFiltered("valid")}>
+                  {VERIFY_VALID_ICON}
+                  Only Valid
+                </button>
+              )}
+              {(details.stats.invalid > 0) && (
+                <button className={styles.invalid} onClick={() => handleExportFiltered("invalid")}>
+                  {VERIFY_INVALID_ICON}
+                  Only Invalid
+                </button>
+              )}
+              {(details.stats.catchall > 0) && (
+                <button className={styles.catchall} onClick={() => handleExportFiltered("catch-all")}>
+                  {VERIFY_CATCHALL_ICON}
+                  Only Catch-All
+                </button>
+              )}
+            </div>
+          </Popup>
+        )}
       </div>
 
       {/* Search input for filtering results */}
@@ -219,11 +229,13 @@ export default function EmailsBatchDetailsController({
       </div>
 
       {/* Statistics cards showing batch summary */}
-      <DetailStats
-        valid={details.stats.valid}
-        invalid={details.stats.invalid}
-        catchall={details.stats.catchall}
-      />
+      {(checkTyp === 'verify') && (
+        <DetailStats
+          valid={details.stats.valid}
+          invalid={details.stats.invalid}
+          catchall={details.stats.catchall}
+        />
+      )}
 
       {/* Results table */}
       <div className={styles.tableContainer}>

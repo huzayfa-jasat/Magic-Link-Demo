@@ -148,6 +148,20 @@ async function db_createBatch(user_id, check_type, title, emails) {
 	const existing_results_set = new Set(existing_results);
 	const fresh_email_ids = emails.filter((email)=>!existing_results_set.has(email.global_id)).map((email)=>email.global_id);
 
+	// 5. Handle edge case: if all emails were cached, mark batch as completed immediately
+	if (fresh_email_ids.length === 0 && existing_results.length === emails.length) {
+		await knex(batch_table).where({
+			'id': batch_id
+		}).update({
+			'status': 'completed',
+			'completed_ts': knex.fn.now()
+		}).catch((err)=>{if (err) err_code = err.code});
+		if (err_code) {
+			console.log("BATCH INSERT ERR 5 (update to completed) = ", err_code);
+			return [false, null];
+		}
+	}
+
 	// Return
 	return [true, batch_id, fresh_email_ids];
 }
