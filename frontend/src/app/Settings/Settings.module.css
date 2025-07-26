@@ -102,3 +102,163 @@
   font-size: 16px;
   color: var(--txt-light);
 }
+
+/* API Key styles */
+.apiKeyContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.apiKeyActions {
+  display: flex;
+  gap: 12px;
+}
+
+.generateButton, .regenerateButton, .deleteButton {
+  width: fit-content;
+  padding: 0 16px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: "Sohne", sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  text-decoration: none;
+}
+
+.generateButton, .regenerateButton {
+  border: 1px solid var(--main-hl);
+  background-color: var(--main-hl);
+  color: var(--white);
+}
+
+.generateButton:hover, .regenerateButton:hover {
+  filter: brightness(1.1);
+}
+
+.deleteButton {
+  border: 1px solid #dc3545;
+  background-color: #dc3545;
+  color: var(--white);
+}
+
+.deleteButton:hover {
+  filter: brightness(1.1);
+}
+
+.uneditable {
+  cursor: default !important;
+}
+
+.uneditable:hover {
+  opacity: 1 !important;
+}
+
+/* Modal styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background-color: var(--white);
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.modalTitle {
+  margin: 0 0 16px 0;
+  font-family: "Circular", "Geist", sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--black);
+}
+
+.modalDescription {
+  margin: 0 0 20px 0;
+  font-family: "Circular", "Geist", sans-serif;
+  font-size: 14px;
+  color: var(--txt-light);
+  line-height: 1.4;
+}
+
+.apiKeyDisplay {
+  background-color: var(--bg-light);
+  border: 1px solid var(--brd-light);
+  border-radius: 6px;
+  padding: 16px;
+  font-family: "PP Supply Mono", monospace;
+  font-size: 14px;
+  word-break: break-all;
+  margin: 0 0 20px 0;
+  color: var(--black);
+}
+
+.modalActions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.copyButton, .closeButton {
+  padding: 0 16px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--txt-light-2);
+  border-radius: 6px;
+  font-size: 15px;
+  font-family: "Sohne", sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  text-decoration: none;
+}
+
+.copyButton {
+  background-color: var(--main-hl);
+  color: var(--white);
+  border-color: var(--main-hl);
+}
+
+.copyButton:hover {
+  filter: brightness(1.1);
+}
+
+.copySuccess {
+  background-color: var(--main-hl-fade2) !important;
+  color: var(--main-hl) !important;
+  border-color: var(--main-hl) !important;
+}
+
+.copySuccess svg {
+  height: 18px;
+  width: auto;
+  margin: auto 0;
+}
+
+.closeButton {
+  background-color: var(--white);
+  color: var(--txt-light);
+  border-color: var(--txt-light-2);
+}
+
+.closeButton:hover {
+  background-color: var(--bg-light);
+}

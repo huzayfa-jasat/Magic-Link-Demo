@@ -9,9 +9,8 @@ const { checkUserAuth } = require('../auth/funs_perms.js');
 const {
     getProfileDetails,
     getApiKey,
-    createApiKey,
-    refreshApiKey,
-    removeApiKey,
+    generateApiKey,
+    deleteApiKey,
     updateProfileDetails,
 } = require('./controller.js');
 
@@ -19,9 +18,8 @@ const {
 settingsRouter.use(checkUserAuth);
 settingsRouter.get('/profile/dtl', getProfileDetails);
 settingsRouter.get('/api/keys/view', getApiKey);
-settingsRouter.post('/api/keys/new', createApiKey);
-settingsRouter.patch('/api/keys/refresh', refreshApiKey);
-settingsRouter.delete('/api/keys/rm', removeApiKey);
+settingsRouter.post('/api/keys/generate', generateApiKey);
+settingsRouter.delete('/api/keys/delete', deleteApiKey);
 settingsRouter.patch('/profile/:key/touch', updateProfileDetails);
 
 // Export
