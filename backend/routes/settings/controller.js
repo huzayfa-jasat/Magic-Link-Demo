@@ -8,9 +8,8 @@ const {
 	db_updateProfileEmail,
 	db_updateProfileName,
 	db_updateProfilePicture,
-	db_createApiKey,
-	db_refreshApiKey,
-	db_removeApiKey,
+	db_generateApiKey,
+	db_deleteApiKey,
 } = require("./funs_db.js");
 
 
@@ -47,34 +46,15 @@ async function getApiKey(req, res) {
 }
 
 /**
- * Create API key
+ * Generate/Regenerate API key (handles both create and regenerate)
  */
-async function createApiKey(req, res) {
+async function generateApiKey(req, res) {
 	try {
-		const [ok, apiKey] = await db_createApiKey(req.user.id);
+		const [ok, apiKey] = await db_generateApiKey(req.user.id);
 		if (ok && apiKey) {
-			return res.status(HttpStatus.SUCCESS_STATUS).json({'data': apiKey});
-		} else if (!ok) {
-			return res.status(HttpStatus.FAILED_STATUS).send("API key already exists or failed to create");
+			return res.status(HttpStatus.SUCCESS_STATUS).json({'data': { apiKey }});
 		}
-		return res.status(HttpStatus.FAILED_STATUS).send("Failed to create API key");
-
-	} catch (err) {
-		console.log("MTE = ", err);
-		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
-	}
-}
-
-/**
- * Regenerate API key
- */
-async function refreshApiKey(req, res) {
-	try {
-		const [ok, apiKey] = await db_refreshApiKey(req.user.id);
-		if (ok && apiKey) {
-			return res.status(HttpStatus.SUCCESS_STATUS).json({'data': apiKey});
-		}
-		return res.status(HttpStatus.FAILED_STATUS).send("Failed to regenerate API key");
+		return res.status(HttpStatus.FAILED_STATUS).send("Failed to generate API key");
 
 	} catch (err) {
 		console.log("MTE = ", err);
@@ -85,9 +65,9 @@ async function refreshApiKey(req, res) {
 /**
  * Delete API key
  */
-async function removeApiKey(req, res) {
+async function deleteApiKey(req, res) {
 	try {
-		const ok = await db_removeApiKey(req.user.id);
+		const ok = await db_deleteApiKey(req.user.id);
 		if (ok) return res.sendStatus(HttpStatus.SUCCESS_STATUS);
 		return res.status(HttpStatus.FAILED_STATUS).send("Failed to delete API key");
 
@@ -130,8 +110,7 @@ async function updateProfileDetails(req, res) {
 module.exports = {
 	getProfileDetails,
 	getApiKey,
-	createApiKey,
-	refreshApiKey,
-	removeApiKey,
+	generateApiKey,
+	deleteApiKey,
 	updateProfileDetails,
 };

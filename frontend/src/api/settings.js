@@ -45,3 +45,21 @@ export const updateProfileEmail = async (email) => {
     }
   );
 };
+
+export const getApiKey = async () => {
+  return await http.get(`${MODULE_PREFIX}/api/keys/view`, {
+    withCredentials: true,
+  });
+};
+
+export const generateApiKey = async () => {
+  return await http.post(`${MODULE_PREFIX}/api/keys/generate`, {}, {
+    withCredentials: true,
+  });
+};
+
+export const deleteApiKey = async () => {
+  return await http.delete(`${MODULE_PREFIX}/api/keys/delete`, {
+    withCredentials: true,
+  });
+};

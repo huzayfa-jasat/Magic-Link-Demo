@@ -12,12 +12,18 @@ import {
   getProfileDetails,
   updateProfileEmail,
   updateProfileName,
-  updateProfileLogo
+  updateProfileLogo,
+  getApiKey,
+  generateApiKey,
+  deleteApiKey
 } from "../../api/settings.js";
 import { logoutUser } from "../../api/auth.js";
 
 // Style Imports
 import styles from "./Settings.module.css";
+
+// Icon Imports
+import { COMPLETE_CHECK_ICON } from "../../assets/icons";
 
 // Constants
 const PROFILE_FIELDS = ["Email", "Name" /* , "ProfileImage" */];
@@ -36,6 +42,12 @@ export default function SettingsController() {
   const [profile, setProfile] = useState({ Email: "", Name: "", ProfileImage: "" });
   const [activeField, setActiveField] = useState(null);
   const [inputValue, setInputValue] = useState("");
+  
+  // API Key states
+  const [apiKey, setApiKey] = useState(null);
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [newApiKey, setNewApiKey] = useState("");
+  const [copySuccess, setCopySuccess] = useState(false);
 
   // Load profile details
   async function loadProfile() {
@@ -52,8 +64,20 @@ export default function SettingsController() {
       setLoading(false);
     }
   }
+
+  // Load API key
+  async function loadApiKey() {
+    try {
+      const { data } = await getApiKey();
+      setApiKey(data?.data?.apiKey || null);
+    } catch (err) {
+      console.error("API key fetch error:", err);
+    }
+  }
+
   useEffect(() => {
     loadProfile();
+    loadApiKey();
   }, []);
 
   // Handle edit click
@@ -82,6 +106,53 @@ export default function SettingsController() {
   const handleLogout = async () => {
     await logoutUser();
     window.location.reload();
+  };
+
+  // Handle API key generation
+  const handleGenerateApiKey = async () => {
+    try {
+      const { data } = await generateApiKey();
+      setNewApiKey(data?.data?.apiKey || "");
+      setShowApiKeyModal(true);
+      // Refresh the masked API key
+      loadApiKey();
+    } catch (err) {
+      console.error("API key generation error:", err);
+    }
+  };
+
+  // Handle copy API key
+  const handleCopyApiKey = async () => {
+    try {
+      await navigator.clipboard.writeText(newApiKey);
+      setCopySuccess(true);
+      setTimeout(() => {
+        setCopySuccess(false);
+      }, 3000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
+
+  // Handle close modal
+  const handleCloseModal = () => {
+    setShowApiKeyModal(false);
+    setNewApiKey("");
+    setCopySuccess(false);
+  };
+
+  // Handle delete API key
+  const handleDeleteApiKey = async () => {
+    if (!confirm("Are you sure you want to delete your API key? This action cannot be undone.")) {
+      return;
+    }
+    
+    try {
+      await deleteApiKey();
+      setApiKey(null);
+    } catch (err) {
+      console.error("API key deletion error:", err);
+    }
   };
 
   // Render
@@ -124,9 +195,63 @@ export default function SettingsController() {
         );
       })}
 
+      {/* API Key Section */}
+      <div className={styles.profileCard}>
+        <h3 className={styles.fieldTitle}>API Key</h3>
+        <div className={styles.apiKeyContainer}>
+          {apiKey ? (
+            <>
+              <div className={styles.fieldValue}>{apiKey}</div>
+              <div className={styles.apiKeyActions}>
+                <button onClick={handleGenerateApiKey} className={styles.regenerateButton}>
+                  Regenerate
+                </button>
+                <button onClick={handleDeleteApiKey} className={styles.deleteButton}>
+                  Delete
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className={styles.fieldValue + ' ' + styles.noValue}>No API key generated</div>
+              <button onClick={handleGenerateApiKey} className={styles.generateButton}>
+                Generate API Key
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
       <button onClick={handleLogout} className={styles.signOutButton}>
         Sign Out
       </button>
+
+      {/* API Key Modal */}
+      {showApiKeyModal && (
+        <div className={styles.modalOverlay} onClick={handleCloseModal}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h2 className={styles.modalTitle}>Your API Key</h2>
+            <p className={styles.modalDescription}>
+              Save this API key securely. You won't be able to see it again.
+            </p>
+            <div className={styles.apiKeyDisplay}>
+              {newApiKey}
+            </div>
+            <div className={styles.modalActions}>
+              <button 
+                onClick={handleCopyApiKey} 
+                className={copySuccess ? styles.copySuccess : styles.copyButton}
+              >
+                {copySuccess && COMPLETE_CHECK_ICON}
+                {copySuccess ? "Copied!" : "Copy"}
+              </button>
+              <button onClick={handleCloseModal} className={styles.closeButton}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
