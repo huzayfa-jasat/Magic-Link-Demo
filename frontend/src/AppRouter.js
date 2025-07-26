@@ -87,7 +87,7 @@ export default function App() {
             <Route exact path="/login" element={<Login />} />
             <Route exact path="/register" element={<Register />} />
             <Route exact path="/forgot-password" element={<ForgotPassword />} />
-            <Route exact path="/loginotp" element={<LoginOTP />} />
+            <Route exact path="/otp" element={<LoginOTP />} />
             <Route exact path="/" element={<Navigate to="/login" />} />
           </Route>
           {/* Only logged-in users */}

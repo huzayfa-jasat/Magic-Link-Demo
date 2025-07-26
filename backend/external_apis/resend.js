@@ -19,7 +19,7 @@ async function sendWelcomeEmail(recipient_email) {
             <link
               rel="preload"
               as="image"
-              href="https://app.omniverifier.com/logo192.png" />
+              href="${LOGO_URL}" />
             <meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
             <meta name="x-apple-disable-message-reformatting" />
           </head>
@@ -66,7 +66,7 @@ async function sendWelcomeEmail(recipient_email) {
                                     <img
                                       alt="OmniVerifier Logo"
                                       height="80"
-                                      src="https://app.omniverifier.com/logo192.png"
+                                      src="${LOGO_URL}"
                                       style="width:80px;height:auto;object-fit:cover;margin-left:auto;margin-right:auto;display:block;outline:none;border:none;text-decoration:none"
                                       width="80" />
                                   </td>
@@ -245,7 +245,7 @@ async function sendOtpEmail(recipient_email, otp_link) {
   <link
     rel="preload"
     as="image"
-    href="https://app.omniverifier.com/logo192.png" />
+    href="${LOGO_URL}" />
   <meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
   <meta name="x-apple-disable-message-reformatting" />
 </head>
@@ -292,7 +292,7 @@ async function sendOtpEmail(recipient_email, otp_link) {
                           <img
                             alt="OmniVerifier Logo"
                             height="80"
-                            src="https://app.omniverifier.com/logo192.png"
+                            src="${LOGO_URL}"
                             style="width:80px;height:auto;object-fit:cover;margin-left:auto;margin-right:auto;display:block;outline:none;border:none;text-decoration:none"
                             width="80" />
                         </td>
@@ -332,7 +332,7 @@ async function sendOtpEmail(recipient_email, otp_link) {
                               <tr>
                                 <td>
                                   <a
-                                    href=${otp_link}
+                                    href="${otp_link}"
                                     style="background-color:rgb(110,207,255);border-radius:4px;color:rgb(0,0,0);font-weight:700;font-size:16px;padding-left:24px;padding-right:24px;padding-top:12px;padding-bottom:12px;text-decoration-line:none;text-align:center;display:inline-block;box-sizing:border-box;line-height:100%;text-decoration:none;max-width:100%;mso-padding-alt:0px;padding:12px 24px 12px 24px"
                                     target="_blank"
                                     ><span
@@ -446,7 +446,7 @@ async function sendPasswordResetEmail(recipient_email, resetLink) {
     <link
       rel="preload"
       as="image"
-      href="https://app.omniverifier.com/logo192.png" />
+      href="${LOGO_URL}" />
     <meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
     <meta name="x-apple-disable-message-reformatting" />
   </head>
@@ -494,7 +494,7 @@ async function sendPasswordResetEmail(recipient_email, resetLink) {
                             <img
                               alt="OmniVerifier Logo"
                               height="80"
-                              src="https://app.omniverifier.com/logo192.png"
+                              src="${LOGO_URL}"
                               style="width:80px;height:auto;object-fit:cover;margin-left:auto;margin-right:auto;display:block;outline:none;border:none;text-decoration:none"
                               width="80" />
                           </td>
@@ -534,7 +534,7 @@ async function sendPasswordResetEmail(recipient_email, resetLink) {
                                 <tr>
                                   <td>
                                     <a
-                                      href=${resetLink}
+                                      href="${resetLink}"
                                       style="background-color:rgb(110,207,255);border-radius:4px;color:rgb(0,0,0);font-weight:700;font-size:16px;padding-left:24px;padding-right:24px;padding-top:12px;padding-bottom:12px;text-decoration-line:none;text-align:center;display:inline-block;box-sizing:border-box;line-height:100%;text-decoration:none;max-width:100%;mso-padding-alt:0px;padding:12px 24px 12px 24px"
                                       target="_blank"
                                       ><span
@@ -648,7 +648,7 @@ async function sendLowCreditsEmail(recipient_email, balance) {
     <link
       rel="preload"
       as="image"
-      href="https://app.omniverifier.com/logo192.png" />
+      href="${LOGO_URL}" />
     <meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
     <meta name="x-apple-disable-message-reformatting" />
   </head>
@@ -697,7 +697,7 @@ async function sendLowCreditsEmail(recipient_email, balance) {
                             <img
                               alt="OmniVerifier Logo"
                               height="80"
-                              src="https://app.omniverifier.com/logo192.png"
+                              src="${LOGO_URL}"
                               style="width:80px;height:auto;object-fit:cover;margin-left:auto;margin-right:auto;display:block;outline:none;border:none;text-decoration:none"
                               width="80" />
                           </td>
@@ -743,7 +743,7 @@ async function sendLowCreditsEmail(recipient_email, balance) {
                                 <tr>
                                   <td>
                                     <a
-                                      href='${process.env.FRONTEND_URL_PREFIX}/credits/purchase'
+                                      href="${process.env.FRONTEND_URL_PREFIX}/credits/purchase"
                                       style="background-color:rgb(110,207,255);border-radius:4px;color:rgb(0,0,0);font-weight:700;font-size:16px;padding-left:24px;padding-right:24px;padding-top:12px;padding-bottom:12px;text-decoration-line:none;text-align:center;display:inline-block;box-sizing:border-box;line-height:100%;text-decoration:none;max-width:100%;mso-padding-alt:0px;padding:12px 24px 12px 24px"
                                       target="_blank"
                                       ><span

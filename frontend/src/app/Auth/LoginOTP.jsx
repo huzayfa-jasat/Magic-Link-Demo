@@ -6,6 +6,9 @@ import { useForm } from "react-hook-form";
 // API Imports
 import { sendOtpCode, verifyOtpCode } from "../../api/auth.js";
 
+// Component Imports
+import { LoadingCircle } from "../../ui/components/LoadingCircle.jsx";
+
 // Style Imports
 import s from "./styles.module.css";
 
@@ -19,42 +22,35 @@ import {
 export default function LoginOTP() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  // States
   const [isValidateFlow, setIsValidateFlow] = useState(false);
-  const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
+  // Form controls
   const {
     register,
     handleSubmit,
   } = useForm();
-
+      
+  // Auto-validate when URL params are present
+  async function verifyOTP(email, code) {
+    try {
+      const resp = await verifyOtpCode(email, code);
+      if (resp.status === 200) window.location.reload();
+      else navigate('/login', { replace: true });
+    } catch (error) {
+      navigate('/login', { replace: true });
+    }
+  }
   useEffect(() => {
-    const urlEmail = searchParams.get('em');
-    const urlOtp = searchParams.get('otp');
-    
+    const urlEmail = searchParams.get('email');
+    const urlOtp = searchParams.get('code');
     if (urlEmail && urlOtp) {
       setIsValidateFlow(true);
-      setEmail(decodeURIComponent(urlEmail));
-      setOtp(decodeURIComponent(urlOtp));
-      
-      // Auto-validate when URL params are present
-      const verifyOTP = async () => {
-        try {
-          const resp = await verifyOtpCode(decodeURIComponent(urlEmail), decodeURIComponent(urlOtp));
-          if (resp.status === 200) {
-            window.location.reload();
-          } else {
-            navigate('/login');
-          }
-        } catch (error) {
-          navigate('/login');
-        }
-      };
-      
-      verifyOTP();
+      verifyOTP(decodeURIComponent(urlEmail), decodeURIComponent(urlOtp));
     }
   }, [searchParams, navigate]);
 
@@ -76,23 +72,10 @@ export default function LoginOTP() {
     }
   }
 
-  // Return layout - if validate flow, show loading
-  if (isValidateFlow) {
-    return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        flexDirection: 'column',
-        gap: '20px'
-      }}>
-        <div>Verifying your login...</div>
-      </div>
-    );
-  }
+  // Render - Validation Flow
+  if (isValidateFlow) return <LoadingCircle />
 
-  // Return layout - request flow
+  // Render - Request Flow
   return (
     <div className={s.container}>
       <form onSubmit={handleSubmit(onRequestSubmit)} className={s.form}>
@@ -104,7 +87,7 @@ export default function LoginOTP() {
           {OMNI_LOGO}
         </div>
         
-        <h1 className={s.title}>Sign in with a one-time password</h1>
+        <h1 className={s.title}>One-Time Password</h1>
         <h2 className={s.formSubtitle}>
           We'll email you a secure link to sign in instantly.
         </h2>
@@ -123,7 +106,7 @@ export default function LoginOTP() {
         {!isSuccess && (
           <div className={s.buttons}>
             <button className={s.button} type="submit">
-              Email me a One-Time Password
+              Continue
             </button>
           </div>
         )}

@@ -92,7 +92,8 @@ export default function ReferralsController() {
     navigator.clipboard.writeText(referralCode);
   }
   const handleShare = () => {
-    // TODO
+    const share_link = `https://app.omniverifier.com/invite?code=${referralCode}`;
+    navigator.clipboard.writeText(share_link);
   }
 
   // Render

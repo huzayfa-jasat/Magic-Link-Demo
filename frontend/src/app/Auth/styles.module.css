@@ -185,7 +185,8 @@
   gap: 15px;
   width: 100%;
 }
-.buttons > button {
+.buttons > button,
+.buttons > a {
   height: 45px;
   width: 100%;
   display: flex;
@@ -202,6 +203,7 @@
   background-color: var(--white);
   transition: all 0.2s ease-in-out;
   cursor: pointer;
+  text-decoration: none;
 }
 .buttons > button > svg {
   margin: auto 10px auto 0;
@@ -220,13 +222,13 @@
   filter: brightness(1.2);
 }
 
-button.otp,
-.buttons > button.otp {
+a.otp,
+.buttons > a.otp {
   color: var(--main-hl);
   background-color: var(--main-hl-fade);
 }
-button.otp:hover,
-.buttons > button.otp:hover {
+a.otp:hover,
+.buttons > a.otp:hover {
   background-color: var(--main-hl-fade2);
 }
 

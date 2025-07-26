@@ -70,7 +70,7 @@ export default function Login() {
           <div className={s.or}>
             <span>or</span>
           </div>
-          <NavLink to="/loginotp" className={`${s.button} ${s.otp}`}>
+          <NavLink to="/otp" className={`${s.button} ${s.otp}`}>
             Email me a One-Time Password
           </NavLink>
         </div>

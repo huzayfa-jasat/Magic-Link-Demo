@@ -91,7 +91,7 @@ async function sendOtpCode(req, res) {
         
         // Send OTP email
         if (ok) {
-            const otp_link = `${process.env.FRONTEND_URL_PREFIX}/login?em=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp_code)}`;
+            const otp_link = `${process.env.FRONTEND_URL_PREFIX}/otp?email=${encodeURIComponent(email)}&code=${encodeURIComponent(otp_code)}`;
             sendOtpEmail(email, otp_link);
         }
 
@@ -177,7 +177,7 @@ async function requestPasswordReset(req, res) {
             await sendPasswordResetEmail(email, resetLink);
         }
         return res.sendStatus(HttpStatus.SUCCESS_STATUS);
-        
+
     } catch (err) {
         return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
     }
