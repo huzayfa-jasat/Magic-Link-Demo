@@ -8,7 +8,7 @@ import { getReferralInviteCode, getReferralInviteList } from "../../api/credits"
 import styles from "./Referrals.module.css";
 
 // Icon Imports
-import { GIFT_ICON } from "../../assets/icons";
+import { COMPLETE_CHECK_ICON, GIFT_ICON } from "../../assets/icons";
 
 // Helper Functions
 function formatTransactionDate(date) {
@@ -46,6 +46,8 @@ export default function ReferralsController() {
   const [referralCode, setReferralCode] = useState(null);
   const [referralInfo, setReferralInfo] = useState(null);
   const [referralHistory, setReferralHistory] = useState([]);
+  const [copySuccess, setCopySuccess] = useState(false);
+  const [shareSuccess, setShareSuccess] = useState(false);
 
   // Fetch referral code
   const fetchReferralCode = async () => {
@@ -88,12 +90,28 @@ export default function ReferralsController() {
   );
 
   // Wrappers
-  const handleCopy = () => {
-    navigator.clipboard.writeText(referralCode);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(referralCode);
+      setCopySuccess(true);
+      setTimeout(() => {
+        setCopySuccess(false);
+      }, 5000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
   }
-  const handleShare = () => {
-    const share_link = `https://app.omniverifier.com/invite?code=${referralCode}`;
-    navigator.clipboard.writeText(share_link);
+  const handleShare = async () => {
+    try {
+      const share_link = `https://app.omniverifier.com/invite?code=${referralCode}`;
+      await navigator.clipboard.writeText(share_link);
+      setShareSuccess(true);
+      setTimeout(() => {
+        setShareSuccess(false);
+      }, 5000);
+    } catch (err) {
+      console.error("Failed to copy share link:", err);
+    }
   }
 
   // Render
@@ -109,8 +127,14 @@ export default function ReferralsController() {
             {(referralCode !== null) && (referralCode)}
           </div>
           <div className={styles.referralActions}>
-            <button onClick={handleCopy}>Copy</button>
-            <button onClick={handleShare}>Share</button>
+            <button onClick={handleCopy} className={(copySuccess) ? styles.copySuccess : ""}>
+              {copySuccess && COMPLETE_CHECK_ICON}
+              {copySuccess ? "Copied!" : "Copy"}
+            </button>
+            <button onClick={handleShare} className={(shareSuccess) ? styles.copySuccess : ""}>
+              {shareSuccess && COMPLETE_CHECK_ICON}
+              {shareSuccess ? "Copied!" : "Share"}
+            </button>
           </div>
         </div>
         <div className={styles.referralCodeContainer}>
