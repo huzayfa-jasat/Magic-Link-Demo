@@ -1,5 +1,5 @@
 # Use a smaller base image suitable for production
-FROM node:16-alpine AS builder
+FROM node:21-alpine AS builder
 
 # Set working directory
 WORKDIR /app
