@@ -3,6 +3,9 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 
+// Component Imports
+import { LoadingCircle } from "../../ui/components/LoadingCircle";
+
 // Style Imports
 import s from "./styles.module.css";
 
@@ -13,7 +16,7 @@ import {
 } from "../../assets/icons";
 
 // Functional Component
-export default function InviteController() {
+export default function InviteCodeController() {
   const [searchParams] = useSearchParams();
 
   // States
@@ -67,7 +70,7 @@ export default function InviteController() {
         {!isCodeFlow && (
           <>
             <h2 className={s.formSubtitle}>
-              Enter your invite code to access special features.
+              Enter your invite code to get rewarded.
             </h2>
             <div className={s.section}>
               <h3 className={s.subtitle}>Invite Code</h3>
@@ -81,11 +84,7 @@ export default function InviteController() {
           </>
         )}
         
-        {isCodeFlow && (
-          <h2 className={s.formSubtitle}>
-            Processing your invite code...
-          </h2>
-        )}
+        {isCodeFlow && <LoadingCircle />}
         
         {(message) && (
           <div className={`${s.section} ${s.txMessage} ${(isError) ? s.txError : s.txSuccess}`}>

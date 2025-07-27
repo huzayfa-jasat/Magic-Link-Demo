@@ -5,9 +5,7 @@ import { useNavigate } from 'react-router-dom';
 // API Imports
 import { 
   createVerifyBatch, 
-  createCatchallBatch, 
-  addToVerifyBatch, 
-  addToCatchallBatch,
+  createCatchallBatch,
   startVerifyBatchProcessing,
   startCatchallBatchProcessing 
 } from '../../api/batches';
@@ -104,19 +102,32 @@ export default function EmailsUploadController() {
     try {
       const fileName = file.name || "New Upload";
 
-      // Make request
-      let response;
-      if (checkTyp === 'verify') response = await createVerifyBatch(emails, fileName);
-      else if (checkTyp === 'catchall') response = await createCatchallBatch(emails, fileName);
-      else throw new Error('Invalid upload type');
-
-      // Handle response
-      if (response.status !== 200) throw new Error(response.data.message);
-      else {
-        // const batchId = response.data.id;
-        // navigate(`/${checkTyp}/${batchId}/details`);
-        navigate(`/home`);
+      // Step 1: Create draft batch
+      let createResponse;
+      if (checkTyp === 'verify') {
+        createResponse = await createVerifyBatch(emails, fileName);
+      } else if (checkTyp === 'catchall') {
+        createResponse = await createCatchallBatch(emails, fileName);
+      } else {
+        throw new Error('Invalid upload type');
       }
+
+      if (createResponse.status !== 200) throw new Error(createResponse.data.message);
+      
+      const batchId = createResponse.data.id;
+      
+      // Step 2: Start batch processing
+      let startResponse;
+      if (checkTyp === 'verify') {
+        startResponse = await startVerifyBatchProcessing(batchId);
+      } else {
+        startResponse = await startCatchallBatchProcessing(batchId);
+      }
+
+      if (startResponse.status !== 200) throw new Error(startResponse.data.message);
+
+      // Navigate to home after successful upload and start
+      navigate(`/home`);
 
     } catch (err) {
       // Check if it's a credits error

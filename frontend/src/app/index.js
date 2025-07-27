@@ -4,8 +4,8 @@ export { default as Register } from "../app/Auth/Register.jsx";
 export { default as ForgotPassword } from "../app/Auth/ForgotPassword.jsx";
 export { default as LoginOTP } from "../app/Auth/LoginOTP.jsx";
 
-/* Invite */
-export { default as Invite } from "../app/Invite/Controller.jsx";
+/* InviteCode */
+export { default as InviteCode } from "../app/Invite/Controller.jsx";
 
 /* Emails */
 export { default as EmailsHome } from "../app/Emails/Controller.jsx";
