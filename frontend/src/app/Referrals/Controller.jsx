@@ -46,7 +46,6 @@ export default function ReferralsController() {
   const [referralCode, setReferralCode] = useState(null);
   const [referralInfo, setReferralInfo] = useState(null);
   const [referralHistory, setReferralHistory] = useState([]);
-  const [copySuccess, setCopySuccess] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
 
   // Fetch referral code
@@ -90,17 +89,6 @@ export default function ReferralsController() {
   );
 
   // Wrappers
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(referralCode);
-      setCopySuccess(true);
-      setTimeout(() => {
-        setCopySuccess(false);
-      }, 5000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
-    }
-  }
   const handleShare = async () => {
     try {
       const share_link = `https://app.omniverifier.com/invite?code=${referralCode}`;
@@ -127,13 +115,9 @@ export default function ReferralsController() {
             {(referralCode !== null) && (referralCode)}
           </div>
           <div className={styles.referralActions}>
-            <button onClick={handleCopy} className={(copySuccess) ? styles.copySuccess : ""}>
-              {copySuccess && COMPLETE_CHECK_ICON}
-              {copySuccess ? "Copied!" : "Copy"}
-            </button>
             <button onClick={handleShare} className={(shareSuccess) ? styles.copySuccess : ""}>
               {shareSuccess && COMPLETE_CHECK_ICON}
-              {shareSuccess ? "Copied!" : "Share"}
+              {shareSuccess ? "Copied!" : "Copy Link"}
             </button>
           </div>
         </div>
