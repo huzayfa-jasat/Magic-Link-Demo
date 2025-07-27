@@ -90,32 +90,32 @@
 .userInfo p {
   margin: auto 0;
   font-family: "Circular", "Geist", sans-serif;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 400;
   color: var(--txt-light);
 }
 
 .topbar a {
-  height: 32px;
+  height: 40px;
   width: fit-content;
-  padding: 0 14px;
+  padding: 0 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 8px;
   border: none;
   border-radius: 50px;
   background-color: var(--main-hl);
   color: var(--white);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 15px;
   font-family: "Circular", "Geist", sans-serif;
   font-weight: 400;
-  transition: background-color 0.2s ease-in-out, opacity 0.2s ease-in-out, color 0.2s ease-in-out;
+  transition: all 0.2s ease-in-out;
   cursor: pointer;
 }
 .topbar a:hover {
-  opacity: 0.6;
+  filter: brightness(1.2);
 }
 .topbar a svg {
   height: 16px;
@@ -125,8 +125,8 @@
 
 .topbar a.settings {
   color: var(--txt-light);
-  background-color: var(--brd-light-2);
-  border: 1px solid var(--brd-light);
+  background-color: var(--brd-light);
+  border: 1px solid var(--txt-light-2);
 }
 .topbar a.settings svg path,
 .topbar a.settings svg circle {
@@ -222,7 +222,7 @@
   gap: 8px;
 }
 .creditsPill .highlight {
-  height: 32px;
+  height: 40px;
   width: 100%;
   padding: 0 14px;
   display: flex;
@@ -233,7 +233,7 @@
   border-radius: 3px;
   background-color: var(--main-hl);
   color: var(--white);
-  font-size: 14px;
+  font-size: 15px;
   font-family: "Circular", "Geist", sans-serif;
   font-weight: 400;
   transition: background-color 0.2s ease-in-out, opacity 0.2s ease-in-out, color 0.2s ease-in-out;
@@ -248,7 +248,7 @@
 }
 .creditsPill .creditBalanceLabel {
   font-family: "Circular", "Geist", sans-serif;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 400;
   color: var(--main-hl);
 }
@@ -262,8 +262,8 @@
 }
 
 .sidebar {
-  width: 280px;
-  height: calc(100vh - 57px);
+  width: 300px;
+  height: calc(100vh - 65px);
   background-color: transparent;
   padding: 10px;
   display: flex;
@@ -298,7 +298,7 @@
   flex-direction: row;
   align-items: center;
   justify-content: flex-start;
-  gap: 10px;
+  gap: 15px;
   border: none;
   border-radius: 5px;
   color: var(--txt-light);
@@ -314,12 +314,12 @@
 }
 .sidebar.collapsed .navItem {
   padding: 0;
-  height: 40px;
-  width: 40px;
+  height: 50px;
+  width: 50px;
 }
 
 .sidebar .navItemText {
-  font-size: 14px;
+  font-size: 16px;
   font-family: "Circular", "Geist", sans-serif;
   font-weight: 400;
 }
@@ -343,31 +343,35 @@
 }
 
 .sidebar .navIcon {
-  width: 22px;
-  height: 22px;
+  width: 35px;
+  height: 35px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
   border-radius: 3px;
   background-color: var(--brd-light);
+  transition: all 0.2s ease-in-out;
 }
 .sidebar.collapsed .navIcon {
   width: 100%;
   height: 100%;
   background-color: transparent;
 }
+.navItem:hover .navIcon {
+  background-color: var(--txt-light-3);
+}
 .sidebar .navItem.active .navIcon {
   background-color: var(--main-hl-fade);
 }
 
 .sidebar .navIcon svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 .sidebar.collapsed .navIcon svg {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
 }
 .sidebar .navIcon svg path,
 .sidebar .navIcon svg circle,

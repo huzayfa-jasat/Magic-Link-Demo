@@ -6,25 +6,45 @@ import { NavLink, useParams } from "react-router-dom";
 import { useUsersContext } from "../../../context/useUsersContext";
 
 // API Imports
-import { getBalance } from "../../../api/credits";
+import { getBalance, getCatchallBalance } from "../../../api/credits";
 
 // Style Imports
 import s from "./AppLayout.module.css";
 
 // Icon Imports
-import { OMNI_LOGO, UPLOAD_ICON, SETTINGS_ICON, SIDEBAR_OPEN, SIDEBAR_CLOSE, COINS_ICON, HOME_ICON, PACKAGE_ICON, REFERRAL_ICON } from "../../../assets/icons";
+import {
+  OMNI_LOGO, UPLOAD_ICON, UPLOAD_ICON_VARIABLE, SETTINGS_ICON, SETTINGS_ICON_VARIABLE, SIDEBAR_OPEN, SIDEBAR_CLOSE, COINS_ICON,
+  // HOME_ICON, PACKAGE_ICON, REFERRAL_ICON,
+  CIRCLE_CHECK_ICON, MONEY_ICON, PERSON_ICON, WALLET_ICON,
+  EMAIL_ICON, EMAIL_SHREDDER_ICON
+} from "../../../assets/icons";
 
 // Constants
 const NAV_TABS = [
-  { icon: HOME_ICON, text: "Validate", link: "/home" },
-  { icon: UPLOAD_ICON, text: "Upload", link: "/upload" },
-  { icon: COINS_ICON, text: "Credits", link: "/credits" },
-  { icon: PACKAGE_ICON, text: "Packages", link: "/packages" },
-  { icon: REFERRAL_ICON, text: "Referrals", link: "/referrals", badge: "EARN CREDITS" },
+  { icon: CIRCLE_CHECK_ICON, text: "Validate", link: "/home" },
+  { icon: <UPLOAD_ICON_VARIABLE strokeWidth={2} />, text: "Upload", link: "/upload" },
+  { icon: WALLET_ICON, text: "Credits", link: "/credits" },
+  { icon: MONEY_ICON, text: "Packages", link: "/packages" },
+  { icon: PERSON_ICON, text: "Referrals", link: "/referrals", badge: "EARN CREDITS" },
+  { icon: <SETTINGS_ICON_VARIABLE strokeWidth={2} />, text: "Settings", link: "/settings" },
 ];
 
 
-// Helper Components
+// Helper Component
+function CreditSidebarPill({ icon, label, balance, link }) {
+  return (
+    <NavLink to={link} className={s.creditsPill}>
+      <div className={s.creditBalanceTop}>
+        {icon}
+        <span className={s.creditBalanceLabel}>{label}</span>
+      </div>
+      <span className={s.creditBalanceAmount}>{balance.toLocaleString()}</span>
+      <div className={s.highlight}>
+        Get More
+      </div>
+    </NavLink>
+  );
+}
 
 
 // Functional Component
@@ -33,7 +53,8 @@ export default function AppLayout({ title, children }) {
 
   // States
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [creditBalance, setCreditBalance] = useState(0);
+  const [emailBalance, setEmailBalance] = useState(0);
+  const [catchallBalance, setCatchallBalance] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   // Change document title
@@ -43,15 +64,14 @@ export default function AppLayout({ title, children }) {
   }, [title]);
 
   // Get credit balance
-  async function loadCreditBalance() {
-    const response = await getBalance();
-    if (response.status === 200) {
-      setCreditBalance(response.data.credit_balance);
-      setIsLoading(false);
-    }
+  async function loadSidebarBalances() {
+    const [emailResponse, catchallResponse] = await Promise.all([getBalance(), getCatchallBalance()]);
+    if (emailResponse.status === 200) setEmailBalance(emailResponse.data.credit_balance);
+    if (catchallResponse.status === 200) setCatchallBalance(catchallResponse.data.credit_balance);
+    setIsLoading(false);
   }
   useEffect(() => {
-    loadCreditBalance();
+    loadSidebarBalances();
   }, []);
 
   // Return layout
@@ -96,22 +116,10 @@ export default function AppLayout({ title, children }) {
               ))}
 
               {(!isLoading) && (
-                <NavLink to="/packages" className={s.creditsPill}>
-                  {/* <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 122.88 88.86"
-                  >
-                    <path d="M7.05,0H115.83a7.07,7.07,0,0,1,7,7.05V81.81a7,7,0,0,1-1.22,4,2.78,2.78,0,0,1-.66,1,2.62,2.62,0,0,1-.66.46,7,7,0,0,1-4.51,1.65H7.05a7.07,7.07,0,0,1-7-7V7.05A7.07,7.07,0,0,1,7.05,0Zm-.3,78.84L43.53,40.62,6.75,9.54v69.3ZM49.07,45.39,9.77,83.45h103L75.22,45.39l-11,9.21h0a2.7,2.7,0,0,1-3.45,0L49.07,45.39Zm31.6-4.84,35.46,38.6V9.2L80.67,40.55ZM10.21,5.41,62.39,47.7,112.27,5.41Z" />
-                  </svg> */}
-                  <div className={s.creditBalanceTop}>
-                    {COINS_ICON}
-                    <span className={s.creditBalanceLabel}>Credits</span>
-                  </div>
-                  <span className={s.creditBalanceAmount}>{creditBalance.toLocaleString()}</span>
-                  <div className={s.highlight}>
-                    Buy More
-                  </div>
-                </NavLink>
+                <>
+                  <CreditSidebarPill icon={EMAIL_ICON} label="Email Credits" balance={emailBalance} link="/packages?p=validate" />
+                  <CreditSidebarPill icon={EMAIL_SHREDDER_ICON} label="Catchall Credits" balance={catchallBalance} link="/packages?p=catchall" />
+                </>
               )}
             </div>
             <div className={s.bottomSection}>

@@ -38,6 +38,11 @@ export default function PackagesController() {
   const [catchallPromotions, setCatchallPromotions] = useState([]);
   const [catchallNonPromotions, setCatchallNonPromotions] = useState([]);
 
+  // Switch views on param change
+  useEffect(() => {
+    setCurrPage((pageParam === "catchall") ? "catchall" : "validate");
+  }, [pageParam]);
+
   // Load packages
   async function loadPackages() {
     const resp = await getPackages();
