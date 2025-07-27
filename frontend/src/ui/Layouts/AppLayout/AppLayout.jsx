@@ -65,7 +65,7 @@ export default function AppLayout({ title, children }) {
             </div>
             <span className={s.divider}>/</span>
             <div className={s.userInfo}>
-              <img src={user.pfp ?? "/defaults/u.webp"} alt="Profile Picture" />
+              {/* <img src={user.pfp ?? "/defaults/u.webp"} alt="Profile Picture" /> */}
               <p>{user.name ?? user.email}</p>
             </div>
           </div>

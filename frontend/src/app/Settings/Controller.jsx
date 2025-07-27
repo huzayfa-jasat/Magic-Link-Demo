@@ -26,7 +26,11 @@ import styles from "./Settings.module.css";
 import { COMPLETE_CHECK_ICON } from "../../assets/icons";
 
 // Constants
-const PROFILE_FIELDS = ["Email", "Name" /* , "ProfileImage" */];
+const PROFILE_FIELDS = [
+  "Email",
+  // "Name",
+  // "ProfileImage"
+];
 const UPDATE_FUNCTIONS = {
   Email: updateProfileEmail,
   Name: updateProfileName,
