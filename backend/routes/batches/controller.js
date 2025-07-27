@@ -10,7 +10,10 @@ const {
 	db_getBatchDetails,
 	db_getBatchResults,
 	db_checkAndDeductCredits,
-	db_removeBatch
+	db_removeBatch,
+	db_addToBatch,
+	db_startBatchProcessing,
+	db_createBatchDraft
 } = require('./funs_db.js');
 
 // External API Function Imports
@@ -25,7 +28,7 @@ const {
 } = require('../../utils/processEmails.js');
 
 // Constants
-const MAX_EMAILS_PER_BATCH = 100000;
+const MAX_EMAILS_PER_BATCH = 1000000; // Increased limit for progressive uploads
 const VALID_BATCHLIST_ORDER_PARAMS = new Set([
 	'timehl', // Time High-Low (newest first)
 	'timelh', // Time Low-High (oldest first)
@@ -98,7 +101,7 @@ async function createBatch(req, res) {
 		// Validate body
 		const { emails, title } = req.body;
 		if (!emails || !Array.isArray(emails) || emails.length === 0) return returnBadRequest(res, 'No emails provided');
-		if (emails.length > MAX_EMAILS_PER_BATCH) return returnBadRequest(res, `Maximum of ${MAX_EMAILS_PER_BATCH.toLocaleString('en-US')} emails allowed per batch`);
+		// Remove individual batch size limit - now handled by file size limit on frontend
 
 		// Process emails
 		const emails_valid = removeInvalidEmails(emails);
@@ -202,11 +205,71 @@ async function removeBatch(req, res) {
 	}
 }
 
+async function addToBatch(req, res) {
+	try {
+		const { checkType, batchId } = req.params;
+
+		// Validate body
+		const { emails } = req.body;
+		if (!emails || !Array.isArray(emails) || emails.length === 0) return returnBadRequest(res, 'No emails provided');
+
+		// Process emails
+		const emails_valid = removeInvalidEmails(emails);
+		const emails_stripped = emails_valid.reduce((acc, email)=>{
+			const email_stripped = stripEmailModifiers(email);
+			if (!acc[email_stripped]) acc[email_stripped] = email;
+			return acc;
+		}, {});
+
+		// Check & deduct credits
+		const [ok_credits, remaining_balance] = await db_checkAndDeductCredits(req.user.id, checkType, Object.keys(emails_stripped).length);
+		if (!ok_credits) return returnBadRequest(res, 'Insufficient credits');
+
+		// Add global emails
+		const ok_global_insert = await db_addGlobalEmails(Object.keys(emails_stripped));
+		if (!ok_global_insert) return returnBadRequest(res, 'Failed to process emails');
+
+		// Get global emails
+		const [ok_global_ids, global_emails] = await db_getEmailGlobalIds(emails_stripped);
+		if (!ok_global_ids) return returnBadRequest(res, 'Failed to get global emails');
+
+		// Add to existing batch
+		const [batch_ok, updated_batch_id] = await db_addToBatch(req.user.id, checkType, batchId, global_emails);
+		if (!batch_ok) return returnBadRequest(res, 'Failed to add emails to batch');
+
+		// Return response
+		return res.status(HttpStatus.SUCCESS_STATUS).json({ id: updated_batch_id, count: Object.keys(emails_stripped).length });
+
+	} catch (err) {
+		console.error("ADD TO BATCH ERR = ", err);
+		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+	}
+}
+
+async function startBatchProcessing(req, res) {
+	try {
+		const { checkType, batchId } = req.params;
+
+		// Start batch processing
+		const ok = await db_startBatchProcessing(req.user.id, checkType, batchId);
+		if (!ok) return returnBadRequest(res, 'Failed to start batch processing');
+
+		// Return response
+		return res.status(HttpStatus.SUCCESS_STATUS).json({ message: 'Batch processing started' });
+
+	} catch (err) {
+		console.error("START BATCH PROCESSING ERR = ", err);
+		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+	}
+}
+
 // Exports
 module.exports = {
 	getBatchesList,
 	createBatch,
 	getBatchDetails,
 	getBatchResults,
-	removeBatch
+	removeBatch,
+	addToBatch,
+	startBatchProcessing
 }

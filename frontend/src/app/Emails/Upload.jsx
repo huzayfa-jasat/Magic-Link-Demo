@@ -3,10 +3,18 @@ import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 // API Imports
-import { createVerifyBatch, createCatchallBatch } from '../../api/batches';
+import { 
+  createVerifyBatch, 
+  createCatchallBatch, 
+  addToVerifyBatch, 
+  addToCatchallBatch,
+  startVerifyBatchProcessing,
+  startCatchallBatchProcessing 
+} from '../../api/batches';
 
 // Component Imports
 import { LoadingCircle } from '../../ui/components/LoadingCircle';
+import CreditsModal from '../../ui/components/CreditsModal';
 import UploadStageFileUpload from './UploadStages/FileUpload';
 import UploadStagePreview from './UploadStages/Preview';
 import UploadStageFinalize from './UploadStages/Finalize';
@@ -24,6 +32,8 @@ export default function EmailsUploadController() {
   const [emails, setEmails] = useState([]);
   const [error, setError] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [showCreditsModal, setShowCreditsModal] = useState(false);
+  const [creditsModalType, setCreditsModalType] = useState('verify');
 
   // Handle parsing CSV
   const parseCSV = useCallback((text) => {
@@ -57,16 +67,19 @@ export default function EmailsUploadController() {
       return;
     }
 
+    // Check file size (10MB limit)
+    const maxFileSize = 10 * 1024 * 1024; // 10MB in bytes
+    if (selectedFile.size > maxFileSize) {
+      setError('File size must be less than 10MB. Please reduce the file size and try again.');
+      return;
+    }
+
     try {
       const text = await selectedFile.text();
       const parsedEmails = parseCSV(text);
       
       if (parsedEmails.length === 0) {
         throw new Error('No valid emails found in the file');
-      }
-
-      if (parsedEmails.length > 10000) {
-        throw new Error('Maximum of 10,000 emails allowed per batch. Please reduce the number of emails and try again.');
       }
 
       setFile(selectedFile);
@@ -106,7 +119,13 @@ export default function EmailsUploadController() {
       }
 
     } catch (err) {
-      setError('Failed to upload emails. Please try again.');
+      // Check if it's a credits error
+      if (err.response && err.response.status === 400 && err.response.data && err.response.data.includes('credits')) {
+        setCreditsModalType(checkTyp);
+        setShowCreditsModal(true);
+      } else {
+        setError('Failed to upload emails. Please try again.');
+      }
       console.error('Upload error:', err);
 
     } finally {
@@ -126,6 +145,11 @@ export default function EmailsUploadController() {
   return (
     <>
       {(isUploading) && <LoadingCircle showBg={true} /> }
+      <CreditsModal 
+        isOpen={showCreditsModal}
+        onClose={() => setShowCreditsModal(false)}
+        checkType={creditsModalType}
+      />
       <div className={styles.uploadContainer}>
         <h1 className={styles.title}>
           {(page === 'upload') && 'Upload CSV'}

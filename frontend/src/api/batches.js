@@ -33,6 +33,16 @@ async function handler_removeBatch(checkType, batchId) {
     withCredentials: true,
   });
 };
+async function handler_addToBatch(checkType, batchId, emails) {
+  return await http.post(`${MODULE_PREFIX}/${checkType}/batch/${batchId}/add`, { emails }, {
+    withCredentials: true,
+  });
+};
+async function handler_startBatchProcessing(checkType, batchId) {
+  return await http.post(`${MODULE_PREFIX}/${checkType}/batch/${batchId}/start`, {}, {
+    withCredentials: true,
+  });
+};
 
 // End Functions
 
@@ -69,4 +79,18 @@ export async function removeVerifyBatch(batchId) {
 };
 export async function removeCatchallBatch(batchId) {
   return await handler_removeBatch('catchall', batchId);
+};
+
+export async function addToVerifyBatch(batchId, emails) {
+  return await handler_addToBatch('deliverable', batchId, emails);
+};
+export async function addToCatchallBatch(batchId, emails) {
+  return await handler_addToBatch('catchall', batchId, emails);
+};
+
+export async function startVerifyBatchProcessing(batchId) {
+  return await handler_startBatchProcessing('deliverable', batchId);
+};
+export async function startCatchallBatchProcessing(batchId) {
+  return await handler_startBatchProcessing('catchall', batchId);
 };

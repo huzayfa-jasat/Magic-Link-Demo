@@ -17,7 +17,9 @@ const {
 	createBatch,
     getBatchDetails,
     getBatchResults,
-	removeBatch
+	removeBatch,
+	addToBatch,
+	startBatchProcessing
 } = require('./controller.js');
 
 // ---------------
@@ -30,6 +32,8 @@ batchesRouter.use(checkUserAuth);
 // Routes
 batchesRouter.get('/list', getBatchesList);
 batchesRouter.post('/:checkType/new', checkValidCheckType, createBatch);
+batchesRouter.post('/:checkType/batch/:batchId/add', checkValidCheckType, checkUserBatchAccess, addToBatch);
+batchesRouter.post('/:checkType/batch/:batchId/start', checkValidCheckType, checkUserBatchAccess, startBatchProcessing);
 batchesRouter.get('/:checkType/batch/:batchId/details', checkValidCheckType, checkUserBatchAccess, getBatchDetails);
 batchesRouter.get('/:checkType/batch/:batchId/results', checkValidCheckType, checkUserBatchAccess, getBatchResults);
 batchesRouter.delete('/:checkType/batch/:batchId/rm', checkValidCheckType, checkUserBatchAccess, removeBatch);
