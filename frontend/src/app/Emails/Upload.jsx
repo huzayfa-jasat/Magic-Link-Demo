@@ -3,10 +3,16 @@ import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 // API Imports
-import { createVerifyBatch, createCatchallBatch } from '../../api/batches';
+import { 
+  createVerifyBatch, 
+  createCatchallBatch,
+  startVerifyBatchProcessing,
+  startCatchallBatchProcessing 
+} from '../../api/batches';
 
 // Component Imports
 import { LoadingCircle } from '../../ui/components/LoadingCircle';
+import CreditsModal from '../../ui/components/CreditsModal';
 import UploadStageFileUpload from './UploadStages/FileUpload';
 import UploadStagePreview from './UploadStages/Preview';
 import UploadStageFinalize from './UploadStages/Finalize';
@@ -24,6 +30,8 @@ export default function EmailsUploadController() {
   const [emails, setEmails] = useState([]);
   const [error, setError] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [showCreditsModal, setShowCreditsModal] = useState(false);
+  const [creditsModalType, setCreditsModalType] = useState('verify');
 
   // Handle parsing CSV
   const parseCSV = useCallback((text) => {
@@ -57,16 +65,19 @@ export default function EmailsUploadController() {
       return;
     }
 
+    // Check file size (10MB limit)
+    const maxFileSize = 10 * 1024 * 1024; // 10MB in bytes
+    if (selectedFile.size > maxFileSize) {
+      setError('File size must be less than 10MB. Please reduce the file size and try again.');
+      return;
+    }
+
     try {
       const text = await selectedFile.text();
       const parsedEmails = parseCSV(text);
       
       if (parsedEmails.length === 0) {
         throw new Error('No valid emails found in the file');
-      }
-
-      if (parsedEmails.length > 10000) {
-        throw new Error('Maximum of 10,000 emails allowed per batch. Please reduce the number of emails and try again.');
       }
 
       setFile(selectedFile);
@@ -91,22 +102,41 @@ export default function EmailsUploadController() {
     try {
       const fileName = file.name || "New Upload";
 
-      // Make request
-      let response;
-      if (checkTyp === 'verify') response = await createVerifyBatch(emails, fileName);
-      else if (checkTyp === 'catchall') response = await createCatchallBatch(emails, fileName);
-      else throw new Error('Invalid upload type');
-
-      // Handle response
-      if (response.status !== 200) throw new Error(response.data.message);
-      else {
-        // const batchId = response.data.id;
-        // navigate(`/${checkTyp}/${batchId}/details`);
-        navigate(`/home`);
+      // Step 1: Create draft batch
+      let createResponse;
+      if (checkTyp === 'verify') {
+        createResponse = await createVerifyBatch(emails, fileName);
+      } else if (checkTyp === 'catchall') {
+        createResponse = await createCatchallBatch(emails, fileName);
+      } else {
+        throw new Error('Invalid upload type');
       }
 
+      if (createResponse.status !== 200) throw new Error(createResponse.data.message);
+      
+      const batchId = createResponse.data.id;
+      
+      // Step 2: Start batch processing
+      let startResponse;
+      if (checkTyp === 'verify') {
+        startResponse = await startVerifyBatchProcessing(batchId);
+      } else {
+        startResponse = await startCatchallBatchProcessing(batchId);
+      }
+
+      if (startResponse.status !== 200) throw new Error(startResponse.data.message);
+
+      // Navigate to home after successful upload and start
+      navigate(`/home`);
+
     } catch (err) {
-      setError('Failed to upload emails. Please try again.');
+      // Check if it's a credits error
+      if (err.response && err.response.status === 400 && err.response.data && err.response.data.includes('credits')) {
+        setCreditsModalType(checkTyp);
+        setShowCreditsModal(true);
+      } else {
+        setError('Failed to upload emails. Please try again.');
+      }
       console.error('Upload error:', err);
 
     } finally {
@@ -126,6 +156,11 @@ export default function EmailsUploadController() {
   return (
     <>
       {(isUploading) && <LoadingCircle showBg={true} /> }
+      <CreditsModal 
+        isOpen={showCreditsModal}
+        onClose={() => setShowCreditsModal(false)}
+        checkType={creditsModalType}
+      />
       <div className={styles.uploadContainer}>
         <h1 className={styles.title}>
           {(page === 'upload') && 'Upload CSV'}

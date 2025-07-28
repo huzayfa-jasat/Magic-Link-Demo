@@ -13,7 +13,7 @@ const MODULE_PREFIX = "/batches";
 // Handlers
 
 async function handler_createBatch(checkType, emails, title) {
-  return await http.post(`${MODULE_PREFIX}/${checkType}/new`, { emails, title }, {
+  return await http.post(`${MODULE_PREFIX}/${checkType}/add`, { emails, title }, {
     withCredentials: true,
   });
 };
@@ -30,6 +30,16 @@ async function handler_getBatchResults(checkType, batchId, page, limit, order, f
 };
 async function handler_removeBatch(checkType, batchId) {
   return await http.delete(`${MODULE_PREFIX}/${checkType}/batch/${batchId}/rm`, {
+    withCredentials: true,
+  });
+};
+async function handler_addToBatch(checkType, batchId, emails) {
+  return await http.post(`${MODULE_PREFIX}/${checkType}/batch/${batchId}/add`, { emails }, {
+    withCredentials: true,
+  });
+};
+async function handler_startBatchProcessing(checkType, batchId) {
+  return await http.post(`${MODULE_PREFIX}/${checkType}/batch/${batchId}/start`, {}, {
     withCredentials: true,
   });
 };
@@ -69,4 +79,18 @@ export async function removeVerifyBatch(batchId) {
 };
 export async function removeCatchallBatch(batchId) {
   return await handler_removeBatch('catchall', batchId);
+};
+
+export async function addToVerifyBatch(batchId, emails) {
+  return await handler_addToBatch('deliverable', batchId, emails);
+};
+export async function addToCatchallBatch(batchId, emails) {
+  return await handler_addToBatch('catchall', batchId, emails);
+};
+
+export async function startVerifyBatchProcessing(batchId) {
+  return await handler_startBatchProcessing('deliverable', batchId);
+};
+export async function startCatchallBatchProcessing(batchId) {
+  return await handler_startBatchProcessing('catchall', batchId);
 };
