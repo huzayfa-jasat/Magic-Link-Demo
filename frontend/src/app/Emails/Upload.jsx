@@ -6,6 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import { 
   createVerifyBatch, 
   createCatchallBatch,
+  addToVerifyBatch,
+  addToCatchallBatch,
   startVerifyBatchProcessing,
   startCatchallBatchProcessing 
 } from '../../api/batches';
@@ -92,7 +94,7 @@ export default function EmailsUploadController() {
     }
   }, [parseCSV]);
 
-  // Handle upload
+  // Handle upload with chunked progressive uploads
   const handleUpload = async (checkTyp) => {
     if (!emails.length || !file) return;
 
@@ -101,22 +103,61 @@ export default function EmailsUploadController() {
 
     try {
       const fileName = file.name || "New Upload";
+      const CHUNK_SIZE = 10000;
+      let batchId = null;
 
-      // Step 1: Create draft batch
-      let createResponse;
-      if (checkTyp === 'verify') {
-        createResponse = await createVerifyBatch(emails, fileName);
-      } else if (checkTyp === 'catchall') {
-        createResponse = await createCatchallBatch(emails, fileName);
-      } else {
-        throw new Error('Invalid upload type');
+      // Process emails in chunks of 10k
+      for (let i = 0; i < emails.length; i += CHUNK_SIZE) {
+        const chunk = emails.slice(i, i + CHUNK_SIZE);
+        
+        try {
+          if (batchId === null) {
+            // First chunk: create new batch
+            let createResponse;
+            if (checkTyp === 'verify') {
+              createResponse = await createVerifyBatch(chunk, fileName);
+            } else if (checkTyp === 'catchall') {
+              createResponse = await createCatchallBatch(chunk, fileName);
+            } else {
+              throw new Error('Invalid upload type');
+            }
+
+            if (createResponse.status !== 200) {
+              throw new Error(createResponse.data?.message || 'Failed to create batch');
+            }
+            
+            batchId = createResponse.data.id;
+            console.log(`Created batch ${batchId} with ${chunk.length} emails`);
+            
+          } else {
+            // Subsequent chunks: add to existing batch
+            let addResponse;
+            if (checkTyp === 'verify') {
+              addResponse = await addToVerifyBatch(batchId, chunk);
+            } else {
+              addResponse = await addToCatchallBatch(batchId, chunk);
+            }
+
+            if (addResponse.status !== 200) {
+              throw new Error(addResponse.data?.message || 'Failed to add emails to batch');
+            }
+            
+            console.log(`Added ${chunk.length} emails to batch ${batchId}`);
+          }
+        } catch (chunkError) {
+          // If this is a 402 status code (insufficient credits), show credits modal
+          if (chunkError.response && chunkError.response.status === 402) {
+            setCreditsModalType(checkTyp);
+            setShowCreditsModal(true);
+            return;
+          }
+          // Re-throw other errors to be handled by outer catch
+          throw chunkError;
+        }
       }
 
-      if (createResponse.status !== 200) throw new Error(createResponse.data.message);
-      
-      const batchId = createResponse.data.id;
-      
-      // Step 2: Start batch processing
+      // Step 2: Start batch processing after all chunks uploaded
+      console.log(`Starting processing for batch ${batchId}`);
       let startResponse;
       if (checkTyp === 'verify') {
         startResponse = await startVerifyBatchProcessing(batchId);
@@ -124,18 +165,23 @@ export default function EmailsUploadController() {
         startResponse = await startCatchallBatchProcessing(batchId);
       }
 
-      if (startResponse.status !== 200) throw new Error(startResponse.data.message);
+      if (startResponse.status !== 200) {
+        throw new Error(startResponse.data?.message || 'Failed to start batch processing');
+      }
+
+      console.log(`Successfully started processing batch ${batchId} with ${emails.length} total emails`);
 
       // Navigate to home after successful upload and start
       navigate(`/home`);
 
     } catch (err) {
-      // Check if it's a credits error
-      if (err.response && err.response.status === 400 && err.response.data && err.response.data.includes('credits')) {
+      // Check if it's a 402 status code (insufficient credits)
+      if (err.response && err.response.status === 402) {
         setCreditsModalType(checkTyp);
         setShowCreditsModal(true);
       } else {
-        setError('Failed to upload emails. Please try again.');
+        // Other errors show generic message
+        setError(err.message || 'Failed to upload emails. Please try again.');
       }
       console.error('Upload error:', err);
 
