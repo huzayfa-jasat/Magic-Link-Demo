@@ -35,7 +35,7 @@
   align-items: center;
   justify-content: space-between;
 
-  padding: 12px 16px;
+  padding: 12px 16px 12px 20px;
   border-bottom: 1px solid var(--brd-light);
 
   background-color: var(--brd-light-2);
@@ -60,6 +60,30 @@
   user-drag: none;
   -webkit-user-select: none;
   -webkit-user-drag: none;
+}
+.topbar .rightMobile {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  user-select: none;
+  user-drag: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+}
+.topbar .menuButton {
+  height: 40px;
+  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--txt-light-2);
+  border-radius: 5px;
+  background-color: var(--brd-light);
+  color: var(--txt-light);
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
 }
 
 .logo {
@@ -90,32 +114,32 @@
 .userInfo p {
   margin: auto 0;
   font-family: "Circular", "Geist", sans-serif;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 400;
   color: var(--txt-light);
 }
 
 .topbar a {
-  height: 32px;
+  height: 40px;
   width: fit-content;
-  padding: 0 14px;
+  padding: 0 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 8px;
   border: none;
   border-radius: 50px;
   background-color: var(--main-hl);
   color: var(--white);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 15px;
   font-family: "Circular", "Geist", sans-serif;
   font-weight: 400;
-  transition: background-color 0.2s ease-in-out, opacity 0.2s ease-in-out, color 0.2s ease-in-out;
+  transition: all 0.2s ease-in-out;
   cursor: pointer;
 }
 .topbar a:hover {
-  opacity: 0.6;
+  filter: brightness(1.2);
 }
 .topbar a svg {
   height: 16px;
@@ -125,8 +149,8 @@
 
 .topbar a.settings {
   color: var(--txt-light);
-  background-color: var(--brd-light-2);
-  border: 1px solid var(--brd-light);
+  background-color: var(--brd-light);
+  border: 1px solid var(--txt-light-2);
 }
 .topbar a.settings svg path,
 .topbar a.settings svg circle {
@@ -222,7 +246,7 @@
   gap: 8px;
 }
 .creditsPill .highlight {
-  height: 32px;
+  height: 40px;
   width: 100%;
   padding: 0 14px;
   display: flex;
@@ -233,7 +257,7 @@
   border-radius: 3px;
   background-color: var(--main-hl);
   color: var(--white);
-  font-size: 14px;
+  font-size: 15px;
   font-family: "Circular", "Geist", sans-serif;
   font-weight: 400;
   transition: background-color 0.2s ease-in-out, opacity 0.2s ease-in-out, color 0.2s ease-in-out;
@@ -248,7 +272,7 @@
 }
 .creditsPill .creditBalanceLabel {
   font-family: "Circular", "Geist", sans-serif;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 400;
   color: var(--main-hl);
 }
@@ -262,8 +286,8 @@
 }
 
 .sidebar {
-  width: 280px;
-  height: calc(100vh - 57px);
+  width: 300px;
+  height: calc(100vh - 65px);
   background-color: transparent;
   padding: 10px;
   display: flex;
@@ -298,7 +322,7 @@
   flex-direction: row;
   align-items: center;
   justify-content: flex-start;
-  gap: 10px;
+  gap: 15px;
   border: none;
   border-radius: 5px;
   color: var(--txt-light);
@@ -314,12 +338,12 @@
 }
 .sidebar.collapsed .navItem {
   padding: 0;
-  height: 40px;
-  width: 40px;
+  height: 50px;
+  width: 50px;
 }
 
 .sidebar .navItemText {
-  font-size: 14px;
+  font-size: 16px;
   font-family: "Circular", "Geist", sans-serif;
   font-weight: 400;
 }
@@ -334,7 +358,7 @@
   padding: 2px 8px;
   border-radius: 50px;
   font-family: "Sohne Mono", monospace;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: -0.3px;
   text-transform: uppercase;
 }
@@ -343,31 +367,35 @@
 }
 
 .sidebar .navIcon {
-  width: 22px;
-  height: 22px;
+  width: 35px;
+  height: 35px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
   border-radius: 3px;
   background-color: var(--brd-light);
+  transition: background-color 0.2s ease-in-out;
 }
 .sidebar.collapsed .navIcon {
   width: 100%;
   height: 100%;
   background-color: transparent;
 }
+.navItem:hover .navIcon {
+  background-color: var(--txt-light-3);
+}
 .sidebar .navItem.active .navIcon {
   background-color: var(--main-hl-fade);
 }
 
 .sidebar .navIcon svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 .sidebar.collapsed .navIcon svg {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
 }
 .sidebar .navIcon svg path,
 .sidebar .navIcon svg circle,
@@ -407,8 +435,8 @@
 }
 
 .collapseButton {
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
   margin: 0 0 0 auto;
   display: flex;
   align-items: center;
@@ -419,13 +447,13 @@
   cursor: pointer;
 }
 .sidebar.collapsed .collapseButton {
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
 }
 
 .collapseButton svg {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
 }
 .collapseButton svg path,
 .collapseButton svg rect {
@@ -433,4 +461,193 @@
 }
 .collapseButton:hover {
   background-color: var(--brd-light-2);
+}
+
+/* Mobile Menu */
+.mobileMenu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: none;
+}
+
+.mobileMenuContent {
+  background-color: var(--body);
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  overflow-y: auto;
+}
+
+.mobileMenuHeader {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mobileMenuCloseButton {
+  height: 40px;
+  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--txt-light-2);
+  border-radius: 5px;
+  background-color: var(--brd-light);
+  color: var(--txt-light);
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+}
+
+.mobileMenuItems {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.mobileNavItem {
+  width: 100%;
+  padding: 12px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 15px;
+  border: none;
+  border-radius: 5px;
+  color: var(--txt-light);
+  background-color: transparent;
+  text-decoration: none;
+  transition: background-color 0.2s ease-in-out, opacity 0.2s ease-in-out, color 0.2s ease-in-out;
+  cursor: pointer;
+}
+
+.mobileNavItem.active,
+.mobileNavItem:hover {
+  color: var(--black);
+  background-color: var(--brd-light);
+}
+
+.mobileNavIcon {
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 3px;
+  background-color: var(--brd-light);
+  transition: background-color 0.2s ease-in-out;
+}
+
+.mobileNavItem:hover .mobileNavIcon {
+  background-color: var(--txt-light-3);
+}
+
+.mobileNavItem.active .mobileNavIcon {
+  background-color: var(--main-hl-fade);
+}
+
+.mobileNavIcon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.mobileNavIcon svg path,
+.mobileNavIcon svg circle,
+.mobileNavIcon svg rect {
+  stroke: var(--txt-light);
+}
+
+.mobileNavItem.active .mobileNavIcon svg path,
+.mobileNavItem.active .mobileNavIcon svg circle,
+.mobileNavItem.active .mobileNavIcon svg rect {
+  stroke: var(--main-hl);
+}
+
+.mobileNavText {
+  font-size: 16px;
+  font-family: "Circular", "Geist", sans-serif;
+  font-weight: 400;
+}
+
+.mobileNavBadge {
+  margin: auto 0 auto auto;
+  background: linear-gradient(90deg, #c0eaff, #68cdff);
+  color: var(--white);
+  padding: 4px 10px;
+  border-radius: 50px;
+  font-family: "Sohne Mono", monospace;
+  font-size: 12px;
+  letter-spacing: -0.3px;
+  text-transform: uppercase;
+}
+
+.mobileMenuCredits {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: auto;
+}
+
+/* Responsiveness */
+@media screen and (max-width: 1000px) {
+  .sidebar {
+    width: fit-content !important;
+  }
+  .sidebar .topSection {
+    gap: 10px !important;
+  }
+  .sidebar .navItem {
+    padding: 0 !important;
+    height: 50px !important;
+    width: 50px !important;
+  }
+  .sidebar .navItemText,
+  .sidebar .navItemBadge,
+  .sidebar .creditsPill {
+    display: none !important;
+  }
+  .sidebar .navIcon {
+    width: 100% !important;
+    height: 100% !important;
+    background-color: transparent !important;
+  }
+  .sidebar .navItem.active .navIcon {
+    background-color: var(--main-hl-fade) !important;
+  }
+  .sidebar .navIcon svg {
+    width: 22px !important;
+    height: 22px !important;
+  }
+  .sidebar .collapseButton {
+    display: none !important;
+  }
+}
+@media screen and (max-width: 700px) {
+  .sidebar {
+    display: none !important;
+  }
+  .right {
+    display: none !important;
+  }
+  .rightMobile {
+    display: flex !important;
+  }
+  .mobileMenu {
+    display: block !important;
+  }
+  .content {
+    padding: 30px 30px 0 30px !important;
+  }
 }

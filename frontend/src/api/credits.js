@@ -23,8 +23,14 @@ export const getCatchallBalance = async () => {
   });
 };
 
+export const listAllTransactions = async () => {
+  return await http.get(`${MODULE_PREFIX}/history`, {
+    withCredentials: true,
+  });
+};
+
 export const getReferralInviteCode = async () => {
-  return await http.get(`${MODULE_PREFIX}/invite/code`, {
+  return await http.get(`${MODULE_PREFIX}/invites/me`, {
     withCredentials: true,
   });
 };
@@ -35,8 +41,10 @@ export const getReferralInviteList = async () => {
   });
 };
 
-export const listAllTransactions = async () => {
-  return await http.get(`${MODULE_PREFIX}/history`, {
+export const redeemReferralInviteCode = async (code) => {
+  return await http.post(`${MODULE_PREFIX}/invites/redeem`, {
+    code,
+  }, {
     withCredentials: true,
   });
 };

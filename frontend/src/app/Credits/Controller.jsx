@@ -72,13 +72,13 @@ export default function CreditsController() {
         <BalanceCard
           title="Email Validation"
           balance={currentBalance}
-          buttonText="Buy Credits"
+          buttonText="Get More Credits"
           buttonLink="/packages?p=validate"
         />
         <BalanceCard
           title="Catchall Validation"
           balance={catchallCurrentBalance}
-          buttonText="Buy Credits"
+          buttonText="Get More Credits"
           buttonLink="/packages?p=catchall"
         />
       </div>

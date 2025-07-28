@@ -1,8 +1,8 @@
-// Style Imports
-import styles from '../Emails.module.css';
-
 // Icon Imports
 import { EMAIL_ICON, EMAIL_SHREDDER_ICON } from '../../../assets/icons';
+
+// Style Imports
+import styles from '../styles/Emails.module.css';
 
 // Component
 export default function UploadStageFinalize({
@@ -18,13 +18,13 @@ export default function UploadStageFinalize({
               <div className={styles.finalizeIcon}>
                 {EMAIL_ICON}
               </div>
-              <h2 className={styles.subtitle}>Verify Emails</h2>
+              <h2 className={styles.subtitle}>Email Validation</h2>
             </div>
             <p className={styles.finalizeText}>
               Test if emails are valid, invalid, or potential catch-alls.
             </p>
             <button className={styles.finalizeButton} onClick={handleVerifyUpload}>
-              Verify {emailCount} Emails
+              Validate {emailCount} Emails
             </button>
           </div>
           <div className={styles.finalizeRow}>
@@ -32,13 +32,13 @@ export default function UploadStageFinalize({
               <div className={styles.finalizeIcon}>
                 {EMAIL_SHREDDER_ICON}
               </div>
-              <h2 className={styles.subtitle}>Test Catch-All's</h2>
+              <h2 className={styles.subtitle}>Catchall Validation</h2>
             </div>
             <p className={styles.finalizeText}>
-              Test the deliverability of emails to potential catch-all recipients.
+              Test the deliverability of catchall emails.
             </p>
             <button className={styles.finalizeButton} onClick={handleCatchallUpload}>
-              Test {emailCount} Emails
+              Validate {emailCount} Catchalls
             </button>
           </div>
         </div>

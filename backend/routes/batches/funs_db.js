@@ -762,21 +762,39 @@ async function db_addToBatch(user_id, check_type, batch_id, emails) {
 }
 
 async function db_startBatchProcessing(user_id, check_type, batch_id) {
-	// Get batch table name
-	const batch_table = getBatchTableName(check_type);
-	if (!batch_table) return false;
-
-	// Update batch status to queued to start processing
 	let err_code;
-	await knex(batch_table).where({
-		'id': batch_id,
-		'user_id': user_id,
-		'status': 'draft'
-	}).update({
-		'status': 'queued'
-	}).catch((err)=>{if (err) err_code = err.code});
+	
+	// Get table names
+	const batch_table = getBatchTableName(check_type);
+	const email_batch_association_table = getEmailBatchAssociationTableName(check_type);
+	if (!batch_table || !email_batch_association_table) return false;
+
+	// Handle edge case: if all emails were cached, mark batch as completed immediately
+	const non_cached_email = await knex(email_batch_association_table).where({
+		'batch_id': batch_id,
+		'used_cached': 0,
+	}).select(
+		'email_global_id'
+	).limit(1).catch((err)=>{if (err) err_code = err.code});
 	if (err_code) return false;
 
+	// Construct status update dict
+	let status_update_dict = { 'status': 'queued' };
+	if (non_cached_email.length === 0) status_update_dict = {
+		'status': 'completed',
+		'completed_ts': knex.fn.now()
+	}
+
+	// Update status accordingly
+	await knex(batch_table).where({
+		'id': batch_id,
+		'status': 'draft'
+	}).update(
+		status_update_dict,
+	).catch((err)=>{if (err) err_code = err.code});
+	if (err_code) return false;
+
+	// Return
 	return true;
 }
 

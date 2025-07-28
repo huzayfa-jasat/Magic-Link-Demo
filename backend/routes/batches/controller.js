@@ -5,7 +5,6 @@ const HttpStatus = require('../../types/HttpStatus.js');
 const {
 	db_getBatchesList,
 	db_addGlobalEmails,
-	db_createBatch,
 	db_getEmailGlobalIds,
 	db_getBatchDetails,
 	db_getBatchResults,
@@ -18,7 +17,7 @@ const {
 
 // External API Function Imports
 const {
-	sendLowCreditsEmail
+	resend_sendLowCreditsEmail
 } = require('../../external_apis/resend.js');
 
 // Util Imports
@@ -93,7 +92,6 @@ async function getBatchesList(req, res) {
 		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
 	}
 }
-
 
 async function getBatchDetails(req, res) {
 	try {

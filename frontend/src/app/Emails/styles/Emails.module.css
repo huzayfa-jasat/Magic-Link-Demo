@@ -2,7 +2,7 @@
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  /* padding: 2rem; */
 }
 
 /* Card styles */
@@ -95,7 +95,7 @@
 .title {
   margin: 0;
   font-family: "Circular", "Geist", sans-serif;
-  font-size: 26px;
+  font-size: 32px;
   font-weight: 400;
   letter-spacing: -0.5px;
   color: #fff;
@@ -226,15 +226,15 @@
 
 .uploadText {
   font-family: "Circular", sans-serif;
-  font-size: 15px;
+  font-size: 17px;
   margin: 0 auto 5px auto;
   color: #fff;
 }
 
 .uploadSubtext {
-  margin: 0;
+  margin: -5px 0 0 0;
   font-family: "Circular", sans-serif;
-  font-size: 14px;
+  font-size: 15px;
   color: #718096;
 }
 
@@ -292,9 +292,9 @@
 }
 
 .buttonPrimary {
-  height: 32px;
+  height: 40px;
   width: fit-content;
-  padding: 0 14px;
+  padding: 0 18px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -304,7 +304,7 @@
   background-color: var(--main-hl);
   color: var(--white);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 15px;
   font-family: "Circular", "Geist", sans-serif;
   font-weight: 400;
   transition: background-color 0.2s ease-in-out, opacity 0.2s ease-in-out, color 0.2s ease-in-out;
@@ -359,11 +359,12 @@
 }
 
 .detailsTitle {
-  font-size: 1.5rem;
   margin: 0;
-  font-family: "Sohne", sans-serif;
-  font-weight: 500;
+  font-size: 32px;
+  font-family: "Circular", "Geist", sans-serif;
+  font-weight: 400;
   color: #fff;
+  line-break: anywhere;
 }
 
 .searchContainer {
@@ -693,7 +694,7 @@
 
 .uploadButton,
 .uploadButtonSmall {
-  height: 41px;
+  height: 45px;
   width: fit-content;
   margin: 30px auto 0 auto;
   padding: 0 18px;
@@ -713,9 +714,8 @@
   cursor: pointer;
 }
 .uploadButtonSmall {
-  height: 35px;
+  height: 40px;
   margin: 0;
-  font-size: 14px;
 }
 .uploadButton svg,
 .uploadButtonSmall svg {
@@ -753,8 +753,9 @@
 
 .finalizeContainer {
   width: 100%;
+  max-width: 800px;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   gap: 15px;
 }
 .finalizeRowContainer {
@@ -803,7 +804,7 @@
 }
 .finalizeButton {
   width: 100%;
-  height: 40px;
+  height: 45px;
   margin-top: 20px;
   display: flex;
   align-items: center;
@@ -815,7 +816,7 @@
   background-color: var(--main-hl);
   color: var(--white);
   cursor: pointer;
-  transition: 0.2s ease;
+  transition: all 0.2s ease-in-out;
   text-decoration: none;
 }
 .finalizeButton:hover {
@@ -838,11 +839,167 @@
   font-weight: 400;
 }
 
+/* Column Select Styles */
+.columnSelectContainer {
+  margin-top: 0;
+  background: var(--body);
+  border: 1px dashed var(--brd-light);
+  border-radius: 8px;
+  padding: 30px;
+  overflow-y: auto;
+}
+
+.columnSelectHeader {
+  margin-bottom: 20px;
+}
+
+.columnSelectText {
+  color: var(--txt-light);
+  margin: 2px 0 10px 0;
+  font-size: 15px;
+}
+
+.columnGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.columnButton {
+  padding: 15px;
+  border: 1px solid var(--brd-light);
+  border-radius: 8px;
+  background: var(--brd-light-2);
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  text-align: left;
+}
+
+.columnButton:hover {
+  background: var(--brd-light);
+  transform: translateY(-2px);
+}
+
+.columnHeader {
+  font-family: "PP Supply Mono", sans-serif;
+  font-weight: 500;
+  font-size: 17px;
+  margin-bottom: 10px;
+  color: var(--black);
+}
+
+.columnSamples {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.columnSample {
+  font-size: 14px;
+  color: var(--txt-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 
 /* Responsiveness */
-
-@media screen and (max-width: 1465px) {
-  .finalizeContainer {
+@media screen and (max-width: 700px) {
+  .title {
+    font-size: 25px;
+  }
+  .detailsTitle {
+    font-size: 25px;
+  }
+  .cardHeader {
+    flex-direction: column-reverse;
+    gap: 20px;
+    align-items: flex-start;
+  }
+  .metaCard {
+    width: 100%;
+    padding: 15px;
+  }
+  .metaValue {
+    font-size: 22px;
+  }
+  .metaLabel {
+    font-size: 15px;
+    margin-bottom: 5px;
+  }
+  .detailsMeta {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    grid-template-columns: unset;
+  }
+  .detailsHeader {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 30px;
+  }
+  .detailsHeader .buttonPrimary {
+    margin: -80px 0 20px 0;
+    margin-left: auto;
+    height: 40px;
+    padding: 0 18px;
+    font-size: 14px;
+  }
+  .exportMenu {
+    min-width: 300px;
+  }
+  .exportMenu button {
+    height: 45px;
+    font-size: 16px;
+    gap: 10px;
+    padding: 10px;
+  }
+  .exportMenu button svg {
+    height: 20px;
+    width: auto;
+  }
+  .grid {
+    margin-top: -15px;
+    display: flex;
     flex-direction: column;
+    grid-template-columns: unset;
+  }
+  .tableHeaderCell {
+    font-size: 15px;
+  }
+  .tableCell {
+    font-size: 14px;
+    padding: 12px;
+  }
+  .tableCellResult {
+    font-size: 14px;
+  }
+  .detailsHeader h1 {
+    margin-top: -15px;
+  }
+}
+@media screen and (max-width: 500px) {
+  .detailsMeta {
+    margin-top: -10px;
+    gap: 10px;
+  }
+  .metaLabel {
+    font-size: 14px;
+  }
+  .metaValue {
+    font-size: 18px;
+  }
+  .metaValue svg {
+    display: none !important;
+  }
+  .tableHeaderCell {
+    font-size: 14px;
+  }
+  .tableHeaderCell:nth-child(3) {
+    display: none;
+  }
+  .tableCell:nth-child(3) {
+    display: none;
   }
 }

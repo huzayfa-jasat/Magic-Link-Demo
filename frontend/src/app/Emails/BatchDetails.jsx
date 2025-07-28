@@ -8,9 +8,9 @@ import { getVerifyBatchResults, getCatchallBatchResults } from "../../api/batche
 
 // Component Imports
 import { LoadingCircle } from "../../ui/components/LoadingCircle";
-import getMailServerDisplay from "./getMailServerDisplay";
-import DetailStats from "./Components/DetailStats";
-import ResultsTable from "./Components/ResultsTable";
+import getMailServerDisplay from "./utils/getMailServerDisplay";
+import DetailStats from "./components/DetailStats";
+import ResultsTable from "./components/ResultsTable";
 
 // Hook Imports
 import useBatchData from "./hooks/useBatchData";
@@ -23,7 +23,7 @@ import {
 } from "../../assets/icons";
 
 // Style Imports
-import styles from "./Emails.module.css";
+import styles from "./styles/Emails.module.css";
 
 // Constants
 const FILTER_MAP = {
@@ -102,15 +102,15 @@ export default function EmailsBatchDetailsController({
         ...allResults.map((item) => {
           // Map result values: 1=deliverable, 2=catchall, 0=undeliverable
           let resultText;
-          if (item.result === 1) resultText = "valid";
-          else if (item.result === 2) resultText = "catch-all";
-          else resultText = "invalid";
+          if (item.result === 1) resultText = "Valid";
+          else if (item.result === 2) resultText = "Catch-All";
+          else resultText = "Invalid";
           
           // Return CSV row
           return [
             item.email,
             resultText,
-            getMailServerDisplay(item.provider) || "",
+            item.provider || "",
           ].join(",");
         }),
       ].join("\n");

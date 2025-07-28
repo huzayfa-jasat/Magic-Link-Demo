@@ -113,7 +113,8 @@
 }
 .txMessage.txError {
   color: var(--fg-neg);
-  background-color: var(--bg-neg);
+  border-color: var(--bg-neg);
+  background-color: var(--result-invalid-fade);
 }
 .txMessage.txSuccess {
   color: var(--main-hl);

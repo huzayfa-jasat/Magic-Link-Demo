@@ -38,6 +38,11 @@ export default function PackagesController() {
   const [catchallPromotions, setCatchallPromotions] = useState([]);
   const [catchallNonPromotions, setCatchallNonPromotions] = useState([]);
 
+  // Switch views on param change
+  useEffect(() => {
+    setCurrPage((pageParam === "catchall") ? "catchall" : "validate");
+  }, [pageParam]);
+
   // Load packages
   async function loadPackages() {
     const resp = await getPackages();
@@ -66,16 +71,16 @@ export default function PackagesController() {
           className={`${styles.pageButton} ${(currPage === "validate") ? styles.active : ""}`}
           onClick={() => setCurrPage("validate")}
         >
-          Email Validation
+          Email <span className={styles.hideMobile}>Validation</span>
         </button>
         <button
           className={`${styles.pageButton} ${(currPage === "catchall") ? styles.active : ""}`}
           onClick={() => setCurrPage("catchall")}
         >
-          Catchall Validation
+          Catchall <span className={styles.hideMobile}>Validation</span>
         </button>
       </div>
-      <br/><br/>
+      <br/>
       <div className={styles.creditGrid}>
         {((currPage === "catchall") ? catchallNonPromotions : validateNonPromotions).map(
           ({ name, amount, price, bonus, total, id }) => (

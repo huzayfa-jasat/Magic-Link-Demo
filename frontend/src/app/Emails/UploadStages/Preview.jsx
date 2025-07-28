@@ -1,5 +1,5 @@
 // Style Imports
-import styles from '../Emails.module.css';
+import styles from '../styles/Emails.module.css';
 
 // Component
 export default function UploadStagePreview({

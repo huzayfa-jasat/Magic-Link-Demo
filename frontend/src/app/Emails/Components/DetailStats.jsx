@@ -1,8 +1,12 @@
-// Style Imports
-import styles from '../Emails.module.css';
-
 // Icons
-import { VERIFY_VALID_ICON, VERIFY_INVALID_ICON, VERIFY_CATCHALL_ICON } from '../../../assets/icons';
+import {
+	VERIFY_VALID_ICON,
+	VERIFY_INVALID_ICON,
+	VERIFY_CATCHALL_ICON
+} from '../../../assets/icons';
+
+// Style Imports
+import styles from '../styles/Emails.module.css';
 
 // Component
 export default function DetailStats({

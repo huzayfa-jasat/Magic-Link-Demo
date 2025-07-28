@@ -107,12 +107,12 @@ export default function App() {
               </AppLayout>
             } />
             <Route exact path="/verify/:id/details" element={
-              <AppLayout title="Verify Emails Details">
+              <AppLayout title="Email Validation Details">
                 <EmailsBatchDetails checkTyp="verify" />
               </AppLayout>
             } />
             <Route exact path="/catchall/:id/details" element={
-              <AppLayout title="Catchall Details">
+              <AppLayout title="Catchall Validation Details">
                 <EmailsBatchDetails checkTyp="catchall" />
               </AppLayout>
             } />
