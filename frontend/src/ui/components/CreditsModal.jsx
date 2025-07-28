@@ -5,14 +5,13 @@ import { useNavigate } from 'react-router-dom';
 import styles from './CreditsModal.module.css';
 
 // Icon Imports
-import { FAILED_ICON } from '../../assets/icons';
+import { WALLET_ICON } from '../../assets/icons';
 
 // Component
 export default function CreditsModal({ 
   isOpen, 
   onClose, 
   checkType = 'verify',
-  message = 'Insufficient credits to process this batch.'
 }) {
   const navigate = useNavigate();
 
@@ -30,24 +29,21 @@ export default function CreditsModal({
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
           <div className={styles.icon}>
-            {FAILED_ICON}
+            {WALLET_ICON}
           </div>
-          <h2 className={styles.title}>Insufficient Credits</h2>
+          <h2 className={styles.title}>Not Enough Credits</h2>
         </div>
         
         <div className={styles.content}>
-          <p className={styles.message}>{message}</p>
-          <p className={styles.subtitle}>
-            You need more {checkType === 'verify' ? 'email validation' : 'catchall validation'} credits to process this batch.
-          </p>
+          <p className={styles.message}>You don't have enough credits to validate these emails.</p>
         </div>
         
         <div className={styles.buttons}>
           <button className={styles.buttonSecondary} onClick={onClose}>
-            Cancel
+            Close
           </button>
           <button className={styles.buttonPrimary} onClick={handleBuyCredits}>
-            Buy Credits
+            Get More Credits
           </button>
         </div>
       </div>

@@ -201,8 +201,9 @@ export default function EmailsUploadController() {
             if (addResponse.status !== 200) throw addResponse;
           }
         } catch (chunkError) {
+          console.log("CHUNK ERROR = ", chunkError);
           // If this is a 402 status code (insufficient credits), show credits modal
-          if (chunkError.response && chunkError.response.status === 402) {
+          if (chunkError.status === 402) {
             setCreditsModalType(checkTyp);
             setShowCreditsModal(true);
             return;
@@ -223,7 +224,7 @@ export default function EmailsUploadController() {
 
     } catch (err) {
       // Check if it's a 402 status code (insufficient credits)
-      if (err.response && err.response.status === 402) {
+      if (err.status === 402) {
         setCreditsModalType(checkTyp);
         setShowCreditsModal(true);
       } else {

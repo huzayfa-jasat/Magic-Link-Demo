@@ -59,8 +59,8 @@ const VALID_BATCHRESULTS_FILTER_PARAMS = new Set([
 ]);
 
 // Helper Functions
-function returnBadRequest(res, msg) {
-	return res.status(HttpStatus.BAD_REQUEST_STATUS).send(msg);
+function returnBadRequest(res, msg, status=HttpStatus.BAD_REQUEST_STATUS) {
+	return res.status(status).send(msg);
 }
 
 // ---------------------
@@ -173,7 +173,7 @@ async function addToBatch(req, res) {
 
 		// Check & deduct credits
 		const [ok_credits, remaining_balance] = await db_checkAndDeductCredits(req.user.id, checkType, Object.keys(emails_stripped).length);
-		if (!ok_credits) return returnBadRequest(res, 'Insufficient credits');
+		if (!ok_credits) return returnBadRequest(res, 'Insufficient credits', HttpStatus.PAYMENT_REQUIRED_STATUS);
 
 		// Check if low credits email should be sent (only for deliverable checks)
 		if (checkType === 'deliverable' && remaining_balance < 1000 && req.user.email) {

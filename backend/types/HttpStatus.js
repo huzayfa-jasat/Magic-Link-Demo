@@ -15,6 +15,7 @@ const HttpStatus = {
   NOT_FOUND_STATUS: 404,
   TOO_MANY_REQUESTS_STATUS: 429,
   MISC_ERROR_STATUS: 500,
+  PAYMENT_REQUIRED_STATUS: 402,
   
   // Error Messages
   MISC_ERROR_MSG: "Misc Error"
