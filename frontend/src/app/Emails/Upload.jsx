@@ -22,6 +22,9 @@ import UploadStageFinalize from './UploadStages/Finalize';
 // Style Imports
 import styles from './Emails.module.css';
 
+// Constants
+const CHUNK_SIZE = 10000;
+
 // Main Component
 export default function EmailsUploadController() {
   const navigate = useNavigate();
@@ -52,8 +55,7 @@ export default function EmailsUploadController() {
 
       return parsedEmails;
     } catch (err) {
-      console.log("ERR = ", err);
-      throw new Error('Failed to parse CSV file. Please ensure it contains emails in the first column.');
+      throw err;
     }
   }, []);
 
@@ -103,7 +105,6 @@ export default function EmailsUploadController() {
 
     try {
       const fileName = file.name || "New Upload";
-      const CHUNK_SIZE = 10000;
       let batchId = null;
 
       // Process emails in chunks of 10k
@@ -118,16 +119,11 @@ export default function EmailsUploadController() {
               createResponse = await createVerifyBatch(chunk, fileName);
             } else if (checkTyp === 'catchall') {
               createResponse = await createCatchallBatch(chunk, fileName);
-            } else {
-              throw new Error('Invalid upload type');
-            }
+            } else throw new Error('Invalid upload type');
 
-            if (createResponse.status !== 200) {
-              throw new Error(createResponse.data?.message || 'Failed to create batch');
-            }
+            if (createResponse.status !== 200) throw createResponse;
             
             batchId = createResponse.data.id;
-            console.log(`Created batch ${batchId} with ${chunk.length} emails`);
             
           } else {
             // Subsequent chunks: add to existing batch
@@ -138,11 +134,7 @@ export default function EmailsUploadController() {
               addResponse = await addToCatchallBatch(batchId, chunk);
             }
 
-            if (addResponse.status !== 200) {
-              throw new Error(addResponse.data?.message || 'Failed to add emails to batch');
-            }
-            
-            console.log(`Added ${chunk.length} emails to batch ${batchId}`);
+            if (addResponse.status !== 200) throw addResponse;
           }
         } catch (chunkError) {
           // If this is a 402 status code (insufficient credits), show credits modal
@@ -157,7 +149,6 @@ export default function EmailsUploadController() {
       }
 
       // Step 2: Start batch processing after all chunks uploaded
-      console.log(`Starting processing for batch ${batchId}`);
       let startResponse;
       if (checkTyp === 'verify') {
         startResponse = await startVerifyBatchProcessing(batchId);
@@ -165,11 +156,7 @@ export default function EmailsUploadController() {
         startResponse = await startCatchallBatchProcessing(batchId);
       }
 
-      if (startResponse.status !== 200) {
-        throw new Error(startResponse.data?.message || 'Failed to start batch processing');
-      }
-
-      console.log(`Successfully started processing batch ${batchId} with ${emails.length} total emails`);
+      if (startResponse.status !== 200) throw startResponse;
 
       // Navigate to home after successful upload and start
       navigate(`/home`);
@@ -183,7 +170,6 @@ export default function EmailsUploadController() {
         // Other errors show generic message
         setError(err.message || 'Failed to upload emails. Please try again.');
       }
-      console.error('Upload error:', err);
 
     } finally {
       setIsUploading(false);
