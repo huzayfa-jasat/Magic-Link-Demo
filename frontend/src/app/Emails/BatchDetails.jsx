@@ -102,15 +102,15 @@ export default function EmailsBatchDetailsController({
         ...allResults.map((item) => {
           // Map result values: 1=deliverable, 2=catchall, 0=undeliverable
           let resultText;
-          if (item.result === 1) resultText = "valid";
-          else if (item.result === 2) resultText = "catch-all";
-          else resultText = "invalid";
+          if (item.result === 1) resultText = "Valid";
+          else if (item.result === 2) resultText = "Catch-All";
+          else resultText = "Invalid";
           
           // Return CSV row
           return [
             item.email,
             resultText,
-            getMailServerDisplay(item.provider) || "",
+            item.provider || "",
           ].join(",");
         }),
       ].join("\n");

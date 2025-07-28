@@ -16,7 +16,6 @@ import { LoadingCircle } from '../../ui/components/LoadingCircle';
 import CreditsModal from '../../ui/components/CreditsModal';
 import UploadStageFileUpload from './UploadStages/FileUpload';
 import UploadStageColumnSelect from './UploadStages/ColumnSelect';
-import UploadStagePreview from './UploadStages/Preview';
 import UploadStageFinalize from './UploadStages/Finalize';
 
 // Style Imports
@@ -175,26 +174,16 @@ export default function EmailsUploadController() {
 
       // Step 1: Create draft batch
       let createResponse;
-      if (checkTyp === 'verify') {
-        createResponse = await createVerifyBatch(emails, fileName);
-      } else if (checkTyp === 'catchall') {
-        createResponse = await createCatchallBatch(emails, fileName);
-      } else {
-        throw new Error('Invalid upload type');
-      }
-
+      if (checkTyp === 'verify') createResponse = await createVerifyBatch(emails, fileName);
+      else if (checkTyp === 'catchall') createResponse = await createCatchallBatch(emails, fileName);
+      else throw new Error('Invalid upload type');
       if (createResponse.status !== 200) throw new Error(createResponse.data.message);
       
+      // Get batch ID and start processing
       const batchId = createResponse.data.id;
-      
-      // Step 2: Start batch processing
       let startResponse;
-      if (checkTyp === 'verify') {
-        startResponse = await startVerifyBatchProcessing(batchId);
-      } else {
-        startResponse = await startCatchallBatchProcessing(batchId);
-      }
-
+      if (checkTyp === 'verify') startResponse = await startVerifyBatchProcessing(batchId);
+      else startResponse = await startCatchallBatchProcessing(batchId);
       if (startResponse.status !== 200) throw new Error(startResponse.data.message);
 
       // Navigate to home after successful upload and start

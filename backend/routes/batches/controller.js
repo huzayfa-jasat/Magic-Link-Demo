@@ -5,7 +5,6 @@ const HttpStatus = require('../../types/HttpStatus.js');
 const {
 	db_getBatchesList,
 	db_addGlobalEmails,
-	db_createBatch,
 	db_getEmailGlobalIds,
 	db_getBatchDetails,
 	db_getBatchResults,

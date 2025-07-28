@@ -14,7 +14,7 @@ import s from "./styles.module.css";
 
 // Icon Imports
 import {
-  OMNI_LOGO, BACK_ICON,
+  OMNI_LOGO,
   COMPLETE_CHECK_ICON, FAILED_ICON,
 } from "../../assets/icons";
 
@@ -39,25 +39,33 @@ export default function InviteCodeController() {
     const urlCode = searchParams.get('code');
     if (urlCode) {
       setIsCodeFlow(true);
-      console.log('Invite code from URL:', urlCode);
-      // TODO: Make API call to process the invite code
-      setMessage("Invite code received! (Check console for details)");
-      setIsSuccess(true);
+      processInviteCode(urlCode);
     }
   }, [searchParams]);
 
-  // Manual code submission flow
-  async function onCodeSubmit(data) {
+  // Process invite code
+  async function processInviteCode(code) {
     try {
-      console.log('Manual invite code:', data.code);
-      // TODO: Make API call to process the invite code
-      setMessage("Invite code submitted! (Check console for details)");
-      setIsError(false);
-      setIsSuccess(true);
+      const response = await redeemReferralInviteCode(code);
+      if (response.status === 200) {
+        setMessage("5,000 credits have been added to your account.");
+        setIsError(false);
+        setIsSuccess(true);
+      } else {
+        setMessage("That referral code is invalid or expired.");
+        setIsError(true);
+      }
     } catch (error) {
       setMessage("Something went wrong. Please try again.");
       setIsError(true);
+    } finally {
+      setIsCodeFlow(false);
     }
+  }
+
+  // Manual code submission flow
+  async function onCodeSubmit(data) {
+    processInviteCode(data.code);
   }
 
   // Render
@@ -68,19 +76,19 @@ export default function InviteCodeController() {
           {OMNI_LOGO}
         </div>
         
-        <h1 className={s.title}>Invite Code</h1>
+        {/* <h1 className={s.title}>Accept Invite</h1> */}
         
         {!isCodeFlow && (
           <>
-            <h2 className={s.formSubtitle}>
+            {/* <h2 className={s.formSubtitle}>
               Enter your invite code to get rewarded.
-            </h2>
+            </h2> */}
             <div className={s.section}>
-              <h3 className={s.subtitle}>Invite Code</h3>
+              <h3 className={s.subtitle}>Referral Code</h3>
               <input 
                 {...register("code", { required: true })} 
                 type="text" 
-                placeholder="Enter your invite code" 
+                placeholder="Enter your referral code" 
                 disabled={isSuccess} 
               />
             </div>
@@ -99,7 +107,7 @@ export default function InviteCodeController() {
         {!isSuccess && !isCodeFlow && (
           <div className={s.buttons}>
             <button className={s.button} type="submit">
-              Submit Code
+              Continue
             </button>
           </div>
         )}

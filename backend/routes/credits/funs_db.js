@@ -123,10 +123,7 @@ async function db_redeemInviteCode(user_id, code) {
 		.where('referral_code', code)
 		.first()
 		.catch((err)=>{if (err) err_code = err.code});
-	if (err_code) return false;
-
-	// Don't leak referral code existence
-	if (!referrer_user) return true;
+	if (err_code || !referrer_user) return false;
 	
 	// Can't self-refer (check for string equality)
 	if (`${referrer_user.id}` === `${user_id}`) return false;
