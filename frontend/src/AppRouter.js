@@ -30,6 +30,7 @@ import {
   Register,
   ForgotPassword,
   LoginOTP,
+  InviteCode,
   Settings,
   EmailsHome,
   EmailsUpload,
@@ -135,6 +136,7 @@ export default function App() {
                 <ReferralsHome />
               </AppLayout>
             } />
+            <Route exact path="/invite" element={<InviteCode />} />
             <Route exact path="/payment/:result" element={
               <Navigate to="/credits" />
             } />

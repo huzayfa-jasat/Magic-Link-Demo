@@ -709,6 +709,145 @@ async function db_removeBatch(user_id, check_type, batch_id) {
 }
 
 
+async function db_addToBatch(user_id, check_type, batch_id, emails) {
+	// Get batch table names
+	const batch_table = getBatchTableName(check_type);
+	const results_table = getResultsTableName(check_type);
+	const email_batch_association_table = getEmailBatchAssociationTableName(check_type);
+	if (!batch_table || !results_table || !email_batch_association_table) return [false, null];
+
+	// Verify batch exists and belongs to user
+	let err_code;
+	const existing_batch = await knex(batch_table).where({
+		'id': batch_id,
+		'user_id': user_id,
+		'status': 'draft' // Only allow adding to draft batches
+	}).select('id', 'total_emails').catch((err)=>{if (err) err_code = err.code});
+	if (err_code || existing_batch.length === 0) return [false, null];
+
+	// Add batch emails association table entries
+	await knex(email_batch_association_table).insert(emails.map((email)=>({
+		'batch_id': batch_id,
+		'email_global_id': email.global_id,
+		'email_nominal': email.email,
+	}))).catch((err)=>{if (err) err_code = err.code});
+	if (err_code) return [false, null];
+
+	// Update total email count
+	await knex(batch_table).where({
+		'id': batch_id
+	}).update({
+		'total_emails': existing_batch[0].total_emails + emails.length
+	}).catch((err)=>{if (err) err_code = err.code});
+	if (err_code) return [false, null];
+
+	// Check cached results for existing results
+	const existing_results = await knex(results_table).whereIn(
+		'email_global_id', emails.map((email)=>email.global_id)
+	).pluck(
+		'email_global_id'
+	).catch((err)=>{if (err) err_code = err.code});
+	if (err_code) return [false, null];
+
+	// Update batch emails association table entries with cached results
+	await knex(email_batch_association_table).whereIn(
+		'email_global_id', existing_results
+	).where('batch_id', batch_id).update({
+		'used_cached': 1,
+		'did_complete': 1,
+	}).catch((err)=>{if (err) err_code = err.code});
+	if (err_code) return [false, null];
+
+	return [true, batch_id];
+}
+
+async function db_startBatchProcessing(user_id, check_type, batch_id) {
+	// Get batch table name
+	const batch_table = getBatchTableName(check_type);
+	if (!batch_table) return false;
+
+	// Update batch status to queued to start processing
+	let err_code;
+	await knex(batch_table).where({
+		'id': batch_id,
+		'user_id': user_id,
+		'status': 'draft'
+	}).update({
+		'status': 'queued'
+	}).catch((err)=>{if (err) err_code = err.code});
+	if (err_code) return false;
+
+	return true;
+}
+
+// Modify db_createBatch to create batches in draft status initially
+async function db_createBatchDraft(user_id, check_type, title, emails) {
+	// Get batch table names
+	const batch_table = getBatchTableName(check_type);
+	const results_table = getResultsTableName(check_type);
+	const email_batch_association_table = getEmailBatchAssociationTableName(check_type);
+	if (!batch_table || !results_table || !email_batch_association_table) return [false, null];
+
+	// 1. Create batch entry in draft status
+	let err_code;
+	const insert_result = await knex(batch_table).insert({
+		'user_id': user_id,
+		'title': title ?? 'Untitled',
+		'status': 'draft', // Start as draft
+		'total_emails': emails.length,
+		'created_ts': knex.fn.now(),
+	}).catch((err)=>{if (err) err_code = err.code});
+	if (err_code) {
+		console.log("BATCH INSERT ERR 1 = ", err_code);
+		return [false, null];
+	}
+	
+	// MySQL typically returns an array with insertId
+	const [batch_id] = insert_result;
+	console.log('batch_id after destructuring:', batch_id);
+	
+	if (!batch_id) return [false, null];
+
+	// 2. Create batch emails association table entries
+	await knex(email_batch_association_table).insert(emails.map((email)=>({
+		'batch_id': batch_id,
+		'email_global_id': email.global_id,
+		'email_nominal': email.email,
+	}))).catch((err)=>{if (err) err_code = err.code});
+	if (err_code) {
+		console.log("BATCH INSERT ERR 2 = ", err_code);
+		return [false, null];
+	}
+	
+	// 3. Check cached results for existing results
+	const existing_results = await knex(results_table).whereIn(
+		'email_global_id', emails.map((email)=>email.global_id)
+	).pluck(
+		'email_global_id'
+	).catch((err)=>{if (err) err_code = err.code});
+	if (err_code) {
+		console.log("BATCH INSERT ERR 3 = ", err_code);
+		return [false, null];
+	}
+
+	// Update batch emails association table entries with cached results
+	await knex(email_batch_association_table).whereIn(
+		'email_global_id', existing_results
+	).update({
+		'used_cached': 1,
+		'did_complete': 1,
+	}).catch((err)=>{if (err) err_code = err.code});
+	if (err_code) {
+		console.log("BATCH INSERT ERR 4 = ", err_code);
+		return [false, null];
+	}
+
+	// Return
+	const existing_results_set = new Set(existing_results);
+	const fresh_email_ids = emails.filter((email)=>!existing_results_set.has(email.global_id)).map((email)=>email.global_id);
+	return [true, batch_id, fresh_email_ids];
+}
+
 // Exports
 module.exports = {
 	db_checkUserBatchAccess,
@@ -719,5 +858,8 @@ module.exports = {
 	db_getBatchDetails,
 	db_getBatchResults,
 	db_checkAndDeductCredits,
-	db_removeBatch
+	db_removeBatch,
+	db_addToBatch,
+	db_startBatchProcessing,
+	db_createBatchDraft
 }
