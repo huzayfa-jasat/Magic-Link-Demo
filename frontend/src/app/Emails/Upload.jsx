@@ -7,6 +7,8 @@ import * as XLSX from 'xlsx';
 import { 
   createVerifyBatch, 
   createCatchallBatch,
+  addToVerifyBatch,
+  addToCatchallBatch,
   startVerifyBatchProcessing,
   startCatchallBatchProcessing 
 } from '../../api/batches';
@@ -20,6 +22,9 @@ import UploadStageFinalize from './UploadStages/Finalize';
 
 // Style Imports
 import styles from './styles/Emails.module.css';
+
+// Constants
+const CHUNK_SIZE = 10000;
 
 // Main Component
 export default function EmailsUploadController() {
@@ -162,7 +167,7 @@ export default function EmailsUploadController() {
     }
   }, [parseCSV, parseExcel]);
 
-  // Handle upload
+  // Handle upload with chunked progressive uploads
   const handleUpload = async (checkTyp) => {
     if (!emails.length || !file) return;
 
@@ -171,33 +176,60 @@ export default function EmailsUploadController() {
 
     try {
       const fileName = file.name || "New Upload";
+      let batchId = null;
 
-      // Step 1: Create draft batch
-      let createResponse;
-      if (checkTyp === 'verify') createResponse = await createVerifyBatch(emails, fileName);
-      else if (checkTyp === 'catchall') createResponse = await createCatchallBatch(emails, fileName);
-      else throw new Error('Invalid upload type');
-      if (createResponse.status !== 200) throw new Error(createResponse.data.message);
-      
-      // Get batch ID and start processing
-      const batchId = createResponse.data.id;
+      // Process emails in chunks of 10k
+      for (let i = 0; i < emails.length; i += CHUNK_SIZE) {
+        const chunk = emails.slice(i, i + CHUNK_SIZE);
+        
+        try {
+          if (batchId === null) {
+            // First chunk: create new batch
+            let createResponse;
+            if (checkTyp === 'verify') createResponse = await createVerifyBatch(chunk, fileName);
+            else if (checkTyp === 'catchall') createResponse = await createCatchallBatch(chunk, fileName);
+            else throw new Error('Invalid upload type');
+            if (createResponse.status !== 200) throw createResponse;
+            
+            batchId = createResponse.data.id;
+            
+          } else {
+            // Subsequent chunks: add to existing batch
+            let addResponse;
+            if (checkTyp === 'verify') addResponse = await addToVerifyBatch(batchId, chunk);
+            else addResponse = await addToCatchallBatch(batchId, chunk);
+            if (addResponse.status !== 200) throw addResponse;
+          }
+        } catch (chunkError) {
+          // If this is a 402 status code (insufficient credits), show credits modal
+          if (chunkError.response && chunkError.response.status === 402) {
+            setCreditsModalType(checkTyp);
+            setShowCreditsModal(true);
+            return;
+          }
+          // Re-throw other errors to be handled by outer catch
+          throw chunkError;
+        }
+      }
+
+      // Step 2: Start batch processing after all chunks uploaded
       let startResponse;
       if (checkTyp === 'verify') startResponse = await startVerifyBatchProcessing(batchId);
       else startResponse = await startCatchallBatchProcessing(batchId);
-      if (startResponse.status !== 200) throw new Error(startResponse.data.message);
+      if (startResponse.status !== 200) throw startResponse;
 
       // Navigate to home after successful upload and start
       navigate(`/home`);
 
     } catch (err) {
-      // Check if it's a credits error
-      if (err.response && err.response.status === 400 && err.response.data && err.response.data.includes('credits')) {
+      // Check if it's a 402 status code (insufficient credits)
+      if (err.response && err.response.status === 402) {
         setCreditsModalType(checkTyp);
         setShowCreditsModal(true);
       } else {
-        setError('Failed to upload emails. Please try again.');
+        // Other errors show generic message
+        setError(err.message || 'Failed to upload emails. Please try again.');
       }
-      console.error('Upload error:', err);
 
     } finally {
       setIsUploading(false);
