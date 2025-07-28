@@ -14,7 +14,6 @@ const {
 // Controller Imports
 const {
 	getBatchesList,
-	createBatch,
     getBatchDetails,
     getBatchResults,
 	removeBatch,
@@ -31,8 +30,8 @@ batchesRouter.use(checkUserAuth);
 
 // Routes
 batchesRouter.get('/list', getBatchesList);
-batchesRouter.post('/:checkType/new', checkValidCheckType, createBatch);
-batchesRouter.post('/:checkType/batch/:batchId/add', checkValidCheckType, checkUserBatchAccess, addToBatch);
+batchesRouter.post('/:checkType/add', checkValidCheckType, addToBatch); // For creating new batch
+batchesRouter.post('/:checkType/batch/:batchId/add', checkValidCheckType, checkUserBatchAccess, addToBatch); // For adding to existing batch
 batchesRouter.post('/:checkType/batch/:batchId/start', checkValidCheckType, checkUserBatchAccess, startBatchProcessing);
 batchesRouter.get('/:checkType/batch/:batchId/details', checkValidCheckType, checkUserBatchAccess, getBatchDetails);
 batchesRouter.get('/:checkType/batch/:batchId/results', checkValidCheckType, checkUserBatchAccess, getBatchResults);

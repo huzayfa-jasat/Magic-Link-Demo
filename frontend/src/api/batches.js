@@ -13,7 +13,7 @@ const MODULE_PREFIX = "/batches";
 // Handlers
 
 async function handler_createBatch(checkType, emails, title) {
-  return await http.post(`${MODULE_PREFIX}/${checkType}/new`, { emails, title }, {
+  return await http.post(`${MODULE_PREFIX}/${checkType}/add`, { emails, title }, {
     withCredentials: true,
   });
 };
