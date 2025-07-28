@@ -15,9 +15,9 @@ const {
 
 // Transactional Email Function Imports
 const {
-    sendWelcomeEmail,
-    sendOtpEmail,
-    sendPasswordResetEmail
+    resend_sendWelcomeEmail,
+    resend_sendOtpEmail,
+    resend_sendPasswordResetEmail,
 } = require('../../external_apis/resend.js');
 
 /**
@@ -68,7 +68,7 @@ async function registerUser(req, res) {
 
 
         // Send welcome email
-        await sendWelcomeEmail(req.body.em);
+        await resend_sendWelcomeEmail(req.body.em);
         return res.status(HttpStatus.SUCCESS_STATUS).send("User registered successfully");
 
     } catch (err) {
@@ -92,7 +92,7 @@ async function sendOtpCode(req, res) {
         // Send OTP email
         if (ok) {
             const otp_link = `${process.env.FRONTEND_URL_PREFIX}/otp?email=${encodeURIComponent(email)}&code=${encodeURIComponent(otp_code)}`;
-            sendOtpEmail(email, otp_link);
+            resend_sendOtpEmail(email, otp_link);
         }
 
         // Don't leak existence / non-existence of users
@@ -174,7 +174,7 @@ async function requestPasswordReset(req, res) {
         if (ok) {
             // Send password reset email
             const resetLink = `${process.env.FRONTEND_URL_PREFIX}/forgot-password?email=${encodeURIComponent(email)}&code=${result.code}`;
-            await sendPasswordResetEmail(email, resetLink);
+            await resend_sendPasswordResetEmail(email, resetLink);
         }
         return res.sendStatus(HttpStatus.SUCCESS_STATUS);
 

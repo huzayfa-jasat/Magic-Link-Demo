@@ -1,4 +1,4 @@
-export function getMailServerDisplay(mail_server) {
+export default function MailServerDisplay(mail_server) {
   switch (mail_server) {
     case "gmail":
       return (

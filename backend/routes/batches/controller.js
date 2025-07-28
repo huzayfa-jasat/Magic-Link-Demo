@@ -15,7 +15,7 @@ const {
 
 // External API Function Imports
 const {
-	sendLowCreditsEmail
+	resend_sendLowCreditsEmail
 } = require('../../external_apis/resend.js');
 
 // Util Imports
@@ -115,7 +115,7 @@ async function createBatch(req, res) {
 		// Check if low credits email should be sent (only for deliverable checks)
 		if (checkType === 'deliverable' && remaining_balance < 1000 && req.user.email) {
 			// Send low credits notification asynchronously - don't wait for it
-			sendLowCreditsEmail(req.user.email, remaining_balance).catch(err => {
+			resend_sendLowCreditsEmail(req.user.email, checkType, remaining_balance).catch(err => {
 				console.error('Failed to send low credits email:', err);
 			});
 		}

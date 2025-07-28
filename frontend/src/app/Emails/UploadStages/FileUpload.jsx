@@ -1,11 +1,11 @@
 // Dependencies
 import { useState, useCallback } from 'react';
 
-// Style Imports
-import styles from '../Emails.module.css';
-
 // Icon Imports
 import { UPLOAD_ICON } from '../../../assets/icons';
+
+// Style Imports
+import styles from '../styles/Emails.module.css';
 
 // Component
 export default function UploadStageFileUpload({
@@ -59,7 +59,7 @@ export default function UploadStageFileUpload({
               {UPLOAD_ICON}
             </div>
             <p className={styles.uploadText}>
-              Drag and drop your CSV file here
+              Drag and drop your CSV or Excel file here
             </p>
             <p className={styles.uploadSubtext}>
               or click to browse
@@ -67,11 +67,11 @@ export default function UploadStageFileUpload({
             <input
               id="fileInput"
               type="file"
-              accept=".csv"
+              accept=".csv, .xlsx, .xls"
               onChange={handleFileChange}
               style={{ display: 'none' }}
             />
           </div>
-        </>		
+        </>
 	)
 }
