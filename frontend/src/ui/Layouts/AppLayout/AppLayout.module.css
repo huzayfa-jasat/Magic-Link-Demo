@@ -435,8 +435,8 @@
 }
 
 .collapseButton {
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
   margin: 0 0 0 auto;
   display: flex;
   align-items: center;
@@ -447,13 +447,13 @@
   cursor: pointer;
 }
 .sidebar.collapsed .collapseButton {
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
 }
 
 .collapseButton svg {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
 }
 .collapseButton svg path,
 .collapseButton svg rect {
@@ -461,40 +461,6 @@
 }
 .collapseButton:hover {
   background-color: var(--brd-light-2);
-}
-
-
-/* Responsiveness */
-@media screen and (max-width: 1000px) {
-  .sidebar {
-    width: fit-content !important;
-  }
-  .sidebar .topSection {
-    gap: 10px !important;
-  }
-  .sidebar .navItem {
-    padding: 0 !important;
-    height: 50px !important;
-    width: 50px !important;
-  }
-  .sidebar .navItemText,
-  .sidebar .navItemBadge,
-  .sidebar .creditsPill {
-    display: none !important;
-  }
-  .sidebar .navIcon {
-    width: 100% !important;
-    height: 100% !important;
-    background-color: transparent !important;
-  }
-  .sidebar .navIcon svg {
-    width: 22px !important;
-    height: 22px !important;
-  }
-  .sidebar .collapseButton {
-    width: 40px !important;
-    height: 40px !important;
-  }
 }
 
 /* Mobile Menu */
@@ -635,6 +601,39 @@
 }
 
 /* Responsiveness */
+@media screen and (max-width: 1000px) {
+  .sidebar {
+    width: fit-content !important;
+  }
+  .sidebar .topSection {
+    gap: 10px !important;
+  }
+  .sidebar .navItem {
+    padding: 0 !important;
+    height: 50px !important;
+    width: 50px !important;
+  }
+  .sidebar .navItemText,
+  .sidebar .navItemBadge,
+  .sidebar .creditsPill {
+    display: none !important;
+  }
+  .sidebar .navIcon {
+    width: 100% !important;
+    height: 100% !important;
+    background-color: transparent !important;
+  }
+  .sidebar .navItem.active .navIcon {
+    background-color: var(--main-hl-fade) !important;
+  }
+  .sidebar .navIcon svg {
+    width: 22px !important;
+    height: 22px !important;
+  }
+  .sidebar .collapseButton {
+    display: none !important;
+  }
+}
 @media screen and (max-width: 700px) {
   .sidebar {
     display: none !important;

@@ -3,6 +3,9 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 
+// API Imports
+import { redeemReferralInviteCode } from "../../api/credits";
+
 // Component Imports
 import { LoadingCircle } from "../../ui/components/LoadingCircle";
 

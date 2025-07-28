@@ -8,19 +8,25 @@ const { checkUserAuth } = require('../auth/funs_perms.js');
 // Controller Imports
 const {
     getBalance,
-    getReferralInviteCode,
-    getReferralInviteList,
     getCreditBalance,
     getCreditBalanceHistory,
+    getReferralInviteCode,
+    getReferralInviteList,
+    redeemInviteCode,
 } = require('./controller.js');
 
-// Routes
+// Middleware
 creditsRouter.use(checkUserAuth);
+
+// Balance Routes
 creditsRouter.get('/balance', getBalance);
-creditsRouter.get('/invite/code', getReferralInviteCode);
-creditsRouter.get('/invites/list', getReferralInviteList);
 creditsRouter.get('/credit-balance', getCreditBalance);
 creditsRouter.get('/history', getCreditBalanceHistory);
+
+// Referral Routes
+creditsRouter.get('/invites/me', getReferralInviteCode);
+creditsRouter.get('/invites/list', getReferralInviteList);
+creditsRouter.post('/invites/redeem', redeemInviteCode);
 
 // Export
 module.exports = creditsRouter;
