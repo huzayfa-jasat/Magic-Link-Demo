@@ -6,7 +6,7 @@
 }
 .form {
   width: calc(100% - 60px);
-  max-width: 450px;
+  max-width: 500px;
   margin-top: -50px;
   display: flex;
   flex-direction: column;
@@ -67,6 +67,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
+  gap: 5px;
   padding: 10px 10px;
   border: 1px solid var(--brd-light);
   border-radius: 50px;
@@ -307,4 +308,74 @@ a.otp:hover,
 }
 .registerv2:hover > div {
   background-color: var(--main-hl-hover);
+}
+
+.agreeSection {
+  margin: 35px 0 0 0;
+  width: 100%;
+  background-color: transparent;
+  border: none;
+  border-radius: 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  background-color: transparent;
+  text-decoration: none;
+  transition: all 0.2s ease-in-out;
+}
+.agreeSection > p,
+.agreeSection > p > a {
+  margin: 0;
+  text-align: left;
+  font-family: "Circular", "Geist", sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  color: var(--black);
+}
+.agreeSection > p > a {
+  color: var(--main-hl);
+  text-decoration: underline;
+}
+.agreeSection > p > a:hover {
+  color: var(--main-hl-hover);
+}
+.agreeCheckbox {
+  width: 25px !important;
+  min-width: 25px !important;
+  height: 25px !important;
+  min-height: 25px !important;
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none !important;
+  border-radius: 4px;
+  transition: all 0.2s ease-in-out;
+  background-color: var(--brd-light);
+  cursor: pointer !important;
+}
+.agreeCheckbox.active {
+  background-color: var(--main-hl-fade) !important;
+}
+.agreeCheckbox.inactive {
+  background-color: var(--brd-light);
+}
+.agreeCheckbox:hover {
+  background-color: var(--txt-light-3);
+}
+
+.agreeCheckbox svg {
+  height: 18px;
+  width: 18px;
+  margin: 0;
+  color: var(--main-hl);
+}
+.agreeCheckbox.active svg {
+  display: flex !important;
+}
+.agreeCheckbox.inactive svg {
+  display: none !important;
 }

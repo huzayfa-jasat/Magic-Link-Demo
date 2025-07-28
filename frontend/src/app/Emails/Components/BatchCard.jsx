@@ -2,14 +2,14 @@
 import { useMemo } from "react";
 import { NavLink } from "react-router-dom";
 
-// Style Imports
-import styles from "../Emails.module.css";
-
 // Icon Imports
 import {
   EMAIL_ICON, EMAIL_SHREDDER_ICON,
   COMPLETE_CHECK_ICON, PROCESSING_ICON, FAILED_ICON,
 } from "../../../assets/icons";
+
+// Style Imports
+import styles from "../styles/Emails.module.css";
 
 // Helper Functions
 function getValidateTypeDisplay(category) {
@@ -17,10 +17,10 @@ function getValidateTypeDisplay(category) {
 	let category_name;
 	switch (category) {
 		case 'deliverable':
-			category_name = 'Verify Emails';
+			category_name = 'Email Validation';
 			break;
 		case 'catchall':
-			category_name = 'Test Catch-All\'s';
+			category_name = 'Catchall Validation';
 			break;
 	}
 	

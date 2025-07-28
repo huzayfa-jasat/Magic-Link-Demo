@@ -71,16 +71,16 @@ export default function PackagesController() {
           className={`${styles.pageButton} ${(currPage === "validate") ? styles.active : ""}`}
           onClick={() => setCurrPage("validate")}
         >
-          Email Validation
+          Email <span className={styles.hideMobile}>Validation</span>
         </button>
         <button
           className={`${styles.pageButton} ${(currPage === "catchall") ? styles.active : ""}`}
           onClick={() => setCurrPage("catchall")}
         >
-          Catchall Validation
+          Catchall <span className={styles.hideMobile}>Validation</span>
         </button>
       </div>
-      <br/><br/>
+      <br/>
       <div className={styles.creditGrid}>
         {((currPage === "catchall") ? catchallNonPromotions : validateNonPromotions).map(
           ({ name, amount, price, bonus, total, id }) => (

@@ -24,3 +24,5 @@ export { CIRCLE_CHECK_ICON } from "./circle_check_icon";
 export { MONEY_ICON } from "./money_icon";
 export { PERSON_ICON } from "./person_icon";
 export { WALLET_ICON } from "./wallet_icon";
+export { MENU_ICON } from "./menu_icon";
+export { MENU_CLOSE_ICON } from "./menu_close_icon";

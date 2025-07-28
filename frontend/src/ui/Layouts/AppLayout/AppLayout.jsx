@@ -16,7 +16,8 @@ import {
   OMNI_LOGO, UPLOAD_ICON, UPLOAD_ICON_VARIABLE, SETTINGS_ICON, SETTINGS_ICON_VARIABLE, SIDEBAR_OPEN, SIDEBAR_CLOSE, COINS_ICON,
   // HOME_ICON, PACKAGE_ICON, REFERRAL_ICON,
   CIRCLE_CHECK_ICON, MONEY_ICON, PERSON_ICON, WALLET_ICON,
-  EMAIL_ICON, EMAIL_SHREDDER_ICON
+  EMAIL_ICON, EMAIL_SHREDDER_ICON,
+  MENU_ICON, MENU_CLOSE_ICON
 } from "../../../assets/icons";
 
 // Constants
@@ -24,7 +25,7 @@ const NAV_TABS = [
   { icon: CIRCLE_CHECK_ICON, text: "Validate", link: "/home" },
   { icon: <UPLOAD_ICON_VARIABLE strokeWidth={2} />, text: "Upload", link: "/upload" },
   { icon: WALLET_ICON, text: "Credits", link: "/credits" },
-  { icon: MONEY_ICON, text: "Packages", link: "/packages" },
+  { icon: MONEY_ICON, text: "Get Credits", link: "/packages" },
   { icon: PERSON_ICON, text: "Referrals", link: "/referrals", badge: "EARN CREDITS" },
   { icon: <SETTINGS_ICON_VARIABLE strokeWidth={2} />, text: "Settings", link: "/settings" },
 ];
@@ -56,6 +57,7 @@ export default function AppLayout({ title, children }) {
   const [emailBalance, setEmailBalance] = useState(0);
   const [catchallBalance, setCatchallBalance] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Change document title
   useEffect(() => {
@@ -99,7 +101,45 @@ export default function AppLayout({ title, children }) {
               Settings
             </NavLink>
           </div>
+          <div className={s.rightMobile}>
+            <button className={s.menuButton} onClick={() => setMobileMenuOpen((prev) => !prev)}>
+              {MENU_ICON}
+            </button>
+          </div>
         </div>
+        {mobileMenuOpen && (
+          <div className={s.mobileMenu}>
+            <div className={s.mobileMenuContent}>
+              <div className={s.mobileMenuHeader}>
+                <div className={s.mobileMenuHeaderLeft}>
+                  {OMNI_LOGO}
+                </div>
+                <button className={s.mobileMenuCloseButton} onClick={() => setMobileMenuOpen(false)}>
+                  {MENU_CLOSE_ICON}
+                </button>
+              </div>
+              <div className={s.mobileMenuItems}>
+                {NAV_TABS.map((tab) => (
+                  <NavLink key={`mobile-nav-${tab.link}`} to={tab.link} className={({ isActive }) => `${s.mobileNavItem} ${isActive ? s.active : ""}`} onClick={() => setMobileMenuOpen(false)}>
+                    <div className={s.mobileNavIcon}>
+                      {tab.icon}
+                    </div>
+                    <span className={s.mobileNavText}>{tab.text}</span>
+                    {tab.badge && (
+                      <span className={s.mobileNavBadge}>{tab.badge}</span>
+                    )}
+                  </NavLink>
+                ))}
+              </div>
+              {!isLoading && (
+                <div className={s.mobileMenuCredits}>
+                  <CreditSidebarPill icon={EMAIL_ICON} label="Email Credits" balance={emailBalance} link="/packages?p=validate" />
+                  <CreditSidebarPill icon={EMAIL_SHREDDER_ICON} label="Catchall Credits" balance={catchallBalance} link="/packages?p=catchall" />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         <div className={s.bottom}>
           <aside className={`${s.sidebar} ${(isCollapsed) ? s.collapsed : ""}`}>
             <div className={s.topSection}>

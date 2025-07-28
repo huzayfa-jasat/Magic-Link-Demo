@@ -1,4 +1,5 @@
 // Dependencies
+import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 
@@ -11,9 +12,18 @@ import s from "./styles.module.css";
 // Icon Imports
 import { OMNI_LOGO } from "../../assets/icons/omni_logo";
 
+// Constants
+const TOS_URL = "https://omniverifier.com/terms-of-service";
+const DPA_URL = "https://omniverifier.com/data-processing-agreement";
+
 // Functional Component
 export default function Register() {
   const navigate = useNavigate();
+
+  // States
+  const [didAgree, setDidAgree] = useState(false);
+
+  // Form Data
   const {
     register,
     handleSubmit,
@@ -21,6 +31,7 @@ export default function Register() {
 
   // Registration wrapper
   async function onSubmit(data) {
+    if (data.email === "" || data.password === "" || data.invite_code === "" || !didAgree) return;
     try {
       await registerUser(data.email, data.password, "Name", data.invite_code);
       const loginSuccess = await loginUser(data.email, data.password);
@@ -57,8 +68,16 @@ export default function Register() {
           <input {...register("password")} type="password" placeholder="••••••••" />
         </div>
         <div className={`${s.section} ${s.nmb}`}>
-          <h3 className={s.subtitle}>Invite Code</h3>
+          <h3 className={s.subtitle}>Early Access Code</h3>
           <input {...register("invite_code")} type="text" placeholder="e.g. OMNI2025" />
+        </div>
+        <div className={s.agreeSection} onClick={()=>{setDidAgree((prev)=>(!prev))}}>
+          <button className={`${s.agreeCheckbox} ${(didAgree) ? s.active : s.inactive}`}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+          </button>
+          <p>I agree to the <a href={TOS_URL} target="_blank" rel="noopener noreferrer">Terms of Service</a> and <a href={DPA_URL} target="_blank" rel="noopener noreferrer">Data Processing Agreement</a>.</p>
         </div>
         <div className={s.buttons}>
           <button className={s.button} type="submit">

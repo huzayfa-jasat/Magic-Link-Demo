@@ -1,11 +1,15 @@
 // Component Imports
-import getMailServerDisplay from "../getMailServerDisplay";
+import getMailServerDisplay from "../utils/getMailServerDisplay";
 
 // Icon Imports
-import { VERIFY_VALID_ICON, VERIFY_INVALID_ICON, VERIFY_CATCHALL_ICON } from '../../../assets/icons';
+import {
+	VERIFY_VALID_ICON,
+	VERIFY_INVALID_ICON,
+	VERIFY_CATCHALL_ICON,
+} from '../../../assets/icons';
 
 // Style Imports
-import styles from '../Emails.module.css';
+import styles from '../styles/Emails.module.css';
 
 // Constants
 const RESULT_DISPLAY_MAP = {
