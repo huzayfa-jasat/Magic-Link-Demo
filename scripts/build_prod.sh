@@ -10,7 +10,7 @@ cp compose_prod.yml docker-compose.yml
 docker-compose down --remove-orphans
 
 # Build the services
-COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose build
+COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose build --no-cache --progress=plain
 
 # Start the services in detached mode
 docker-compose up -d
