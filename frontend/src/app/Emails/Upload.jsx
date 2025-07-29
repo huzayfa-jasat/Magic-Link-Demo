@@ -133,10 +133,10 @@ export default function EmailsUploadController() {
       return;
     }
 
-    // Check file size (10MB limit)
-    const maxFileSize = 10 * 1024 * 1024; // 10MB in bytes
+    // Check file size (50MB limit)
+    const maxFileSize = 50 * 1024 * 1024; // 50MB in bytes
     if (selectedFile.size > maxFileSize) {
-      setError('File size must be less than 10MB. Please reduce the file size and try again.');
+      setError('File size must be less than 50MB. Please reduce the file size and try again.');
       return;
     }
 
