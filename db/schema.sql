@@ -191,7 +191,7 @@ CREATE TABLE Batches_Deliverable (
     `title` varchar(200) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
     `bouncer_batch_id` varchar(50) DEFAULT NULL, -- NULL if no external API call needed
     `user_id` int NOT NULL,
-    `status` enum('queued', 'processing', 'completed', 'failed') NOT NULL DEFAULT 'queued',
+    `status` enum('draft', 'pending', 'queued', 'processing', 'completed', 'failed') NOT NULL DEFAULT 'queued',
     `total_emails` int NOT NULL DEFAULT 0,
     `cached_results` int NOT NULL DEFAULT 0, -- Count of results reused from cache
     `new_verifications` int NOT NULL DEFAULT 0, -- Count sent to external API
@@ -208,7 +208,7 @@ CREATE TABLE Batches_Catchall (
     `title` varchar(200) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
     `bouncer_batch_id` varchar(50) DEFAULT NULL, -- NULL if no external API call needed
     `user_id` int NOT NULL,
-    `status` enum('queued', 'processing', 'completed', 'failed') NOT NULL DEFAULT 'queued',
+    `status` enum('draft', 'pending','queued', 'processing', 'completed', 'failed') NOT NULL DEFAULT 'queued',
     `total_emails` int NOT NULL DEFAULT 0,
     `cached_results` int NOT NULL DEFAULT 0,
     `new_verifications` int NOT NULL DEFAULT 0,
