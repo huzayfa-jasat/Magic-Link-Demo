@@ -13,6 +13,18 @@ RUN npm i
 # Copy the rest of the application
 COPY . .
 
+# DEBUG: Check what got copied
+RUN echo "=== Listing /app contents ===" && \
+    ls -la /app/ && \
+    echo "=== Listing /app/src ===" && \
+    ls -la /app/src/ && \
+    echo "=== Listing /app/src/app ===" && \
+    ls -la /app/src/app/ && \
+    echo "=== Listing /app/src/app/Emails ===" && \
+    ls -la /app/src/app/Emails/ && \
+    echo "=== Looking for EmptyBatchList ===" && \
+    find /app -name "*EmptyBatchList*" -type f
+
 # Set environment variables for the build process
 ENV CHOKIDAR_USEPOLLING=true
 ENV REACT_APP_ENV_MODE=production
