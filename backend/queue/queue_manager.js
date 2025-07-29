@@ -51,7 +51,7 @@ class QueueManager {
     }
 
     /**
-     * Setup queue event handlers for monitoring
+     * Setup queue event handlers
      */
     setupQueueEvents() {
         this.queue.on('completed', (job) => {
@@ -168,7 +168,7 @@ class QueueManager {
     }
 
     /**
-     * Get queue status for monitoring
+     * Get queue status
      */
     async getStatus() {
         if (!this.queue) return null;

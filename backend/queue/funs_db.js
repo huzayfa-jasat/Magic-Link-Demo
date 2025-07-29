@@ -245,8 +245,6 @@ async function db_processBouncerResults(bouncer_batch_id, results_array, check_t
         return [false, 0];
     }
 
-    console.log("EMAIL IDS = ", email_ids);
-
     // Construct dict for fast lookup
     const email_ids_dict = {};
     for (const email_id of email_ids) {
@@ -263,7 +261,7 @@ async function db_processBouncerResults(bouncer_batch_id, results_array, check_t
         const curr_global_id = email_ids_dict[curr_stripped_email].global_id;
 
         // Log
-        console.log(`RESULT ENTRY - GID ${curr_global_id} (${curr_stripped_email}) = `, result);
+        // console.log(`RESULT ENTRY - GID ${curr_global_id} (${curr_stripped_email}) = `, result);
 
         // Construct update object
         let update_object = {

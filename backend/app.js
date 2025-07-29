@@ -22,7 +22,8 @@ const route_prefix = (process.env.NODE_ENV === "development") ? "/api" : "";
 app.use(route_prefix + '/webhooks/', webhookRoute);
 
 // Body parser middleware
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
 // CORS Middleware
 var corsWL = [

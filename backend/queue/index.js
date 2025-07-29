@@ -49,8 +49,8 @@ async function shutdownQueue() {
 }
 
 /**
- * Get current queue status for monitoring
- * - Used for monitoring the queue system
+ * Get current queue status
+ * - Used for queue system status
  */
 async function getQueueStatus() {
     try {
