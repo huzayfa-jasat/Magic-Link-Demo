@@ -12,7 +12,11 @@ const {
 	db_removeBatch,
 	db_addToBatch,
 	db_startBatchProcessing,
-	db_createBatchDraft
+	db_createBatchDraft,
+	db_checkCreditsOnly,
+	db_deductCreditsForActualBatch,
+	db_createBatchWithEstimate,
+	db_getUserBatchAccess
 } = require('./funs_db.js');
 
 // External API Function Imports
@@ -160,8 +164,11 @@ async function addToBatch(req, res) {
 		const { emails, title } = req.body;
 		if (!emails || !Array.isArray(emails) || emails.length === 0) return returnBadRequest(res, 'No emails provided');
 		
-		// If no batchId provided, this is a new batch creation
+		// If no batchId provided, this is a new batch creation - but this should now use /new endpoint
 		const isNewBatch = !batchId;
+		if (isNewBatch) {
+			return returnBadRequest(res, 'Use /new endpoint to create new batches');
+		}
 
 		// Process emails
 		const emails_valid = removeInvalidEmails(emails);
@@ -171,18 +178,6 @@ async function addToBatch(req, res) {
 			return acc;
 		}, {});
 
-		// Check & deduct credits
-		const [ok_credits, remaining_balance] = await db_checkAndDeductCredits(req.user.id, checkType, Object.keys(emails_stripped).length);
-		if (!ok_credits) return returnBadRequest(res, 'Insufficient credits', HttpStatus.PAYMENT_REQUIRED_STATUS);
-
-		// Check if low credits email should be sent (only for deliverable checks)
-		if (checkType === 'deliverable' && remaining_balance < 1000 && req.user.email) {
-			// Send low credits notification asynchronously - don't wait for it
-			sendLowCreditsEmail(req.user.email, remaining_balance).catch(err => {
-				console.error('Failed to send low credits email:', err);
-			});
-		}
-
 		// Add global emails
 		const ok_global_insert = await db_addGlobalEmails(Object.keys(emails_stripped));
 		if (!ok_global_insert) return returnBadRequest(res, 'Failed to process emails');
@@ -191,25 +186,12 @@ async function addToBatch(req, res) {
 		const [ok_global_ids, global_emails] = await db_getEmailGlobalIds(emails_stripped);
 		if (!ok_global_ids) return returnBadRequest(res, 'Failed to get global emails');
 
-		// Handle new batch creation vs adding to existing batch
-		let batch_ok, result_batch_id;
-		
-		if (isNewBatch) {
-			// Create new draft batch
-			const [create_ok, new_batch_id, fresh_email_ids] = await db_createBatchDraft(req.user.id, checkType, title, global_emails);
-			batch_ok = create_ok;
-			result_batch_id = new_batch_id;
-		} else {
-			// Add to existing batch
-			const [add_ok, updated_batch_id] = await db_addToBatch(req.user.id, checkType, batchId, global_emails);
-			batch_ok = add_ok;
-			result_batch_id = updated_batch_id;
-		}
-		
-		if (!batch_ok) return returnBadRequest(res, isNewBatch ? 'Failed to create batch' : 'Failed to add emails to batch');
+		// Add to existing batch
+		const [add_ok, updated_batch_id] = await db_addToBatch(req.user.id, checkType, batchId, global_emails);
+		if (!add_ok) return returnBadRequest(res, 'Failed to add emails to batch');
 
 		// Return response
-		return res.status(HttpStatus.SUCCESS_STATUS).json({ id: result_batch_id, count: Object.keys(emails_stripped).length });
+		return res.status(HttpStatus.SUCCESS_STATUS).json({ id: updated_batch_id, count: Object.keys(emails_stripped).length });
 
 	} catch (err) {
 		console.error("ADD TO BATCH ERR = ", err);
@@ -221,15 +203,68 @@ async function startBatchProcessing(req, res) {
 	try {
 		const { checkType, batchId } = req.params;
 
+		// Deduct credits based on actual batch size
+		const [credits_ok, remaining_balance, actual_email_count] = await db_deductCreditsForActualBatch(req.user.id, checkType, batchId);
+		if (!credits_ok) {
+			return returnBadRequest(res, 'Insufficient credits for actual batch size', HttpStatus.PAYMENT_REQUIRED_STATUS);
+		}
+
+		// Check if low credits email should be sent (only for deliverable checks)
+		if (checkType === 'deliverable' && remaining_balance < 1000 && req.user.email) {
+			// Send low credits notification asynchronously - don't wait for it
+			resend_sendLowCreditsEmail(req.user.email, remaining_balance).catch(err => {
+				console.error('Failed to send low credits email:', err);
+			});
+		}
+
 		// Start batch processing
 		const ok = await db_startBatchProcessing(req.user.id, checkType, batchId);
 		if (!ok) return returnBadRequest(res, 'Failed to start batch processing');
 
 		// Return response
-		return res.status(HttpStatus.SUCCESS_STATUS).json({ message: 'Batch processing started' });
+		return res.status(HttpStatus.SUCCESS_STATUS).json({ 
+			message: 'Batch processing started',
+			credits_deducted: actual_email_count,
+			remaining_balance: remaining_balance
+		});
 
 	} catch (err) {
 		console.error("START BATCH PROCESSING ERR = ", err);
+		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+	}
+}
+
+async function createNewBatch(req, res) {
+	try {
+		const { checkType } = req.params;
+		const { emails, title } = req.body;
+
+		// Validate body
+		if (!emails || typeof emails !== 'number' || emails <= 0) {
+			return returnBadRequest(res, 'Invalid emails count provided');
+		}
+
+		// Check credits (without deducting)
+		const [ok_credits, current_balance] = await db_checkCreditsOnly(req.user.id, checkType, emails);
+		if (!ok_credits) {
+			return returnBadRequest(res, 'Insufficient credits', HttpStatus.PAYMENT_REQUIRED_STATUS);
+		}
+
+		// Create batch with estimated email count
+		const [batch_ok, batch_id] = await db_createBatchWithEstimate(req.user.id, checkType, title, emails);
+		if (!batch_ok) {
+			return returnBadRequest(res, 'Failed to create batch');
+		}
+
+		// Return response
+		return res.status(HttpStatus.SUCCESS_STATUS).json({ 
+			id: batch_id, 
+			estimated_emails: emails,
+			current_balance: current_balance
+		});
+
+	} catch (err) {
+		console.error("CREATE NEW BATCH ERR = ", err);
 		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
 	}
 }
@@ -241,5 +276,6 @@ module.exports = {
 	getBatchResults,
 	removeBatch,
 	addToBatch,
-	startBatchProcessing
+	startBatchProcessing,
+	createNewBatch
 }

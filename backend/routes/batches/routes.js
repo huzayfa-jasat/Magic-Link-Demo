@@ -18,7 +18,8 @@ const {
     getBatchResults,
 	removeBatch,
 	addToBatch,
-	startBatchProcessing
+	startBatchProcessing,
+	createNewBatch
 } = require('./controller.js');
 
 // ---------------
@@ -30,6 +31,7 @@ batchesRouter.use(checkUserAuth);
 
 // Routes
 batchesRouter.get('/list', getBatchesList);
+batchesRouter.post('/:checkType/new', checkValidCheckType, createNewBatch); // New route for creating batch with credit check only
 batchesRouter.post('/:checkType/add', checkValidCheckType, addToBatch); // For creating new batch
 batchesRouter.post('/:checkType/batch/:batchId/add', checkValidCheckType, checkUserBatchAccess, addToBatch); // For adding to existing batch
 batchesRouter.post('/:checkType/batch/:batchId/start', checkValidCheckType, checkUserBatchAccess, startBatchProcessing);

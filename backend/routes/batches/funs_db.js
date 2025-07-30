@@ -634,6 +634,32 @@ async function db_getBatchResults(user_id, check_type, batch_id, page, limit, or
 // UPDATE Functions
 // -------------------
 
+async function db_checkCreditsOnly(user_id, check_type, num_emails) {
+	// Get table names
+	const credit_table = getCreditTableName(check_type);
+	if (!credit_table) return [false, null];
+	
+	try {
+		// Check credit balance only - no deduction
+		const curr_balance = await knex(credit_table)
+			.where({ 'user_id': user_id })
+			.select('current_balance')
+			.first();
+		
+		// Verify sufficient balance
+		if (!curr_balance || curr_balance.current_balance < num_emails) {
+			return [false, null];
+		}
+
+		// Return success with current balance
+		return [true, curr_balance.current_balance];
+
+	} catch (error) {
+		console.error('Credit check failed:', error.message);
+		return [false, null];
+	}
+}
+
 async function db_checkAndDeductCredits(user_id, check_type, num_emails) {
 	// Get table names
 	const credit_table = getCreditTableName(check_type);
@@ -683,6 +709,63 @@ async function db_checkAndDeductCredits(user_id, check_type, num_emails) {
 		// Transaction automatically rolled back on any error
 		console.error('Credit deduction transaction failed:', error.message);
 		return [false, null];
+	}
+}
+
+async function db_deductCreditsForActualBatch(user_id, check_type, batch_id) {
+	// Get table names
+	const credit_table = getCreditTableName(check_type);
+	const credit_history_table = getCreditHistoryTableName(check_type);
+	const email_batch_association_table = getEmailBatchAssociationTableName(check_type);
+	if (!credit_table || !credit_history_table || !email_batch_association_table) return [false, null];
+	
+	try {
+		const result = await knex.transaction(async (trx) => {
+			// Get actual number of emails associated with this batch
+			const email_count = await trx(email_batch_association_table)
+				.where({ 'batch_id': batch_id })
+				.count('* as count')
+				.first();
+			
+			const actual_email_count = email_count.count;
+			
+			// Check credit balance
+			const curr_balance = await trx(credit_table)
+				.where({ 'user_id': user_id })
+				.select('current_balance')
+				.forUpdate() // Row lock to prevent race conditions
+				.first();
+			
+			// Verify sufficient balance
+			if (!curr_balance || curr_balance.current_balance < actual_email_count) {
+				throw new Error('Insufficient credits for actual batch size');
+			}
+
+			// Deduct credits based on actual email count
+			await trx(credit_table)
+				.where({ 'user_id': user_id })
+				.decrement('current_balance', actual_email_count);
+
+			// Log usage in history
+			await trx(credit_history_table).insert({
+				'user_id': user_id,
+				'credits_used': actual_email_count,
+				'event_typ': 'usage',
+				'usage_ts': knex.fn.now()
+			});
+
+			// Calculate new balance after deduction
+			const new_balance = curr_balance.current_balance - actual_email_count;
+
+			// Return success with new balance and actual email count
+			return [true, new_balance, actual_email_count];
+		});
+
+		return result;
+
+	} catch (error) {
+		console.error('Credit deduction for batch failed:', error.message);
+		return [false, null, 0];
 	}
 }
 
@@ -851,7 +934,7 @@ async function db_createBatchDraft(user_id, check_type, title, emails) {
 	// Update batch emails association table entries with cached results
 	await knex(email_batch_association_table).whereIn(
 		'email_global_id', existing_results
-	).update({
+	).where('batch_id', batch_id).update({
 		'used_cached': 1,
 		'did_complete': 1,
 	}).catch((err)=>{if (err) err_code = err.code});
@@ -860,10 +943,41 @@ async function db_createBatchDraft(user_id, check_type, title, emails) {
 		return [false, null];
 	}
 
-	// Return
+	// Get "fresh" email ID's (not cached / need to be verified)
 	const existing_results_set = new Set(existing_results);
 	const fresh_email_ids = emails.filter((email)=>!existing_results_set.has(email.global_id)).map((email)=>email.global_id);
+
+	// Return
 	return [true, batch_id, fresh_email_ids];
+}
+
+async function db_createBatchWithEstimate(user_id, check_type, title, estimated_emails) {
+	// Get batch table name
+	const batch_table = getBatchTableName(check_type);
+	if (!batch_table) return [false, null];
+
+	// Create batch entry in draft status with estimated email count
+	let err_code;
+	const insert_result = await knex(batch_table).insert({
+		'user_id': user_id,
+		'title': title ?? 'Untitled',
+		'status': 'draft', // Start as draft
+		'total_emails': estimated_emails, // Set estimated count
+		'created_ts': knex.fn.now(),
+	}).catch((err)=>{if (err) err_code = err.code});
+	if (err_code) {
+		console.log("BATCH ESTIMATE INSERT ERR = ", err_code);
+		return [false, null];
+	}
+	
+	// MySQL typically returns an array with insertId
+	const [batch_id] = insert_result;
+	console.log('batch_id after destructuring (estimate):', batch_id);
+	
+	if (!batch_id) return [false, null];
+
+	// Return batch ID - no emails added yet
+	return [true, batch_id];
 }
 
 // Exports
@@ -875,9 +989,10 @@ module.exports = {
 	db_getBatchesList,
 	db_getBatchDetails,
 	db_getBatchResults,
-	db_checkAndDeductCredits,
 	db_removeBatch,
 	db_addToBatch,
 	db_startBatchProcessing,
-	db_createBatchDraft
+	db_checkCreditsOnly,
+	db_deductCreditsForActualBatch,
+	db_createBatchWithEstimate
 }
