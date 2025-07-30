@@ -83,7 +83,7 @@ class QueueManager {
 
         const workerConfig = {
             connection: this.redisConnection,
-            concurrency: 1,        // Simple single-threaded processing
+            concurrency: 3,        // Allow parallel processing with new race-free design
             stalledInterval: 30000,
             maxStalledCount: 1
         };
@@ -102,7 +102,7 @@ class QueueManager {
     /**
      * Schedule repeating jobs
      * - Batch Creator - Every 5 seconds for both deliverable and catchall
-     * - Status Checker - Every 30 seconds for both deliverable and catchall
+     * - Individual status checking is now scheduled per-batch by the batch creator
      */
     async scheduleJobs() {
         console.log('Scheduling repeating jobs...');
@@ -124,24 +124,7 @@ class QueueManager {
             }
         );
 
-        // Status Checker
-        await this.queue.add('status_checker_deliverable', 
-            { check_type: 'deliverable' }, 
-            {
-                repeat: { every: 30000 }, // 30 seconds
-                jobId: 'status_checker_deliverable'
-            }
-        );
-
-        await this.queue.add('status_checker_catchall', 
-            { check_type: 'catchall' }, 
-            {
-                repeat: { every: 30000 },
-                jobId: 'status_checker_catchall'
-            }
-        );
-
-        console.log('All repeating jobs scheduled successfully');
+        console.log('Batch creation jobs scheduled successfully');
     }
 
 

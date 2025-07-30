@@ -14,6 +14,7 @@ const {
 class BatchCreatorWorker {
     constructor() {
         this.bouncerAPI = new BouncerAPI();
+        this.queueManager = require('../queue_manager');
     }
 
     /**
@@ -97,6 +98,9 @@ class BatchCreatorWorker {
 
                     // console.log(`✅ Assigned ${affectedBatches} user batches to bouncer batch ${bouncerBatchId}`);
 
+                    // Schedule individual status check for this specific batch (30 seconds delay)
+                    await this.scheduleStatusCheck(bouncerBatchId, check_type, 30000);
+
                     // Record rate limit usage
                     await db_recordRateLimit(check_type, 'create_batch');
                     batchesCreated++;
@@ -120,6 +124,31 @@ class BatchCreatorWorker {
         } catch (error) {
             console.error(`💥 Fatal error in batch creation for ${check_type}:`, error);
             throw error; // Re-throw to mark job as failed
+        }
+    }
+
+    /**
+     * Schedule individual status check for a specific bouncer batch
+     */
+    async scheduleStatusCheck(bouncerBatchId, check_type, delayMs) {
+        try {
+            await this.queueManager.queue.add(`individual_status_check_${check_type}`, 
+                { 
+                    bouncer_batch_id: bouncerBatchId,
+                    check_type: check_type,
+                    attempt: 1,
+                    max_attempts: 40 // Will check up to 40 times (20 minutes) with 30s intervals
+                }, 
+                {
+                    delay: delayMs,
+                    attempts: 1, // No job-level retries, we handle fixed-interval retries internally
+                    removeOnComplete: 5,
+                    removeOnFail: 5
+                }
+            );
+            console.log(`📅 Scheduled status check for ${check_type} batch ${bouncerBatchId} in ${delayMs/1000}s`);
+        } catch (error) {
+            console.error(`❌ Failed to schedule status check for batch ${bouncerBatchId}:`, error.message);
         }
     }
 

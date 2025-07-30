@@ -349,13 +349,13 @@ async function db_processBouncerResults(bouncer_batch_id, results_array, check_t
 // ==========================================
 
 /**
- * Check if we can make API request without exceeding rate limits (200/min - 180 buffer = 20 safety margin)
+ * Check if we can make API request without exceeding rate limits (200/min - 20 buffer = 180 usable)
  * @param {string} verification_type - 'deliverable' or 'catchall'
  * @param {string} request_type - 'create_batch', 'check_status', 'download_results'
- * @param {number} buffer_requests - Buffer to leave (default 180)
+ * @param {number} buffer_requests - Buffer to leave (default 20)
  * @returns {[boolean, boolean, number]} - [success, can_make_request, current_count]
  */
-async function db_checkRateLimit(verification_type, request_type, buffer_requests = 180) {
+async function db_checkRateLimit(verification_type, request_type, buffer_requests = 20) {
     let err_code;
 
     // Get current count
@@ -371,7 +371,7 @@ async function db_checkRateLimit(verification_type, request_type, buffer_request
 
     // Get safety limit
     const current_count = parseInt(result[0].total_requests) || 0;
-    const safety_limit = 200 - buffer_requests; // 20 requests with 180 buffer
+    const safety_limit = 200 - buffer_requests; // 180 requests with 20 buffer
     const can_make_request = (current_count + 1) <= safety_limit;
 
     // Return
