@@ -5,8 +5,8 @@ import * as XLSX from 'xlsx';
 
 // API Imports
 import { 
-  createVerifyBatch, 
-  createCatchallBatch,
+  createNewVerifyBatch,
+  createNewCatchallBatch,
   addToVerifyBatch,
   addToCatchallBatch,
   startVerifyBatchProcessing,
@@ -34,7 +34,7 @@ export default function EmailsUploadController() {
   const [page, setPage] = useState('upload');
   const [file, setFile] = useState(null);
   const [fileData, setFileData] = useState({ headers: [], rows: [] });
-  const [selectedColumnIndex, setSelectedColumnIndex] = useState(null);
+  const [, setSelectedColumnIndex] = useState(null);
   const [emails, setEmails] = useState([]);
   const [error, setError] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -167,7 +167,7 @@ export default function EmailsUploadController() {
     }
   }, [parseCSV, parseExcel]);
 
-  // Handle upload with chunked progressive uploads
+  // Handle upload with new 3-step flow: /new, /add, /start
   const handleUpload = async (checkTyp) => {
     if (!emails.length || !file) return;
 
@@ -176,30 +176,25 @@ export default function EmailsUploadController() {
 
     try {
       const fileName = file.name || "New Upload";
-      let batchId = null;
+      
+      // Step 1: Create new batch with email count estimate (/new endpoint)
+      let createResponse;
+      if (checkTyp === 'verify') createResponse = await createNewVerifyBatch(emails.length, fileName);
+      else if (checkTyp === 'catchall') createResponse = await createNewCatchallBatch(emails.length, fileName);
+      else throw new Error('Invalid upload type');
+      
+      if (createResponse.status !== 200) throw createResponse;
+      const batchId = createResponse.data.id;
 
-      // Process emails in chunks of 10k
+      // Step 2: Add all emails in chunks using /add endpoint
       for (let i = 0; i < emails.length; i += CHUNK_SIZE) {
         const chunk = emails.slice(i, i + CHUNK_SIZE);
         
         try {
-          if (batchId === null) {
-            // First chunk: create new batch
-            let createResponse;
-            if (checkTyp === 'verify') createResponse = await createVerifyBatch(chunk, fileName);
-            else if (checkTyp === 'catchall') createResponse = await createCatchallBatch(chunk, fileName);
-            else throw new Error('Invalid upload type');
-            if (createResponse.status !== 200) throw createResponse;
-            
-            batchId = createResponse.data.id;
-            
-          } else {
-            // Subsequent chunks: add to existing batch
-            let addResponse;
-            if (checkTyp === 'verify') addResponse = await addToVerifyBatch(batchId, chunk);
-            else addResponse = await addToCatchallBatch(batchId, chunk);
-            if (addResponse.status !== 200) throw addResponse;
-          }
+          let addResponse;
+          if (checkTyp === 'verify') addResponse = await addToVerifyBatch(batchId, chunk);
+          else addResponse = await addToCatchallBatch(batchId, chunk);
+          if (addResponse.status !== 200) throw addResponse;
         } catch (chunkError) {
           console.log("CHUNK ERROR = ", chunkError);
           // If this is a 402 status code (insufficient credits), show credits modal
@@ -213,7 +208,7 @@ export default function EmailsUploadController() {
         }
       }
 
-      // Step 2: Start batch processing after all chunks uploaded
+      // Step 3: Start batch processing (/start endpoint)
       let startResponse;
       if (checkTyp === 'verify') startResponse = await startVerifyBatchProcessing(batchId);
       else startResponse = await startCatchallBatchProcessing(batchId);

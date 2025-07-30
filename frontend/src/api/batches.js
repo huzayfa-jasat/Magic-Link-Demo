@@ -43,6 +43,11 @@ async function handler_startBatchProcessing(checkType, batchId) {
     withCredentials: true,
   });
 };
+async function handler_createNewBatch(checkType, emailCount, title) {
+  return await http.post(`${MODULE_PREFIX}/${checkType}/new`, { emails: emailCount, title }, {
+    withCredentials: true,
+  });
+};
 
 // End Functions
 
@@ -93,4 +98,11 @@ export async function startVerifyBatchProcessing(batchId) {
 };
 export async function startCatchallBatchProcessing(batchId) {
   return await handler_startBatchProcessing('catchall', batchId);
+};
+
+export async function createNewVerifyBatch(emailCount, title) {
+  return await handler_createNewBatch('deliverable', emailCount, title);
+};
+export async function createNewCatchallBatch(emailCount, title) {
+  return await handler_createNewBatch('catchall', emailCount, title);
 };
