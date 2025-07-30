@@ -137,7 +137,7 @@ class BatchCreatorWorker {
                     bouncer_batch_id: bouncerBatchId,
                     check_type: check_type,
                     attempt: 1,
-                    max_attempts: 40 // Will check up to 40 times (20 minutes) with 30s intervals
+                    max_attempts: 720 // Will check up to 720 times (6 hours) with 30s intervals
                 }, 
                 {
                     delay: delayMs,

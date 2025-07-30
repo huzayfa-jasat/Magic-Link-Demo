@@ -20,7 +20,7 @@ class IndividualStatusCheckerWorker {
      * Process individual batch status check with fixed intervals
      */
     async processJob(job) {
-        const { bouncer_batch_id, check_type, attempt = 1, max_attempts = 40 } = job.data;
+        const { bouncer_batch_id, check_type, attempt = 1, max_attempts = 720 } = job.data;
         
         try {
             console.log(`🔍 Status check attempt ${attempt}/${max_attempts} for ${check_type} batch: ${bouncer_batch_id}`);
