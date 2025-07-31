@@ -273,6 +273,7 @@ CREATE TABLE Bouncer_Batches_Catchall (
     INDEX idx_user_batch_mapping (`user_batch_id`, `status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
+DROP TABLE IF EXISTS `Bouncer_Batch_Emails_Deliverable`;
 CREATE TABLE Bouncer_Batch_Emails_Deliverable (
     `bouncer_batch_id` varchar(50) NOT NULL, -- ID from bouncer API
     `email_global_id` int NOT NULL,
