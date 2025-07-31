@@ -40,6 +40,17 @@ const getResultsTableName = (check_type) => {
 	}
 }
 
+const getBouncerBatchTableName = (check_type) => {
+    switch (check_type) {
+        case 'deliverable':
+            return 'Bouncer_Batches_Deliverable';
+        case 'catchall':
+            return 'Bouncer_Batches_Catchall';
+        default:
+            return null;
+    }
+}
+
 const getBouncerEmailTableName = (check_type) => {
     switch (check_type) {
         case 'deliverable':
@@ -68,6 +79,7 @@ module.exports = {
 	getCreditHistoryTableName,
 	getBatchTableName,
 	getResultsTableName,
+	getBouncerBatchTableName,
 	getBouncerEmailTableName,
 	getEmailBatchAssociationTableName
 }
