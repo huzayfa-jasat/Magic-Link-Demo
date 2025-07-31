@@ -12,6 +12,7 @@ import {
 // Context Imports
 import { UsersContextProvider } from "./context/usersContextProvider.jsx";
 import { useUsersContext } from "./context/useUsersContext.js";
+import { CreditsContextProvider } from "./context/creditsContextProvider.jsx";
 
 // Util Imports
 import ScrollToTop from "./utils/ScrollToTop";
@@ -80,9 +81,10 @@ export default function App() {
   // Routing
   return (
     <UsersContextProvider>
-      <Router>
-        <ScrollToTop />
-        <Routes>
+      <CreditsContextProvider>
+        <Router>
+          <ScrollToTop />
+          <Routes>
           {/* Only non-logged-in users */}
           <Route element={<RulesRouter rule="public" />}>
             <Route exact path="/login" element={<Login />} />
@@ -145,6 +147,7 @@ export default function App() {
           <Route path="/*" element={<NotFound404 />} />
         </Routes>
       </Router>
+      </CreditsContextProvider>
     </UsersContextProvider>
   );
 }

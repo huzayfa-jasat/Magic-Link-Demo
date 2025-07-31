@@ -4,9 +4,9 @@ import { NavLink, useParams } from "react-router-dom";
 
 // Context Imports
 import { useUsersContext } from "../../../context/useUsersContext";
+import { useCreditsContext } from "../../../context/useCreditsContext";
 
 // API Imports
-import { getBalance, getCatchallBalance } from "../../../api/credits";
 
 // Style Imports
 import s from "./AppLayout.module.css";
@@ -51,12 +51,10 @@ function CreditSidebarPill({ icon, label, balance, link }) {
 // Functional Component
 export default function AppLayout({ title, children }) {
   const { user } = useUsersContext();
+  const { emailBalance, catchallBalance, isLoading } = useCreditsContext();
 
   // States
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [emailBalance, setEmailBalance] = useState(0);
-  const [catchallBalance, setCatchallBalance] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Change document title
@@ -65,16 +63,6 @@ export default function AppLayout({ title, children }) {
     else document.title = "OmniVerifier";
   }, [title]);
 
-  // Get credit balance
-  async function loadSidebarBalances() {
-    const [emailResponse, catchallResponse] = await Promise.all([getBalance(), getCatchallBalance()]);
-    if (emailResponse.status === 200) setEmailBalance(emailResponse.data.credit_balance);
-    if (catchallResponse.status === 200) setCatchallBalance(catchallResponse.data.credit_balance);
-    setIsLoading(false);
-  }
-  useEffect(() => {
-    loadSidebarBalances();
-  }, []);
 
   // Return layout
   return (

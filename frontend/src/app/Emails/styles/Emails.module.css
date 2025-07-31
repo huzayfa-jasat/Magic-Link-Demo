@@ -22,11 +22,12 @@
 
 .cardHeader {
   display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-start;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
+  gap: 15px;
+  margin-bottom: 0;
 }
-
 /* Link styles */
 .link {
   text-decoration: none;
@@ -911,11 +912,6 @@
   }
   .detailsTitle {
     font-size: 25px;
-  }
-  .cardHeader {
-    flex-direction: column-reverse;
-    gap: 20px;
-    align-items: flex-start;
   }
   .metaCard {
     width: 100%;
