@@ -48,3 +48,9 @@ export const redeemReferralInviteCode = async (code) => {
     withCredentials: true,
   });
 };
+
+export const getOverviewStats = async () => {
+  return await http.get(`${MODULE_PREFIX}/lifetime`, {
+    withCredentials: true,
+  });
+};

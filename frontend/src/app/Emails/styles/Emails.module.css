@@ -905,6 +905,59 @@
 }
 
 
+
+.overviewStats {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+}
+.overviewStat {
+  min-width: 400px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  border: 1px dashed var(--txt-light-2);
+  border-radius: 6px;
+}
+.overviewStatHeader {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+.overviewStatIcon {
+  height: 40px;
+  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  color: var(--main-hl);
+  background-color: var(--main-hl-fade);
+}
+.overviewStatIcon svg {
+  color: var(--main-hl);
+}
+.overviewStatTitle {
+  margin: 0;
+  font-family: "PP Supply Mono", sans-serif;
+  font-weight: 500;
+  font-size: 30px;
+  color: var(--black);
+}
+.overviewStatText {
+  margin: 0;
+  font-family: Circular, Geist, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: -.3px;
+  color: var(--txt-light);
+}
+
+
+
 /* Responsiveness */
 @media screen and (max-width: 700px) {
   .title {

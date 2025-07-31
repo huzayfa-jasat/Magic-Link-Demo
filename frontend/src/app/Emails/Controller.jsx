@@ -3,11 +3,13 @@ import { useEffect, useState } from "react";
 
 // API Imports
 import { getBatchesList } from "../../api/batches";
+import { getOverviewStats } from "../../api/credits";
 
 // Component Imports
 import { LoadingCircle } from "../../ui/components/LoadingCircle";
 import EmptyBatchList from "./components/EmptyBatchList";
 import BatchCard from "./components/BatchCard";
+import DashboardOverviewStats from "./components/DashboardOverviewStats";
 
 // Style Imports
 import styles from "./styles/Emails.module.css";
@@ -31,6 +33,7 @@ export default function HomeController() {
   // States
   const [currFilter, setCurrFilter] = useState("all");
   const [requests, setRequests] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -55,6 +58,20 @@ export default function HomeController() {
     fetchBatches();
   }, [currFilter]);
 
+  // Load stats on mount
+  const fetchStats = async () => {
+    try {
+      const response = await getOverviewStats();
+      setStats(response.data);
+    } catch (err) {
+      setError("Failed to load overview stats");
+      console.error("Error fetching stats:", err);
+    }
+  };
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
   // TODO: Pagination
 
   // Render
@@ -77,8 +94,10 @@ export default function HomeController() {
   }
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>Validate</h1>
-      <br/>
+      <h1 className={styles.title}>Welcome back!</h1>
+      {(stats !== null) && <DashboardOverviewStats stats={stats} />}
+      {/* <h1 className={styles.title}>Validate</h1> */}
+      <br/><br/>
       <div className={packageStyles.pageSelector}>
         <CategorySelectorButton title={<>All <span className={packageStyles.hideMobile}>Requests</span></>} category="all" setCategory={setCurrFilter} isActive={currFilter === "all"} />
         <CategorySelectorButton title={<>Email <span className={packageStyles.hideMobile}>Validation</span></>} category="deliverable" setCategory={setCurrFilter} isActive={currFilter === "deliverable"} />

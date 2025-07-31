@@ -26,3 +26,4 @@ export { PERSON_ICON } from "./person_icon";
 export { WALLET_ICON } from "./wallet_icon";
 export { MENU_ICON } from "./menu_icon";
 export { MENU_CLOSE_ICON } from "./menu_close_icon";
+export { TIME_ICON } from "./time_icon";
