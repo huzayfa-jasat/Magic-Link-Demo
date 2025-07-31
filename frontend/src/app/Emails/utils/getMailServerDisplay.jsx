@@ -74,7 +74,7 @@ export default function getMailServerDisplay(mail_server) {
     default:
       return (
         <span>
-          Other
+          {/* Other */}
         </span>
       );
   }
