@@ -107,6 +107,15 @@ class QueueManager {
     async scheduleJobs() {
         console.log('Scheduling repeating jobs...');
 
+        // Remove old status checker jobs that may still be in Redis
+        try {
+            await this.queue.removeRepeatable('status_checker_deliverable', { repeat: { every: 30000 } });
+            await this.queue.removeRepeatable('status_checker_catchall', { repeat: { every: 30000 } });
+            console.log('Removed old status checker jobs');
+        } catch (error) {
+            console.log('No old status checker jobs to remove');
+        }
+
         // Batch Creator
         await this.queue.add('greedy_batch_creator_deliverable', 
             { check_type: 'deliverable' }, 

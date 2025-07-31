@@ -244,6 +244,35 @@ CREATE TABLE Batch_Emails_Catchall (
     FOREIGN KEY (`email_global_id`) REFERENCES Emails_Global(`global_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
+-- Bouncer Batch Tracking Tables - CRITICAL for queue management
+DROP TABLE IF EXISTS `Bouncer_Batches_Deliverable`;
+CREATE TABLE Bouncer_Batches_Deliverable (
+    `bouncer_batch_id` varchar(50) NOT NULL, -- ID from bouncer API
+    `user_batch_id` int NOT NULL, -- Which user batch this bouncer batch belongs to
+    `status` enum('pending', 'processing', 'completed', 'failed') NOT NULL DEFAULT 'pending',
+    `email_count` int NOT NULL DEFAULT 0, -- Number of emails in this bouncer batch
+    `created_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`bouncer_batch_id`),
+    FOREIGN KEY (`user_batch_id`) REFERENCES Batches_Deliverable(`id`) ON DELETE CASCADE,
+    INDEX idx_status_lookup (`status`, `created_ts`),
+    INDEX idx_user_batch_mapping (`user_batch_id`, `status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+
+DROP TABLE IF EXISTS `Bouncer_Batches_Catchall`;
+CREATE TABLE Bouncer_Batches_Catchall (
+    `bouncer_batch_id` varchar(50) NOT NULL, -- ID from bouncer API
+    `user_batch_id` int NOT NULL, -- Which user batch this bouncer batch belongs to
+    `status` enum('pending', 'processing', 'completed', 'failed') NOT NULL DEFAULT 'pending',
+    `email_count` int NOT NULL DEFAULT 0, -- Number of emails in this bouncer batch
+    `created_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`bouncer_batch_id`),
+    FOREIGN KEY (`user_batch_id`) REFERENCES Batches_Catchall(`id`) ON DELETE CASCADE,
+    INDEX idx_status_lookup (`status`, `created_ts`),
+    INDEX idx_user_batch_mapping (`user_batch_id`, `status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+
 CREATE TABLE Bouncer_Batch_Emails_Deliverable (
     `bouncer_batch_id` varchar(50) NOT NULL, -- ID from bouncer API
     `email_global_id` int NOT NULL,
@@ -252,6 +281,7 @@ CREATE TABLE Bouncer_Batch_Emails_Deliverable (
     PRIMARY KEY (`bouncer_batch_id`, `email_global_id`),
     FOREIGN KEY (`email_global_id`) REFERENCES Emails_Global(`global_id`) ON DELETE CASCADE,
     FOREIGN KEY (`user_batch_id`) REFERENCES Batches_Deliverable(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`bouncer_batch_id`) REFERENCES Bouncer_Batches_Deliverable(`bouncer_batch_id`) ON DELETE CASCADE,
     INDEX idx_email_lookup (`email_global_id`, `bouncer_batch_id`),
     INDEX idx_user_batch_tracking (`user_batch_id`, `bouncer_batch_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
@@ -265,6 +295,7 @@ CREATE TABLE Bouncer_Batch_Emails_Catchall (
     PRIMARY KEY (`bouncer_batch_id`, `email_global_id`),
     FOREIGN KEY (`email_global_id`) REFERENCES Emails_Global(`global_id`) ON DELETE CASCADE,
     FOREIGN KEY (`user_batch_id`) REFERENCES Batches_Catchall(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`bouncer_batch_id`) REFERENCES Bouncer_Batches_Catchall(`bouncer_batch_id`) ON DELETE CASCADE,
     INDEX idx_email_lookup (`email_global_id`, `bouncer_batch_id`),
     INDEX idx_user_batch_tracking (`user_batch_id`, `bouncer_batch_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
