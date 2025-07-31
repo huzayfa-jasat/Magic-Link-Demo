@@ -36,7 +36,7 @@ export default function DashboardOverviewStats({
 				</div>
 				<h2 className={styles.overviewStatTitle}>{getTimeDisplayString(stats.mins)}</h2>
 			</div>
-			<p className={styles.overviewStatText}>You verified {getTimeDisplayString(stats.mins)} quicker than using competitors.</p>
+			<p className={styles.overviewStatText}>You've saved approximately {getTimeDisplayString(stats.mins)} on verifications compared to competitors.</p>
 		</div>
 		<div className={styles.overviewStat}>
 			<div className={styles.overviewStatHeader}>

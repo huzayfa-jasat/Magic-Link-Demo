@@ -94,16 +94,15 @@ export default function HomeController() {
   }
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>Welcome back!</h1>
-      {(stats !== null) && <DashboardOverviewStats stats={stats} />}
-      {/* <h1 className={styles.title}>Validate</h1> */}
-      <br/><br/>
+      <h1 className={styles.title}>{(requests.length > 0) ? "Welcome back!" : "Validate"}</h1>
+      {(requests.length > 0 && stats !== null) && <DashboardOverviewStats stats={stats} />}
+      <br/>
       <div className={packageStyles.pageSelector}>
         <CategorySelectorButton title={<>All <span className={packageStyles.hideMobile}>Requests</span></>} category="all" setCategory={setCurrFilter} isActive={currFilter === "all"} />
         <CategorySelectorButton title={<>Email <span className={packageStyles.hideMobile}>Validation</span></>} category="deliverable" setCategory={setCurrFilter} isActive={currFilter === "deliverable"} />
         <CategorySelectorButton title={<>Catchall <span className={packageStyles.hideMobile}>Validation</span></>} category="catchall" setCategory={setCurrFilter} isActive={currFilter === "catchall"} />
       </div>
-      <br/><br/>
+      <br/>
       {(requests.length > 0) ?
         <div className={styles.grid}>
           {requests.map((request) => (

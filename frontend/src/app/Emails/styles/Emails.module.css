@@ -907,12 +907,12 @@
 
 
 .overviewStats {
-  display: flex;
-  flex-direction: row;
+  margin: 25px 0 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
 }
 .overviewStat {
-  min-width: 400px;
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -924,7 +924,7 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 12px;
+  gap: 15px;
 }
 .overviewStatIcon {
   height: 40px;
@@ -944,7 +944,7 @@
   margin: 0;
   font-family: "PP Supply Mono", sans-serif;
   font-weight: 500;
-  font-size: 30px;
+  font-size: 25px;
   color: var(--black);
 }
 .overviewStatText {
