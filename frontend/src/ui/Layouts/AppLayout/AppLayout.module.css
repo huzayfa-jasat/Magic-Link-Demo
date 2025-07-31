@@ -575,6 +575,12 @@
   stroke: var(--main-hl);
 }
 
+.navIcon.noStroke svg path,
+.mobileNavIcon.noStroke svg path {
+  stroke: none !important;
+  fill: var(--txt-light) !important;
+}
+
 .mobileNavText {
   font-size: 16px;
   font-family: "Circular", "Geist", sans-serif;

@@ -123,7 +123,7 @@ export default function AppLayout({ title, children }) {
                 ))}
                 {BOTTOM_NAV_TABS.map((tab) => (
                   <a key={`mobile-nav-${tab.link}`} href={tab.link} target="_blank" rel="noopener noreferrer" className={s.mobileNavItem} onClick={() => setMobileMenuOpen(false)}>
-                    <div className={s.mobileNavIcon}>
+                    <div className={`${s.mobileNavIcon} ${s.noStroke}`}>
                       {tab.icon}
                     </div>
                     <span className={s.mobileNavText}>{tab.text}</span>
@@ -162,7 +162,7 @@ export default function AppLayout({ title, children }) {
               )}
               {BOTTOM_NAV_TABS.map((tab) => (
                 <a key={`al-nav-${tab.link}`} href={tab.link} target="_blank" rel="noopener noreferrer" className={s.navItem}>
-                  <div className={s.navIcon}>
+                  <div className={`${s.navIcon} ${s.noStroke}`}>
                     {tab.icon}
                   </div>
                   <span className={s.navItemText}>{tab.text}</span>
