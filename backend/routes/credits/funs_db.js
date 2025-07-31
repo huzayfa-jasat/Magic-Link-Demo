@@ -136,42 +136,37 @@ async function db_getLifetimeStats(user_id) {
 		.catch((err)=>{if (err) err_code = err.code});
 	if (err_code) return [false, null];
 
-	// Calculate total completed emails for mins calculation
-	const total_deliverable = await knex('Batch_Emails_Deliverable as bed')
-		.join('Batches_Deliverable as bd', 'bd.id', 'bed.batch_id')
-		.where('bd.user_id', user_id)
-		.where('bd.status', 'completed')
-		.where('bed.did_complete', 1)
-		.count('* as total')
-		.first()
-		.catch((err)=>{if (err) err_code = err.code});
-	if (err_code) return [false, null];
-
-	const total_catchall = await knex('Batch_Emails_Catchall as bec')
-		.join('Batches_Catchall as bc', 'bc.id', 'bec.batch_id')
-		.where('bc.user_id', user_id)
-		.where('bc.status', 'completed')
-		.where('bec.did_complete', 1)
-		.count('* as total')
-		.first()
-		.catch((err)=>{if (err) err_code = err.code});
-	if (err_code) return [false, null];
-
-	// Calculate lifetime purchased credits (excluding bonuses)
-	const purchased_credits = await knex('Users_Credit_Balance_History')
-		.where('user_id', user_id)
-		.where('event_typ', 'purchase')
-		.sum('credits_used as total_purchased')
-		.first()
-		.catch((err)=>{if (err) err_code = err.code});
-	if (err_code) return [false, null];
-
-	const purchased_catchall_credits = await knex('Users_Catchall_Credit_Balance_History')
-		.where('user_id', user_id)
-		.where('event_typ', 'purchase')
-		.sum('credits_used as total_purchased')
-		.first()
-		.catch((err)=>{if (err) err_code = err.code});
+	// Calculate total completed emails for mins calculation and lifetime purchased credits in parallel
+	const [total_deliverable, total_catchall, purchased_credits, purchased_catchall_credits] = await Promise.all([
+		knex('Batch_Emails_Deliverable as bed')
+			.join('Batches_Deliverable as bd', 'bd.id', 'bed.batch_id')
+			.where('bd.user_id', user_id)
+			.where('bd.status', 'completed')
+			.where('bed.did_complete', 1)
+			.count('* as total')
+			.first()
+			.catch((err)=>{if (err) err_code = err.code}),
+		knex('Batch_Emails_Catchall as bec')
+			.join('Batches_Catchall as bc', 'bc.id', 'bec.batch_id')
+			.where('bc.user_id', user_id)
+			.where('bc.status', 'completed')
+			.where('bec.did_complete', 1)
+			.count('* as total')
+			.first()
+			.catch((err)=>{if (err) err_code = err.code}),
+		knex('Users_Credit_Balance_History')
+			.where('user_id', user_id)
+			.where('event_typ', 'purchase')
+			.sum('credits_used as total_purchased')
+			.first()
+			.catch((err)=>{if (err) err_code = err.code}),
+		knex('Users_Catchall_Credit_Balance_History')
+			.where('user_id', user_id)
+			.where('event_typ', 'purchase')
+			.sum('credits_used as total_purchased')
+			.first()
+			.catch((err)=>{if (err) err_code = err.code})
+	]);
 	if (err_code) return [false, null];
 
 	// Calculate results
