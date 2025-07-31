@@ -1,6 +1,7 @@
-// Import both workers
+// Import all workers
 const BatchCreatorWorker = require('./batch_creator_worker');
 const StatusCheckerWorker = require('./status_checker_worker');
+const IndividualStatusCheckerWorker = require('./individual_status_checker_worker');
 
 /**
  * Unified worker that routes jobs to appropriate handlers
@@ -19,6 +20,12 @@ class UnifiedWorker {
         if (job.name.startsWith('status_checker_')) {
             console.log(`➡️  Routing to StatusCheckerWorker`);
             const worker = new StatusCheckerWorker();
+            return await worker.processJob(job);
+        }
+        
+        if (job.name.startsWith('individual_status_check_')) {
+            console.log(`➡️  Routing to IndividualStatusCheckerWorker`);
+            const worker = new IndividualStatusCheckerWorker();
             return await worker.processJob(job);
         }
         

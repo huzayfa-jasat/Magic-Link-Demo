@@ -956,13 +956,13 @@ async function db_createBatchWithEstimate(user_id, check_type, title, estimated_
 	const batch_table = getBatchTableName(check_type);
 	if (!batch_table) return [false, null];
 
-	// Create batch entry in draft status with estimated email count
+	// Create batch entry in draft status with zero email count (will be incremented by addToBatch)
 	let err_code;
 	const insert_result = await knex(batch_table).insert({
 		'user_id': user_id,
 		'title': title ?? 'Untitled',
 		'status': 'draft', // Start as draft
-		'total_emails': estimated_emails, // Set estimated count
+		'total_emails': 0, // Start at 0, addToBatch will increment with actual count
 		'created_ts': knex.fn.now(),
 	}).catch((err)=>{if (err) err_code = err.code});
 	if (err_code) {
