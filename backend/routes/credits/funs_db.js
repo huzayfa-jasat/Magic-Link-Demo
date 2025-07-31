@@ -3,6 +3,8 @@ const knex = require('knex')(require('../../knexfile.js').development);
 
 // Constants
 const REFERRAL_CREDITS_REWARD = 5000;
+const MIN_SAVED_PER_100K_EMAILS = 18;
+const COST_SAVED_PER_100K_EMAILS = 19;
 
 
 // -------------------
@@ -172,9 +174,9 @@ async function db_getLifetimeStats(user_id) {
 	// Calculate results
 	const bounced = parseInt(bounced_deliverable.bounced) || 0;
 	const total_emails = (parseInt(total_deliverable.total) || 0) + (parseInt(total_catchall.total) || 0);
-	const mins = Math.round((6 * total_emails / 100000) * 10) / 10;
+	const mins = Math.round((MIN_SAVED_PER_100K_EMAILS * total_emails / 100000) * 10) / 10;
 	const total_purchased_credits = (parseInt(purchased_credits.total_purchased) || 0) + (parseInt(purchased_catchall_credits.total_purchased) || 0);
-	const cost = Math.round((19 * total_purchased_credits / 100000) * 10) / 10;
+	const cost = Math.round((COST_SAVED_PER_100K_EMAILS * total_purchased_credits / 100000) * 10) / 10;
 
 	return [true, {
 		bounced: bounced,
