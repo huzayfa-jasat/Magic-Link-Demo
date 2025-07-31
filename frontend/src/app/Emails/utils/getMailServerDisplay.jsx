@@ -74,7 +74,6 @@ export default function getMailServerDisplay(mail_server) {
     default:
       return (
         <span>
-          <svg />
           Other
         </span>
       );

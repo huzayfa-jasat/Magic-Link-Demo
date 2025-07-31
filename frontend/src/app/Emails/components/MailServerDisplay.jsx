@@ -229,7 +229,6 @@ export default function MailServerDisplay(mail_server) {
     default:
       return (
         <span>
-          <svg />
           Other
         </span>
       );
