@@ -69,8 +69,7 @@ async function db_getEmailsForGreedyBatch(check_type, max_emails = 10000) {
             'bd.new_verifications as user_batch_total',
             'bd.created_ts'
         )
-        // .where('bd.bouncer_batch_id', null)
-        // .where('bd.new_verifications', '>', 0)
+        .where('bd.bouncer_batch_id', null)  // CRITICAL: Only get batches not yet assigned to bouncer
         .where('bd.status', 'queued')
         .where('bed.used_cached', 0)
         .where('bed.did_complete', 0)

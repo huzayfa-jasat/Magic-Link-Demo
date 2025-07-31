@@ -25,7 +25,7 @@ class BatchCreatorWorker {
         const { check_type } = job.data;
         
         try {
-            // console.log(`🚀 Starting greedy batch creation for ${check_type}`);
+            console.log(`🚀 Starting greedy batch creation for ${check_type}`);
 
             // 1. Check Available Capacity (max 15 concurrent batches)
             const [capacitySuccess, currentCount, availableCapacity] = await db_getOutstandingBouncerBatchCount(check_type);
@@ -39,7 +39,7 @@ class BatchCreatorWorker {
                 return;
             }
 
-            // console.log(`📊 Available capacity: ${availableCapacity} batches for ${check_type}`);
+            console.log(`📊 Available capacity: ${availableCapacity} batches for ${check_type} (current: ${currentCount}/15)`);
 
             // 2. Initial Rate Limit Check
             const [rateLimitSuccess, canMakeRequest] = await db_checkRateLimit(check_type, 'create_batch');
@@ -53,7 +53,7 @@ class BatchCreatorWorker {
             
             for (let i = 0; i < availableCapacity; i++) {
                 try {
-                    // console.log(`📦 Creating batch ${i + 1}/${availableCapacity} for ${check_type}`);
+                    console.log(`📦 Creating batch ${i + 1}/${availableCapacity} for ${check_type}`);
 
                     // Get 10k emails for this batch (FIFO ordered)
                     const [emailsSuccess, emailsData] = await db_getEmailsForGreedyBatch(check_type, 10000);
@@ -63,11 +63,11 @@ class BatchCreatorWorker {
                     }
 
                     if (!emailsData || emailsData.length === 0) {
-                        // console.log(`✅ No more pending emails for ${check_type}, stopping batch creation`);
+                        console.log(`✅ No more pending emails for ${check_type}, stopping batch creation (checked ${i} batches)`);
                         break;
                     }
 
-                    // console.log(`📧 Retrieved ${emailsData.length} emails for ${check_type} batch ${i + 1}`);
+                    console.log(`📧 Retrieved ${emailsData.length} emails for ${check_type} batch ${i + 1}`);
 
                     // Prepare email list for bouncer API (stripped emails)
                     const emailList = emailsData.map(email => email.email_stripped);
@@ -119,7 +119,7 @@ class BatchCreatorWorker {
                 }
             }
 
-            // console.log(`🎉 Completed batch creation cycle for ${check_type}: ${batchesCreated} batches created`);
+            console.log(`🎉 Completed batch creation cycle for ${check_type}: ${batchesCreated} batches created`);
 
         } catch (error) {
             console.error(`💥 Fatal error in batch creation for ${check_type}:`, error);
