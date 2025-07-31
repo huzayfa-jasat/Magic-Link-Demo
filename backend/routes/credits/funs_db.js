@@ -111,6 +111,83 @@ async function db_getCreditBalanceHistory(user_id) {
 	return [true, db_resp];
 }
 
+async function db_getLifetimeStats(user_id) {
+	let err_code;
+
+	// Calculate bounced emails (invalid status)
+	// Invalid means: (is_catchall = 0 OR is_catchall IS NULL) AND (status = 'undeliverable' OR (status = 'risky' AND reason != 'low_deliverability'))
+	const bounced_deliverable = await knex('Email_Deliverable_Results as edr')
+		.join('Batch_Emails_Deliverable as bed', 'bed.email_global_id', 'edr.email_global_id')
+		.join('Batches_Deliverable as bd', 'bd.id', 'bed.batch_id')
+		.where('bd.user_id', user_id)
+		.where('bd.status', 'completed')
+		.where('bed.did_complete', 1)
+		.where(function() {
+			this.where('edr.is_catchall', 0).orWhereNull('edr.is_catchall');
+		})
+		.where(function() {
+			this.where('edr.status', 'undeliverable')
+				.orWhere(function() {
+					this.where('edr.status', 'risky').whereNot('edr.reason', 'low_deliverability');
+				});
+		})
+		.count('* as bounced')
+		.first()
+		.catch((err)=>{if (err) err_code = err.code});
+	if (err_code) return [false, null];
+
+	// Calculate total completed emails for mins calculation
+	const total_deliverable = await knex('Batch_Emails_Deliverable as bed')
+		.join('Batches_Deliverable as bd', 'bd.id', 'bed.batch_id')
+		.where('bd.user_id', user_id)
+		.where('bd.status', 'completed')
+		.where('bed.did_complete', 1)
+		.count('* as total')
+		.first()
+		.catch((err)=>{if (err) err_code = err.code});
+	if (err_code) return [false, null];
+
+	const total_catchall = await knex('Batch_Emails_Catchall as bec')
+		.join('Batches_Catchall as bc', 'bc.id', 'bec.batch_id')
+		.where('bc.user_id', user_id)
+		.where('bc.status', 'completed')
+		.where('bec.did_complete', 1)
+		.count('* as total')
+		.first()
+		.catch((err)=>{if (err) err_code = err.code});
+	if (err_code) return [false, null];
+
+	// Calculate lifetime purchased credits (excluding bonuses)
+	const purchased_credits = await knex('Users_Credit_Balance_History')
+		.where('user_id', user_id)
+		.where('event_typ', 'purchase')
+		.sum('credits_used as total_purchased')
+		.first()
+		.catch((err)=>{if (err) err_code = err.code});
+	if (err_code) return [false, null];
+
+	const purchased_catchall_credits = await knex('Users_Catchall_Credit_Balance_History')
+		.where('user_id', user_id)
+		.where('event_typ', 'purchase')
+		.sum('credits_used as total_purchased')
+		.first()
+		.catch((err)=>{if (err) err_code = err.code});
+	if (err_code) return [false, null];
+
+	// Calculate results
+	const bounced = parseInt(bounced_deliverable.bounced) || 0;
+	const total_emails = (parseInt(total_deliverable.total) || 0) + (parseInt(total_catchall.total) || 0);
+	const mins = Math.round((6 * total_emails / 100000) * 10) / 10;
+	const total_purchased_credits = (parseInt(purchased_credits.total_purchased) || 0) + (parseInt(purchased_catchall_credits.total_purchased) || 0);
+	const cost = Math.round((19 * total_purchased_credits / 100000) * 10) / 10;
+
+	return [true, {
+		bounced: bounced,
+		mins: mins,
+		cost: cost
+	}];
+}
+
 
 // -------------------
 // UPDATE Functions
@@ -161,4 +238,5 @@ module.exports = {
 	db_getReferralInviteCode,
 	db_getReferralInviteList,
 	db_redeemInviteCode,
+	db_getLifetimeStats,
 };
