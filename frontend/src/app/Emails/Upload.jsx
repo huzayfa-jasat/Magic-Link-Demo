@@ -13,6 +13,9 @@ import {
   startCatchallBatchProcessing 
 } from '../../api/batches';
 
+// Context Imports
+import { useCreditsContext } from '../../context/useCreditsContext';
+
 // Component Imports
 import { LoadingCircle } from '../../ui/components/LoadingCircle';
 import CreditsModal from '../../ui/components/CreditsModal';
@@ -29,6 +32,7 @@ const CHUNK_SIZE = 10000;
 // Main Component
 export default function EmailsUploadController() {
   const navigate = useNavigate();
+  const { updateEmailBalance, updateCatchallBalance } = useCreditsContext();
 
   // States
   const [page, setPage] = useState('upload');
@@ -213,6 +217,15 @@ export default function EmailsUploadController() {
       if (checkTyp === 'verify') startResponse = await startVerifyBatchProcessing(batchId);
       else startResponse = await startCatchallBatchProcessing(batchId);
       if (startResponse.status !== 200) throw startResponse;
+
+      // Update the appropriate credit balance based on checkType
+      if (startResponse.data && startResponse.data.remaining_balance !== undefined) {
+        if (checkTyp === 'verify') {
+          updateEmailBalance(startResponse.data.remaining_balance);
+        } else if (checkTyp === 'catchall') {
+          updateCatchallBalance(startResponse.data.remaining_balance);
+        }
+      }
 
       // Navigate to home after successful upload and start
       navigate(`/home`);

@@ -84,6 +84,9 @@ function getStatusDisplay(status) {
 		</div>
 	)
 }
+function getEmailCountDisplay(count) {
+	return <span className={styles.statValue}>{count.toLocaleString()}</span>;
+}
 
 // Component
 export default function BatchCard({
@@ -110,9 +113,7 @@ export default function BatchCard({
 			<div className={styles.stats}>
 				<div className={styles.stat}>
 					<span className={styles.statLabel}>Emails</span>
-					<span className={styles.statValue}>
-						{request.emails}
-					</span>
+					{getEmailCountDisplay(request.emails)}
 				</div>
 				<div className={styles.stat}>
 					<span className={styles.statLabel}>Status</span>

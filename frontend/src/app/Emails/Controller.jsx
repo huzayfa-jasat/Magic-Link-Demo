@@ -85,17 +85,15 @@ export default function HomeController() {
         <CategorySelectorButton title={<>Catchall <span className={packageStyles.hideMobile}>Validation</span></>} category="catchall" setCategory={setCurrFilter} isActive={currFilter === "catchall"} />
       </div>
       <br/><br/>
-      <div className={styles.grid}>
-        {(requests.length > 0) ?
-          <>
-            {requests.map((request) => (
-              <BatchCard key={request.id} request={request} />
-            ))}
-          </>
-          :
-          <EmptyBatchList />
-        }
-      </div>
+      {(requests.length > 0) ?
+        <div className={styles.grid}>
+          {requests.map((request) => (
+            <BatchCard key={request.id} request={request} />
+          ))}
+        </div>
+        :
+        <EmptyBatchList />
+      }
     </div>
   );
 }
