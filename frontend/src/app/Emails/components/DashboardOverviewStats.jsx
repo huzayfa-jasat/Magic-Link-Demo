@@ -20,15 +20,18 @@ export default function DashboardOverviewStats({
 }) {
   return (
     <div className={styles.overviewStats}>
-		<div className={styles.overviewStat}>
-			<div className={styles.overviewStatHeader}>
-				<div className={styles.overviewStatIcon}>
-					{EMAIL_ICON}
+		{(stats.bounced > 0) && (
+			<div className={styles.overviewStat}>
+				<div className={styles.overviewStatHeader}>
+					<div className={styles.overviewStatIcon}>
+						{EMAIL_ICON}
+					</div>
+					<h2 className={styles.overviewStatTitle}>{stats.bounced.toLocaleString()} emails</h2>
 				</div>
-				<h2 className={styles.overviewStatTitle}>{stats.bounced.toLocaleString()} emails</h2>
+				<p className={styles.overviewStatText}>You protected yourself from sending {stats.bounced.toLocaleString()} bounced emails.</p>
 			</div>
-			<p className={styles.overviewStatText}>You protected yourself from sending {stats.bounced.toLocaleString()} bounced emails.</p>
-		</div>
+		)}
+		{(stats.mins > 0) && (
 		<div className={styles.overviewStat}>
 			<div className={styles.overviewStatHeader}>
 				<div className={styles.overviewStatIcon}>
@@ -38,15 +41,18 @@ export default function DashboardOverviewStats({
 			</div>
 			<p className={styles.overviewStatText}>You've saved approximately {getTimeDisplayString(stats.mins)} on verifications compared to competitors.</p>
 		</div>
-		<div className={styles.overviewStat}>
-			<div className={styles.overviewStatHeader}>
-				<div className={styles.overviewStatIcon}>
-					{MONEY_ICON}
+		)}
+		{(stats.cost > 0) && (
+			<div className={styles.overviewStat}>
+				<div className={styles.overviewStatHeader}>
+					<div className={styles.overviewStatIcon}>
+						{MONEY_ICON}
+					</div>
+					<h2 className={styles.overviewStatTitle}>{getMoneyDisplayString(stats.cost)}</h2>
 				</div>
-				<h2 className={styles.overviewStatTitle}>{getMoneyDisplayString(stats.cost)}</h2>
+				<p className={styles.overviewStatText}>You've saved approximately {getMoneyDisplayString(stats.cost)} on verifications compared to competitors.</p>
 			</div>
-			<p className={styles.overviewStatText}>You've saved approximately {getMoneyDisplayString(stats.cost)} on verifications compared to competitors.</p>
-		</div>
+		)}
     </div>
   );
 }
