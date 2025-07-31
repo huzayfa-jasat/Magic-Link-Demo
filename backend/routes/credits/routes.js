@@ -13,6 +13,7 @@ const {
     getReferralInviteCode,
     getReferralInviteList,
     redeemInviteCode,
+    getLifetimeStats,
 } = require('./controller.js');
 
 // Middleware
@@ -27,6 +28,9 @@ creditsRouter.get('/history', getCreditBalanceHistory);
 creditsRouter.get('/invites/me', getReferralInviteCode);
 creditsRouter.get('/invites/list', getReferralInviteList);
 creditsRouter.post('/invites/redeem', redeemInviteCode);
+
+// Lifetime Stats Route
+creditsRouter.get('/lifetime', getLifetimeStats);
 
 // Export
 module.exports = creditsRouter;

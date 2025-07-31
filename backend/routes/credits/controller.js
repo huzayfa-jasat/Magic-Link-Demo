@@ -9,6 +9,7 @@ const {
 	db_getReferralInviteCode,
 	db_getReferralInviteList,
 	db_redeemInviteCode,
+	db_getLifetimeStats,
 } = require("./funs_db.js");
 
 
@@ -104,6 +105,20 @@ async function redeemInviteCode(req, res) {
 	}
 }
 
+/**
+ * Get lifetime stats
+ */
+async function getLifetimeStats(req, res) {
+	try {
+		const [ok, resp] = await db_getLifetimeStats(req.user.id);
+		if (ok) return res.status(HttpStatus.SUCCESS_STATUS).json(resp);
+		return res.status(HttpStatus.FAILED_STATUS).send("Failed to get lifetime stats");
+	} catch (err) {
+		console.log("MTE = ", err);
+		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+	}
+}
+
 
 // Export
 module.exports = {
@@ -113,4 +128,5 @@ module.exports = {
     getReferralInviteCode,
     getReferralInviteList,
 	redeemInviteCode,
+	getLifetimeStats,
 };
