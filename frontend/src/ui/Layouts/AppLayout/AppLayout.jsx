@@ -17,7 +17,7 @@ import {
   // HOME_ICON, PACKAGE_ICON, REFERRAL_ICON,
   CIRCLE_CHECK_ICON, MONEY_ICON, PERSON_ICON, WALLET_ICON,
   EMAIL_ICON, EMAIL_SHREDDER_ICON,
-  MENU_ICON, MENU_CLOSE_ICON
+  MENU_ICON, MENU_CLOSE_ICON, WHATSAPP_ICON, SLACK_ICON
 } from "../../../assets/icons";
 
 // Constants
@@ -28,6 +28,8 @@ const NAV_TABS = [
   { icon: MONEY_ICON, text: "Get Credits", link: "/packages" },
   { icon: PERSON_ICON, text: "Referrals", link: "/referrals", badge: "EARN CREDITS" },
   { icon: <SETTINGS_ICON_VARIABLE strokeWidth={2} />, text: "Settings", link: "/settings" },
+  { icon: WHATSAPP_ICON, text: "Join WhatsApp", link: "https://chat.whatsapp.com/JSP8pcqkYYp0YfrY9hpc9d?mode=ac_t", external: true, badge: "EXTERNAL" },
+  { icon: SLACK_ICON, text: "Need Support?", link: "https://join.slack.com/t/omniverifier/shared_invite/zt-30riqee11-jdEItRg0dTdL_zdpg8w~IA", external: true, badge: "EXTERNAL" },
 ];
 
 
@@ -108,15 +110,27 @@ export default function AppLayout({ title, children }) {
               </div>
               <div className={s.mobileMenuItems}>
                 {NAV_TABS.map((tab) => (
-                  <NavLink key={`mobile-nav-${tab.link}`} to={tab.link} className={({ isActive }) => `${s.mobileNavItem} ${isActive ? s.active : ""}`} onClick={() => setMobileMenuOpen(false)}>
-                    <div className={s.mobileNavIcon}>
-                      {tab.icon}
-                    </div>
-                    <span className={s.mobileNavText}>{tab.text}</span>
-                    {tab.badge && (
-                      <span className={s.mobileNavBadge}>{tab.badge}</span>
-                    )}
-                  </NavLink>
+                  tab.external ? (
+                    <a key={`mobile-nav-${tab.link}`} href={tab.link} target="_blank" rel="noopener noreferrer" className={s.mobileNavItem} onClick={() => setMobileMenuOpen(false)}>
+                      <div className={s.mobileNavIcon}>
+                        {tab.icon}
+                      </div>
+                      <span className={s.mobileNavText}>{tab.text}</span>
+                      {tab.badge && (
+                        <span className={s.mobileNavBadge}>{tab.badge}</span>
+                      )}
+                    </a>
+                  ) : (
+                    <NavLink key={`mobile-nav-${tab.link}`} to={tab.link} className={({ isActive }) => `${s.mobileNavItem} ${isActive ? s.active : ""}`} onClick={() => setMobileMenuOpen(false)}>
+                      <div className={s.mobileNavIcon}>
+                        {tab.icon}
+                      </div>
+                      <span className={s.mobileNavText}>{tab.text}</span>
+                      {tab.badge && (
+                        <span className={s.mobileNavBadge}>{tab.badge}</span>
+                      )}
+                    </NavLink>
+                  )
                 ))}
               </div>
               {!isLoading && (
@@ -132,15 +146,27 @@ export default function AppLayout({ title, children }) {
           <aside className={`${s.sidebar} ${(isCollapsed) ? s.collapsed : ""}`}>
             <div className={s.topSection}>
               {NAV_TABS.map((tab) => (
-                <NavLink key={`al-nav-${tab.link}`} to={tab.link} className={({ isActive }) => `${s.navItem} ${(isActive) ? s.active : ""}`}>
-                  <div className={s.navIcon}>
-                    {tab.icon}
-                  </div>
-                  <span className={s.navItemText}>{tab.text}</span>
-                  {(tab.badge) && (
-                    <span className={s.navItemBadge}>{tab.badge}</span>
-                  )}
-                </NavLink>
+                tab.external ? (
+                  <a key={`al-nav-${tab.link}`} href={tab.link} target="_blank" rel="noopener noreferrer" className={s.navItem}>
+                    <div className={s.navIcon}>
+                      {tab.icon}
+                    </div>
+                    <span className={s.navItemText}>{tab.text}</span>
+                    {(tab.badge) && (
+                      <span className={s.navItemBadge}>{tab.badge}</span>
+                    )}
+                  </a>
+                ) : (
+                  <NavLink key={`al-nav-${tab.link}`} to={tab.link} className={({ isActive }) => `${s.navItem} ${(isActive) ? s.active : ""}`}>
+                    <div className={s.navIcon}>
+                      {tab.icon}
+                    </div>
+                    <span className={s.navItemText}>{tab.text}</span>
+                    {(tab.badge) && (
+                      <span className={s.navItemBadge}>{tab.badge}</span>
+                    )}
+                  </NavLink>
+                )
               ))}
 
               {(!isLoading) && (
