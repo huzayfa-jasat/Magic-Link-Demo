@@ -184,6 +184,7 @@
   }
   .pageSelector {
     width: 100%;
+    margin-bottom: 10px;
   }
   .pageButton {
     padding: 13px 20px;
