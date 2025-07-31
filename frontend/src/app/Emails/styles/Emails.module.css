@@ -161,22 +161,25 @@
 }
 
 .loadingText {
-  color: #718096;
+  color: var(--txt-light);
   font-size: 1rem;
 }
 
 /* Empty state */
 .empty {
   text-align: center;
-  padding: 3rem;
-  color: #718096;
+  padding: 50px 30px;
+  color: var(--txt-light);
+  background-color: var(--main-hl-fade2);
+  border: none;
+  border-radius: 10px;
 }
 
 .emptyText {
   margin: 0 auto;
   font-size: 18px;
   font-weight: 400;
-  color: #fff;
+  color: var(--black);
 }
 
 .emptySubtext {
