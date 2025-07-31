@@ -75,9 +75,6 @@ export default function HomeController() {
       </div>
     );
   }
-  if (requests.length === 0) {
-    return <EmptyBatchList />;
-  }
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Validate</h1>
@@ -89,9 +86,15 @@ export default function HomeController() {
       </div>
       <br/><br/>
       <div className={styles.grid}>
-        {requests.map((request) => (
-          <BatchCard key={request.id} request={request} />
-        ))}
+        {(requests.length > 0) ?
+          <>
+            {requests.map((request) => (
+              <BatchCard key={request.id} request={request} />
+            ))}
+          </>
+          :
+          <EmptyBatchList />
+        }
       </div>
     </div>
   );
