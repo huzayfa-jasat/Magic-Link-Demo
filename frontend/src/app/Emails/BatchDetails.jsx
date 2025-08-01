@@ -143,17 +143,14 @@ export default function EmailsBatchDetailsController({
       const url = URL.createObjectURL(blob);
       
       // Generate filename based on filter type
-      let filename;
       const batchName = details.title || id;
-      if (filter === 'valid') {
-        filename = `Good_Only_OmniVerifier_${batchName}.csv`;
-      } else if (filter === 'invalid') {
-        filename = `Invalid_Only_OmniVerifier_${batchName}.csv`;
-      } else if (filter === 'catch-all') {
-        filename = `Catchall_Only_OmniVerifier_${batchName}.csv`;
-      } else {
-        filename = `All_Emails_OmniVerifier_${batchName}.csv`;
-      }
+      let prefix;
+      if (filter === 'valid') prefix = 'Good_Only';
+      else if (filter === 'invalid') prefix = 'Invalid_Only';
+      else if (filter === 'catch-all') prefix = 'Catchall_Only';
+      else prefix = 'All_Emails';
+      
+      const filename = `${prefix}_OmniVerifier_${batchName}.csv`;
       
       link.setAttribute("href", url);
       link.setAttribute("download", filename);
