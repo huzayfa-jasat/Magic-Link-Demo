@@ -8,7 +8,6 @@ import { getVerifyBatchResults, getCatchallBatchResults } from "../../api/batche
 
 // Component Imports
 import { LoadingCircle } from "../../ui/components/LoadingCircle";
-import getMailServerDisplay from "./utils/getMailServerDisplay";
 import DetailStats from "./components/DetailStats";
 import ResultsTable from "./components/ResultsTable";
 import ExportLoadingModal from "./components/ExportLoadingModal";
@@ -62,7 +61,7 @@ export default function EmailsBatchDetailsController({
   // Check if batch is completed and navigate back if not
   useEffect(() => {
     if (details && details.status !== 'completed' && details.status !== 'complete') {
-      navigate('/home');
+      navigate('/validate');
     }
   }, [details, navigate]);
 
@@ -203,7 +202,7 @@ export default function EmailsBatchDetailsController({
   return (
     <div className={styles.detailsContainer}>
       {/* Navigation back to home */}
-      <Link to="/home" className={styles.backLink}>
+      <Link to="/validate" className={styles.backLink}>
         {BACK_ICON}
         Go Back
       </Link>

@@ -43,7 +43,7 @@ export default function CreditsModal({
             Close
           </button>
           <button className={styles.buttonPrimary} onClick={handleBuyCredits}>
-            Get More Credits
+            Buy More Credits
           </button>
         </div>
       </div>

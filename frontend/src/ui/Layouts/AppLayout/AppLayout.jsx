@@ -1,6 +1,6 @@
 // Dependencies
 import { useEffect, useState } from "react";
-import { NavLink, useParams } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 // Context Imports
 import { useUsersContext } from "../../../context/useUsersContext";
@@ -22,7 +22,7 @@ import {
 
 // Constants
 const NAV_TABS = [
-  { icon: CIRCLE_CHECK_ICON, text: "Validate", link: "/home" },
+  { icon: CIRCLE_CHECK_ICON, text: "Validate", link: "/validate" },
   { icon: <UPLOAD_ICON_VARIABLE strokeWidth={2} />, text: "Upload", link: "/upload" },
   { icon: WALLET_ICON, text: "Credits", link: "/credits" },
   { icon: MONEY_ICON, text: "Get Credits", link: "/packages" },
@@ -44,7 +44,7 @@ function CreditSidebarPill({ icon, label, balance, link }) {
       </div>
       <span className={s.creditBalanceAmount}>{balance.toLocaleString()}</span>
       <div className={s.highlight}>
-        Get More
+        Buy Credits
       </div>
     </NavLink>
   );
@@ -53,6 +53,7 @@ function CreditSidebarPill({ icon, label, balance, link }) {
 
 // Functional Component
 export default function AppLayout({ title, children }) {
+  const navigate = useNavigate();
   const { user } = useUsersContext();
   const { emailBalance, catchallBalance, isLoading } = useCreditsContext();
 
@@ -73,7 +74,7 @@ export default function AppLayout({ title, children }) {
       <main className={s.main}>
         <div className={s.topbar}>
           <div className={s.left}>
-            <div className={s.logo}>
+            <div className={s.logo} onClick={() => navigate("/validate")}>
               {OMNI_LOGO}
             </div>
             <span className={s.divider}>/</span>

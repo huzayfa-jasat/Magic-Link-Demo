@@ -125,7 +125,7 @@ const resend_template_LowCredits = (checkType, balance) => {
 																				<![endif]-->
 																			</span>
 																			<span style="max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:9px">
-																				Get More Credits
+																				Buy More Credits
 																			</span>
 																			<span>
 																				<!--[if mso]>
