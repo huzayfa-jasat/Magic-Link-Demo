@@ -22,10 +22,32 @@ async function db_getCatchallCreditBalance(user_id) {
 
 async function db_getCatchallCreditBalanceHistory(user_id) {
 	let err_code;
-	const db_resp = await knex('Users_Catchall_Credit_Balance_History')
-		.select('user_id', 'credits_used', 'usage_ts')
-		.where('user_id', user_id)
-		.orderBy('usage_ts', 'desc')
+	const db_resp = await knex('Users_Catchall_Credit_Balance_History as h')
+		.select(
+			'h.credits_used', 
+			'h.usage_ts',
+			'h.event_typ',
+			'h.batch_id',
+			'h.batch_type',
+			knex.raw(`
+				CASE 
+					WHEN h.batch_type = 'deliverable' THEN bd.title
+					WHEN h.batch_type = 'catchall' THEN bc.title
+					ELSE NULL
+				END as batch_name
+			`)
+		)
+		.leftJoin('Batches_Deliverable as bd', function() {
+			this.on('h.batch_id', '=', 'bd.id')
+				.andOn('h.batch_type', '=', knex.raw('?', ['deliverable']));
+		})
+		.leftJoin('Batches_Catchall as bc', function() {
+			this.on('h.batch_id', '=', 'bc.id')
+				.andOn('h.batch_type', '=', knex.raw('?', ['catchall']));
+		})
+		.where('h.user_id', user_id)
+		.where('h.credits_used', '>', 0) // Filter out zero credit usage
+		.orderBy('h.usage_ts', 'desc')
 		.catch((err)=>{if (err) err_code = err.code});
 	if (err_code) return [false, null];
 	return [true, db_resp];

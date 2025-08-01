@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 // API Imports
 import {
   getBalance, getCatchallBalance,
-  listAllTransactions,
+  listAllTransactions, listCatchallTransactions,
 } from "../../api/credits";
 
 // Component Imports
@@ -24,8 +24,19 @@ export default function CreditsController() {
   // Fetch transactions
   const fetchTransactions = async () => {
     try {
-      const response = await listAllTransactions();
-      setTransactions(response.data.data);
+      // Fetch both regular and catchall transactions in parallel
+      const [regularResponse, catchallResponse] = await Promise.all([
+        listAllTransactions(),
+        listCatchallTransactions()
+      ]);
+      
+      // Combine both transaction lists
+      const allTransactions = [
+        ...regularResponse.data.data,
+        ...catchallResponse.data.data
+      ];
+      
+      setTransactions(allTransactions);
       return true;
     } catch (err) {
       console.error("Error fetching transactions:", err);

@@ -29,6 +29,12 @@ export const listAllTransactions = async () => {
   });
 };
 
+export const listCatchallTransactions = async () => {
+  return await http.get(`${CATCHALL_MODULE_PREFIX}/history`, {
+    withCredentials: true,
+  });
+};
+
 export const getReferralInviteCode = async () => {
   return await http.get(`${MODULE_PREFIX}/invites/me`, {
     withCredentials: true,
