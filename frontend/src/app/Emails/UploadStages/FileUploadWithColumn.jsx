@@ -1,12 +1,14 @@
 // Dependencies
 import { useState, useCallback, useEffect } from 'react';
-import Popup from 'reactjs-popup';
 
 // Icon Imports
-import { UPLOAD_ICON, COMPLETE_CHECK_ICON } from '../../../assets/icons';
+import { UPLOAD_ICON, COMPLETE_CHECK_ICON, EMAIL_ICON } from '../../../assets/icons';
 
 // Style Imports
 import styles from '../styles/Emails.module.css';
+
+// Component Imports
+import ColumnSelectorPopup from '../components/ColumnSelectorPopup';
 
 // Component
 export default function UploadStageFileUploadWithColumn({
@@ -82,14 +84,19 @@ export default function UploadStageFileUploadWithColumn({
 	const getSampleData = () => {
 		if (selectedColumnIndex === null || !fileData.rows.length) return [];
 		
-		return fileData.rows.slice(0, 3).map(row => row[selectedColumnIndex] || '-');
+		return fileData.rows.slice(0, 10).filter((row) => (
+			row[selectedColumnIndex] !== undefined &&
+			row[selectedColumnIndex] !== null &&
+			row[selectedColumnIndex] !== '' &&
+			// VERY simple email regex
+			/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row[selectedColumnIndex])
+		)).map(row => row[selectedColumnIndex] || '-').slice(0,5);
 	};
 
 	// Render
 	return (
 		<>
 			{(error) && <p className={styles.error}>{error}</p>}
-			
 			{!file ? (
 				// File upload area
 				<div
@@ -144,63 +151,28 @@ export default function UploadStageFileUploadWithColumn({
 
 					{/* Column selection row */}
 					<div className={styles.columnSelectRow}>
+						<div className={styles.columnSelectIcon}>
+							{EMAIL_ICON}
+						</div>
 						<div className={styles.columnSelectInfo}>
-							<h3 className={styles.columnSelectTitle}>Email Column</h3>
+							<h3 className={styles.columnSelectTitle}>Select Email Column</h3>
 							<p className={styles.columnSelectSubtitle}>
-								Select the column containing email addresses
+								Select the column that contains email addresses
 							</p>
 						</div>
-						
-						<Popup
-							position="bottom right"
-							arrow={false}
-							on={["click"]}
-							closeOnDocumentClick
-							open={isDropdownOpen}
-							onOpen={() => setIsDropdownOpen(true)}
-							onClose={() => setIsDropdownOpen(false)}
-							trigger={
-								<button className={styles.columnDropdownTrigger}>
-									{selectedColumnIndex !== null 
-										? (fileData.headers[selectedColumnIndex] || `Column ${selectedColumnIndex + 1}`)
-										: 'Select column'}
-									<span className={styles.dropdownArrow}>▼</span>
-								</button>
-							}
-							contentStyle={{
-								boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-								border: '1px solid #e5e7eb',
-								borderRadius: '8px',
-								padding: '8px',
-								background: 'white',
-								maxHeight: '300px',
-								overflowY: 'auto',
-								minWidth: '200px'
-							}}
-						>
-							<div className={styles.columnDropdownContent}>
-								{fileData.headers.map((header, index) => (
-									<button
-										key={index}
-										className={styles.columnDropdownItem}
-										onClick={() => handleDropdownColumnSelect(index)}
-									>
-										<div className={styles.columnDropdownItemHeader}>
-											{header || `Column ${index + 1}`}
-										</div>
-										<div className={styles.columnDropdownItemSample}>
-											{fileData.rows[0]?.[index] || '-'}
-										</div>
-									</button>
-								))}
-							</div>
-						</Popup>
+						<ColumnSelectorPopup
+							isDropdownOpen={isDropdownOpen}
+							setIsDropdownOpen={setIsDropdownOpen}
+							selectedColumnIndex={selectedColumnIndex}
+							headers={fileData.headers}
+							handleDropdownColumnSelect={handleDropdownColumnSelect}
+						/>
 					</div>
 
 					{/* Sample data display */}
 					{selectedColumnIndex !== null && (
 						<div className={styles.sampleDataContainer}>
-							<h4 className={styles.sampleDataTitle}>Sample data:</h4>
+							<h4 className={styles.sampleDataTitle}>Sample</h4>
 							<div className={styles.sampleDataList}>
 								{getSampleData().map((sample, index) => (
 									<div key={index} className={styles.sampleDataItem}>

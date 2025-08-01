@@ -50,8 +50,8 @@ function getStatusDisplay(status) {
 		case 'completed': case 'complete':
 			status_name = 'Complete';
 			break;
-		case 'processing': case 'queued':
-			status_name = 'Processing';
+		case 'processing':
+			status_name = 'In Progress';
 			break;
 		case 'failed':
 			status_name = 'Failed';
@@ -66,7 +66,7 @@ function getStatusDisplay(status) {
 		case 'completed': case 'complete':
 			status_icon = COMPLETE_CHECK_ICON;
 			break;
-		case 'processing': case 'queued':
+		case 'processing':
 			status_icon = PROCESSING_ICON;
 			break;
 		case 'failed':

@@ -231,7 +231,7 @@
 .uploadText {
   font-family: "Circular", sans-serif;
   font-size: 17px;
-  margin: 0 auto 5px auto;
+  margin: 0 auto 8px auto;
   color: #fff;
 }
 
@@ -942,7 +942,7 @@
 .uploadTextComplete {
   font-family: "Circular", sans-serif;
   font-size: 17px;
-  margin: 0 auto 5px auto;
+  margin: 0 auto 8px auto;
   color: var(--main-hl);
   font-weight: 500;
 }
@@ -957,26 +957,50 @@
   border-radius: 8px;
 }
 
-.columnSelectInfo {
-  flex: 1;
+.columnSelectIcon {
+  width: 42px;
+  height: 42px;
+  margin-right: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  background-color: var(--main-hl-fade);
+  color: var(--main-hl);
+}
+.columnSelectIcon svg {
+  height: 20px;
+  width: auto;
 }
 
-.columnSelectTitle {
-  margin: 0 0 5px 0;
+.columnSelectInfo {
+  flex: 1;
+  margin-bottom: -5px;
+}
+
+.columnSelectTitle,
+.sampleDataTitle {
+  margin: 0 0 2px 0;
   font-family: "Circular", sans-serif;
-  font-size: 18px;
-  font-weight: 500;
+  font-size: 16px;
+  font-weight: 400;
   color: var(--black);
+}
+.sampleDataTitle {
+  margin-bottom: 15px;
 }
 
 .columnSelectSubtitle {
   margin: 0;
-  font-size: 14px;
+  font-family: "Circular", "Geist", sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: -0.3px;
   color: var(--txt-light);
 }
 
 .columnDropdownTrigger {
-  padding: 10px 20px;
+  padding: 8px 12px;
   min-width: 150px;
   display: flex;
   justify-content: space-between;
@@ -1003,57 +1027,49 @@
 }
 
 .columnDropdownContent {
+  min-width: 320px;
+  max-height: 300px;
+  overflow-y: scroll;
+  padding: 12px;
+  margin-top: 10px;
   display: flex;
   flex-direction: column;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--brd-light);
 }
 
 .columnDropdownItem {
-  padding: 12px 16px;
+  align-items: center;
+  background-color: initial;
   border: none;
-  background: none;
-  text-align: left;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  border-bottom: 1px solid var(--brd-light);
-}
-
-.columnDropdownItem:last-child {
-  border-bottom: none;
-}
-
-.columnDropdownItem:hover {
-  background: var(--brd-light-2);
-}
-
-.columnDropdownItemHeader {
-  font-family: "PP Supply Mono", sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--black);
-  margin-bottom: 4px;
-}
-
-.columnDropdownItemSample {
-  font-size: 13px;
+  border-radius: 5px;
   color: var(--txt-light);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  cursor: pointer;
+  display: flex;
+  font-family: Circular, Geist, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  gap: 7px;
+  height: 40px;
+  justify-content: flex-start;
+  padding: 12px;
+  transition: all .2s ease-in-out;
+  width: 100%;
+}
+.columnDropdownItem:hover {
+  color: var(--main-hl-hover);
+  background-color: var(--main-hl-fade3);
+}
+.columnDropdownItem.active {
+  color: var(--main-hl);
+  background-color: var(--main-hl-fade2);
 }
 
 .sampleDataContainer {
   padding: 20px;
-  background: var(--brd-light-2);
   border: 1px solid var(--brd-light);
   border-radius: 8px;
-}
-
-.sampleDataTitle {
-  margin: 0 0 10px 0;
-  font-family: "Circular", sans-serif;
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--black);
 }
 
 .sampleDataList {
@@ -1063,7 +1079,7 @@
 }
 
 .sampleDataItem {
-  padding: 8px 12px;
+  padding: 10px 12px;
   background: var(--white);
   border: 1px solid var(--brd-light);
   border-radius: 4px;
@@ -1146,6 +1162,11 @@
 
 
 /* Responsiveness */
+@media screen and (max-width: 800px) {
+  .columnSelectSubtitle {
+    display: none;
+  }
+}
 @media screen and (max-width: 700px) {
   .title {
     font-size: 25px;
@@ -1237,5 +1258,25 @@
   }
   .tableCell:nth-child(3) {
     display: none;
+  }
+  .columnSelectIcon {
+    display: none;
+  }
+  .uploadTextComplete {
+    font-size: 15px;
+  }
+  .uploadSubtext {
+    font-size: 14px;
+  }
+}
+@media screen and (max-width: 450px) {
+  .columnSelectRow {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+  .columnSelectSubtitle {
+    display: block;
   }
 }

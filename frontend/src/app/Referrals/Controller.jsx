@@ -29,12 +29,12 @@ function ReferralCard({ referral }) {
           {GIFT_ICON}
         </div>
         <div className={styles.history_card_title}>
-          <h5>{referral.name}</h5>
-          <p>{formatTransactionDate(referral.event_ts)}</p>
+          <h5>{referral.email}</h5>
+          <p>{formatTransactionDate(referral.joined_ts)}</p>
         </div>
       </div>
       <div className={`${styles.credits_used}`}>
-        +&nbsp;{referral.reward.toLocaleString()}
+        +&nbsp;{referral.credits.toLocaleString()}
       </div>
     </div>
   );

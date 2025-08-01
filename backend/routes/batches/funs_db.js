@@ -242,7 +242,7 @@ async function db_getBatchesList(user_id, page, limit, order, category, status) 
 	let status_filter;
 	switch (status) {
 		case 'processing':
-			status_filter = ['processing', 'queued'];
+			status_filter = ['processing', 'queued', 'draft', 'pending'];
 			break;
 		case 'completed':
 			status_filter = ['completed'];
@@ -312,7 +312,7 @@ async function db_getBatchesList(user_id, page, limit, order, category, status) 
 	// - Mask "queued" as "processing"
 	const formatted_batches = batches.map((batch)=>({
 		...batch,
-		status: (batch.status === 'queued') ? 'processing' : batch.status
+		status: (batch.status === 'queued' || batch.status === 'draft' || batch.status === 'pending') ? 'processing' : batch.status
 	}));
 
 	// Get metadata

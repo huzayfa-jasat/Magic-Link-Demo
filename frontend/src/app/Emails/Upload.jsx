@@ -293,10 +293,9 @@ export default function EmailsUploadController() {
       />
       <div className={styles.uploadContainer}>
         <h1 className={styles.title}>
-          {(page === 'upload') && 'Upload & Select Column'}
+          {(page === 'upload') && 'Upload File'}
           {(page === 'finalize') && 'Choose Validation'}
         </h1>
-        <br/>
         {(page === 'upload') && (
           <UploadStageFileUploadWithColumn
             error={error}
