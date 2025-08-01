@@ -1,5 +1,5 @@
 // Dependencies
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Popup from "reactjs-popup";
 
@@ -24,6 +24,7 @@ import {
 
 // Style Imports
 import styles from "./styles/Emails.module.css";
+import settingsStyles from "../Settings/Settings.module.css";
 
 // Constants
 const FILTER_MAP = {
@@ -39,6 +40,10 @@ export default function EmailsBatchDetailsController({
 }) {
   const { id } = useParams();
   const navigate = useNavigate();
+  
+  // Export loading state
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState({ current: 0, total: 0 });
 
   // Use custom hook for all batch data management
   const {
@@ -76,23 +81,40 @@ export default function EmailsBatchDetailsController({
   // Export filtered results to CSV (fetches all pages for the filter)
   const handleExportFiltered = useCallback(
     async (filter) => {
-      const ITEMS_PER_PAGE = 50;
+      const ITEMS_PER_PAGE = 1000;
       let allResults = [];
       let page = 1;
       let done = false;
+      
+      // Show loading modal
+      setIsExporting(true);
+      setExportProgress({ current: 0, total: 0 });
 
-      // Fetch all pages of filtered results
-      while (!done) {
-        // Get response (no search / sort)
-        let response;
-        if (checkTyp === 'verify') response = await getVerifyBatchResults(id, page, ITEMS_PER_PAGE, 'timehl', FILTER_MAP[filter] || 'all', '');
-        else if (checkTyp === 'catchall') response = await getCatchallBatchResults(id, page, ITEMS_PER_PAGE, 'timehl', FILTER_MAP[filter] || 'all', '');
-        const pageResults = response.data.results || [];
-        allResults = [...allResults, ...pageResults];
-        
-        // Check if we have more pages using metadata
-        if (!response.data.metadata?.has_more) done = true;
-        else page++;
+      try {
+        // Fetch all pages of filtered results
+        while (!done) {
+          // Get response (no search / sort)
+          let response;
+          if (checkTyp === 'verify') response = await getVerifyBatchResults(id, page, ITEMS_PER_PAGE, 'timehl', FILTER_MAP[filter] || 'all', '');
+          else if (checkTyp === 'catchall') response = await getCatchallBatchResults(id, page, ITEMS_PER_PAGE, 'timehl', FILTER_MAP[filter] || 'all', '');
+          const pageResults = response.data.results || [];
+          allResults = [...allResults, ...pageResults];
+          
+          // Update progress based on metadata
+          const metadata = response.data.metadata;
+          if (metadata) {
+            const totalPages = Math.ceil(metadata.total_count / ITEMS_PER_PAGE);
+            setExportProgress({ current: page, total: totalPages });
+          }
+          
+          // Check if we have more pages using metadata
+          if (!response.data.metadata?.has_more) done = true;
+          else page++;
+        }
+      } catch (error) {
+        console.error('Export failed:', error);
+        setIsExporting(false);
+        return;
       }
 
       // Build CSV content from all filtered results
@@ -124,6 +146,9 @@ export default function EmailsBatchDetailsController({
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      
+      // Hide loading modal
+      setIsExporting(false);
     },
     [id, checkTyp]
   );
@@ -261,6 +286,48 @@ export default function EmailsBatchDetailsController({
           <p>No more results to load</p>
         </div>
       )} */}
+      
+      {/* Export Loading Modal */}
+      {isExporting && (
+        <div className={settingsStyles.modalOverlay}>
+          <div className={settingsStyles.modal}>
+            <h2 className={settingsStyles.modalTitle}>Downloading Results</h2>
+            <p className={settingsStyles.modalDescription}>
+              Please wait while we prepare your export...
+            </p>
+            
+            {/* Progress Bar */}
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{
+                width: '100%',
+                height: '8px',
+                backgroundColor: 'var(--bg-light)',
+                borderRadius: '4px',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  width: exportProgress.total > 0 ? `${(exportProgress.current / exportProgress.total) * 100}%` : '0%',
+                  height: '100%',
+                  backgroundColor: 'var(--main-hl)',
+                  transition: 'width 0.3s ease'
+                }} />
+              </div>
+              <div style={{
+                marginTop: '8px',
+                fontSize: '14px',
+                color: 'var(--txt-light)',
+                textAlign: 'center'
+              }}>
+                {exportProgress.total > 0 ? (
+                  `Processing page ${exportProgress.current} of ${exportProgress.total}`
+                ) : (
+                  'Initializing...'
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
