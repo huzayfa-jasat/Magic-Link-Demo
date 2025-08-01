@@ -1,5 +1,5 @@
 // Dependencies
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Popup from "reactjs-popup";
 
@@ -11,6 +11,7 @@ import { LoadingCircle } from "../../ui/components/LoadingCircle";
 import getMailServerDisplay from "./utils/getMailServerDisplay";
 import DetailStats from "./components/DetailStats";
 import ResultsTable from "./components/ResultsTable";
+import ExportLoadingModal from "./components/ExportLoadingModal";
 
 // Hook Imports
 import useBatchData from "./hooks/useBatchData";
@@ -39,6 +40,10 @@ export default function EmailsBatchDetailsController({
 }) {
   const { id } = useParams();
   const navigate = useNavigate();
+  
+  // Export loading state
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState({ current: 0, total: 0 });
 
   // Use custom hook for all batch data management
   const {
@@ -76,23 +81,40 @@ export default function EmailsBatchDetailsController({
   // Export filtered results to CSV (fetches all pages for the filter)
   const handleExportFiltered = useCallback(
     async (filter) => {
-      const ITEMS_PER_PAGE = 50;
+      const ITEMS_PER_PAGE = 1000;
       let allResults = [];
       let page = 1;
       let done = false;
+      
+      // Show loading modal
+      setIsExporting(true);
+      setExportProgress({ current: 0, total: 0 });
 
-      // Fetch all pages of filtered results
-      while (!done) {
-        // Get response (no search / sort)
-        let response;
-        if (checkTyp === 'verify') response = await getVerifyBatchResults(id, page, ITEMS_PER_PAGE, 'timehl', FILTER_MAP[filter] || 'all', '');
-        else if (checkTyp === 'catchall') response = await getCatchallBatchResults(id, page, ITEMS_PER_PAGE, 'timehl', FILTER_MAP[filter] || 'all', '');
-        const pageResults = response.data.results || [];
-        allResults = [...allResults, ...pageResults];
-        
-        // Check if we have more pages using metadata
-        if (!response.data.metadata?.has_more) done = true;
-        else page++;
+      try {
+        // Fetch all pages of filtered results
+        while (!done) {
+          // Get response (no search / sort)
+          let response;
+          if (checkTyp === 'verify') response = await getVerifyBatchResults(id, page, ITEMS_PER_PAGE, 'timehl', FILTER_MAP[filter] || 'all', '');
+          else if (checkTyp === 'catchall') response = await getCatchallBatchResults(id, page, ITEMS_PER_PAGE, 'timehl', FILTER_MAP[filter] || 'all', '');
+          const pageResults = response.data.results || [];
+          allResults = [...allResults, ...pageResults];
+          
+          // Update progress based on metadata
+          const metadata = response.data.metadata;
+          if (metadata) {
+            const totalPages = Math.ceil(metadata.total_count / ITEMS_PER_PAGE);
+            setExportProgress({ current: page, total: totalPages });
+          }
+          
+          // Check if we have more pages using metadata
+          if (!response.data.metadata?.has_more) done = true;
+          else page++;
+        }
+      } catch (error) {
+        console.error('Export failed:', error);
+        setIsExporting(false);
+        return;
       }
 
       // Build CSV content from all filtered results
@@ -124,6 +146,9 @@ export default function EmailsBatchDetailsController({
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      
+      // Hide loading modal
+      setIsExporting(false);
     },
     [id, checkTyp]
   );
@@ -261,6 +286,12 @@ export default function EmailsBatchDetailsController({
           <p>No more results to load</p>
         </div>
       )} */}
+      
+      {/* Export Loading Modal */}
+      <ExportLoadingModal 
+        isOpen={isExporting} 
+        progress={exportProgress} 
+      />
     </div>
   );
 }
