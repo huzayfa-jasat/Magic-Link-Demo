@@ -11,7 +11,7 @@ export default function ExportLoadingModal({ isOpen, progress }) {
   return (
     <div className={settingsStyles.modalOverlay}>
       <div className={settingsStyles.modal}>
-        <h2 className={settingsStyles.modalTitle}>Downloading Results</h2>
+        <h2 className={settingsStyles.modalTitle}>Downloading...</h2>
         <p className={settingsStyles.modalDescription}>
           Please wait while we prepare your export...
         </p>
