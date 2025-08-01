@@ -28,7 +28,7 @@ export default function ExportLoadingModal({ isOpen, progress }) {
           </div>
           <div className={settingsStyles.progressText}>
             {progress.total > 0 ? (
-              `Processing page ${progress.current} of ${progress.total}`
+              `${(100 * (progress.current / progress.total)).toFixed(0)}%`
             ) : (
               'Loading...'
             )}

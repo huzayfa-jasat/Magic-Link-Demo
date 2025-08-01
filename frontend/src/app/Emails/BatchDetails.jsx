@@ -79,7 +79,7 @@ export default function EmailsBatchDetailsController({
 
   // Export filtered results to CSV (fetches all pages for the filter)
   const handleExportFiltered = useCallback(
-    async (filter) => {
+    async (filter, title) => {
       const ITEMS_PER_PAGE = 1000;
       let allResults = [];
       let page = 1;
@@ -142,9 +142,9 @@ export default function EmailsBatchDetailsController({
       const url = URL.createObjectURL(blob);
       
       // Generate filename based on filter type
-      const batchName = details.title || id;
+      const batchName = title || id;
       let prefix;
-      if (filter === 'valid') prefix = 'Good_Only';
+      if (filter === 'valid') prefix = 'Valid_Only';
       else if (filter === 'invalid') prefix = 'Invalid_Only';
       else if (filter === 'catch-all') prefix = 'Catchall_Only';
       else prefix = 'All_Emails';
@@ -224,24 +224,24 @@ export default function EmailsBatchDetailsController({
             }
           >
             <div className={styles.exportMenu}>
-            <button onClick={() => handleExportFiltered("all")}>
+            <button onClick={() => handleExportFiltered("all", details.title)}>
               {EMAIL_ICON}
               All Emails
             </button>
               {(details.stats.valid > 0) && (
-                <button className={styles.valid} onClick={() => handleExportFiltered("valid")}>
+                <button className={styles.valid} onClick={() => handleExportFiltered("valid", details.title)}>
                   {VERIFY_VALID_ICON}
                   Only Valid
                 </button>
               )}
               {(details.stats.invalid > 0) && (
-                <button className={styles.invalid} onClick={() => handleExportFiltered("invalid")}>
+                <button className={styles.invalid} onClick={() => handleExportFiltered("invalid", details.title)}>
                   {VERIFY_INVALID_ICON}
                   Only Invalid
                 </button>
               )}
               {(details.stats.catchall > 0) && (
-                <button className={styles.catchall} onClick={() => handleExportFiltered("catch-all")}>
+                <button className={styles.catchall} onClick={() => handleExportFiltered("catch-all", details.title)}>
                   {VERIFY_CATCHALL_ICON}
                   Only Catch-All
                 </button>

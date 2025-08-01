@@ -728,6 +728,7 @@ async function db_deductCreditsForActualBatch(user_id, check_type, batch_id) {
 				.first();
 			
 			const actual_email_count = email_count.count;
+			console.log("ACTUAL EMAIL COUNT = ", actual_email_count);
 			
 			// Check credit balance
 			const curr_balance = await trx(credit_table)
@@ -738,6 +739,7 @@ async function db_deductCreditsForActualBatch(user_id, check_type, batch_id) {
 			
 			// Verify sufficient balance
 			if (!curr_balance || curr_balance.current_balance < actual_email_count) {
+				console.log("Err 2");
 				throw new Error('Insufficient credits for actual batch size');
 			}
 
