@@ -19,8 +19,7 @@ import { useCreditsContext } from '../../context/useCreditsContext';
 // Component Imports
 import { LoadingCircle } from '../../ui/components/LoadingCircle';
 import CreditsModal from '../../ui/components/CreditsModal';
-import UploadStageFileUpload from './UploadStages/FileUpload';
-import UploadStageColumnSelect from './UploadStages/ColumnSelect';
+import UploadStageFileUploadWithColumn from './UploadStages/FileUploadWithColumn';
 import UploadStageFinalize from './UploadStages/Finalize';
 
 // Style Imports
@@ -42,6 +41,7 @@ export default function EmailsUploadController() {
   const [emails, setEmails] = useState([]);
   const [error, setError] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
   const [showCreditsModal, setShowCreditsModal] = useState(false);
   const [creditsModalType, setCreditsModalType] = useState('verify');
 
@@ -144,6 +144,10 @@ export default function EmailsUploadController() {
       return;
     }
 
+    // Show loading while processing file
+    setIsProcessingFile(true);
+    setError(null);
+
     try {
       let parsedData;
       
@@ -162,12 +166,14 @@ export default function EmailsUploadController() {
       setFile(selectedFile);
       setFileData(parsedData);
       setError(null);
-      setPage('columnSelect');
+      // Stay on upload page to show combined view
 
     } catch (err) {
       setError(err.message);
       setFile(null);
       setFileData({ headers: [], rows: [] });
+    } finally {
+      setIsProcessingFile(false);
     }
   }, [parseCSV, parseExcel]);
 
@@ -279,7 +285,7 @@ export default function EmailsUploadController() {
   // Render
   return (
     <>
-      {(isUploading) && <LoadingCircle showBg={true} /> }
+      {(isUploading || isProcessingFile) && <LoadingCircle showBg={true} /> }
       <CreditsModal 
         isOpen={showCreditsModal}
         onClose={() => setShowCreditsModal(false)}
@@ -287,22 +293,16 @@ export default function EmailsUploadController() {
       />
       <div className={styles.uploadContainer}>
         <h1 className={styles.title}>
-          {(page === 'upload') && 'Upload File'}
-          {(page === 'columnSelect') && 'Select Emails'}
+          {(page === 'upload') && 'Upload & Select Column'}
           {(page === 'finalize') && 'Choose Validation'}
         </h1>
         <br/>
         {(page === 'upload') && (
-          <UploadStageFileUpload
+          <UploadStageFileUploadWithColumn
             error={error}
             handleFileChange={handleFileChange}
-          />
-        )}
-        {(page === 'columnSelect') && (
-          <UploadStageColumnSelect
-            fileName={file.name || "New Upload"}
-            headers={fileData.headers}
-            sampleData={fileData.rows}
+            file={file}
+            fileData={fileData}
             handleColumnSelect={handleColumnSelect}
             handleCancel={handleRemoveFile}
           />
