@@ -116,7 +116,7 @@ async function db_getCreditBalanceHistory(user_id) {
 					WHEN h.batch_type = 'deliverable' THEN bd.title
 					WHEN h.batch_type = 'catchall' THEN bc.title
 					ELSE NULL
-				END as batch_name
+				END as list_name
 			`)
 		)
 		.leftJoin('Batches_Deliverable as bd', function() {
