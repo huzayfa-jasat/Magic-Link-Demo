@@ -1,8 +1,8 @@
 // Dependencies
 const knex = require('knex')(require('../../knexfile.js').development);
-const { resend_sendBatchCompletionEmail } = require('../../external_apis/resend.js');
 
 // Function Imports
+const { resend_sendBatchCompletionEmail } = require('../../external_apis/resend.js');
 const {
 	getCreditTableName,
 	getCreditHistoryTableName,
@@ -10,6 +10,40 @@ const {
 	getResultsTableName,
 	getEmailBatchAssociationTableName
 } = require('./funs_db_utils.js');
+
+/**
+ * Send batch completion email notification
+ * @param {number} user_id - User ID
+ * @param {string} check_type - 'deliverable' or 'catchall'
+ * @param {number} batch_id - Batch ID
+ */
+async function db_sendBatchCompletionEmail(user_id, check_type, batch_id) {
+	// Get batch details
+	const [batch_ok, batch_details] = await db_getBatchDetails(user_id, check_type, batch_id);
+	if (!batch_ok) return;
+
+	// Get user email
+	const [email_ok, user_email] = await db_getUserEmail(user_id);
+	if (!email_ok) return;
+
+	// Send batch completion email
+	try {
+		const email_result = await resend_sendBatchCompletionEmail(
+			user_email,
+			batch_details.title || 'Untitled Batch',
+			check_type,
+			batch_id
+		);
+		
+		if (email_result.error) {
+			console.log(`⚠️ Failed to send batch completion email for batch ${batch_id}:`, email_result.error);
+		} else {
+			console.log(`📧 Batch completion email sent for batch ${batch_id}`);
+		}
+	} catch (email_error) {
+		console.log(`⚠️ Error sending batch completion email for batch ${batch_id}:`, email_error);
+	}
+}
 
 // Helper Functions
 const formatResultsByCheckType = (results, check_type) => {
@@ -177,35 +211,7 @@ async function db_createBatch(user_id, check_type, title, emails) {
 		}
 		
 		// Send batch completion email notification
-		try {
-			// Get batch details
-			const [batch_ok, batch_details] = await db_getBatchDetails(user_id, check_type, batch_id);
-			if (batch_ok && batch_details) {
-				// Get user email
-				const [email_ok, user_email] = await db_getUserEmail(user_id);
-				if (email_ok && user_email) {
-					// Send batch completion email
-					const email_result = await resend_sendBatchCompletionEmail(
-						user_email,
-						batch_details.title || 'Untitled Batch',
-						check_type,
-						batch_id
-					);
-					
-					if (email_result.error) {
-						console.log(`⚠️ Failed to send batch completion email for batch ${batch_id}:`, email_result.error);
-					} else {
-						console.log(`📧 Batch completion email sent for batch ${batch_id}`);
-					}
-				} else {
-					console.log(`⚠️ Could not get user email for batch ${batch_id}`);
-				}
-			} else {
-				console.log(`⚠️ Could not get batch details for batch ${batch_id}`);
-			}
-		} catch (email_error) {
-			console.log(`⚠️ Error sending batch completion email for batch ${batch_id}:`, email_error);
-		}
+		await db_sendBatchCompletionEmail(user_id, check_type, batch_id);
 	}
 
 	// Return
@@ -767,12 +773,9 @@ async function db_deductCreditsForActualBatch(user_id, check_type, batch_id) {
 	
 	try {
 		const result = await knex.transaction(async (trx) => {
-			// Get actual number of NON-CACHED emails associated with this batch
+			// Get total number of emails associated with this batch (including cached ones)
 			const email_count = await trx(email_batch_association_table)
-				.where({ 
-					'batch_id': batch_id,
-					'used_cached': 0  // Only count non-cached emails that need processing
-				})
+				.where({ 'batch_id': batch_id })
 				.count('* as count')
 				.first();
 			
@@ -819,7 +822,6 @@ async function db_deductCreditsForActualBatch(user_id, check_type, batch_id) {
 		return [false, null, 0];
 	}
 }
-
 
 // -------------------
 // DELETE Functions
@@ -934,35 +936,7 @@ async function db_startBatchProcessing(user_id, check_type, batch_id) {
 
 	// Send batch completion email notification if batch was completed
 	if (is_completed) {
-		try {
-			// Get batch details
-			const [batch_ok, batch_details] = await db_getBatchDetails(user_id, check_type, batch_id);
-			if (batch_ok && batch_details) {
-				// Get user email
-				const [email_ok, user_email] = await db_getUserEmail(user_id);
-				if (email_ok && user_email) {
-					// Send batch completion email
-					const email_result = await resend_sendBatchCompletionEmail(
-						user_email,
-						batch_details.title || 'Untitled Batch',
-						check_type,
-						batch_id
-					);
-					
-					if (email_result.error) {
-						console.log(`⚠️ Failed to send batch completion email for batch ${batch_id}:`, email_result.error);
-					} else {
-						console.log(`📧 Batch completion email sent for batch ${batch_id}`);
-					}
-				} else {
-					console.log(`⚠️ Could not get user email for batch ${batch_id}`);
-				}
-			} else {
-				console.log(`⚠️ Could not get batch details for batch ${batch_id}`);
-			}
-		} catch (email_error) {
-			console.log(`⚠️ Error sending batch completion email for batch ${batch_id}:`, email_error);
-		}
+		await db_sendBatchCompletionEmail(user_id, check_type, batch_id);
 	}
 
 	// Return
@@ -1049,35 +1023,7 @@ async function db_createBatchDraft(user_id, check_type, title, emails) {
 		}
 		
 		// Send batch completion email notification
-		try {
-			// Get batch details
-			const [batch_ok, batch_details] = await db_getBatchDetails(user_id, check_type, batch_id);
-			if (batch_ok && batch_details) {
-				// Get user email
-				const [email_ok, user_email] = await db_getUserEmail(user_id);
-				if (email_ok && user_email) {
-					// Send batch completion email
-					const email_result = await resend_sendBatchCompletionEmail(
-						user_email,
-						batch_details.title || 'Untitled Batch',
-						check_type,
-						batch_id
-					);
-					
-					if (email_result.error) {
-						console.log(`⚠️ Failed to send batch completion email for batch ${batch_id}:`, email_result.error);
-					} else {
-						console.log(`📧 Batch completion email sent for batch ${batch_id}`);
-					}
-				} else {
-					console.log(`⚠️ Could not get user email for batch ${batch_id}`);
-				}
-			} else {
-				console.log(`⚠️ Could not get batch details for batch ${batch_id}`);
-			}
-		} catch (email_error) {
-			console.log(`⚠️ Error sending batch completion email for batch ${batch_id}:`, email_error);
-		}
+		await db_sendBatchCompletionEmail(user_id, check_type, batch_id);
 	}
 
 	// Return
@@ -1127,5 +1073,6 @@ module.exports = {
 	db_startBatchProcessing,
 	db_checkCreditsOnly,
 	db_deductCreditsForActualBatch,
-	db_createBatchWithEstimate
+	db_createBatchWithEstimate,
+	db_sendBatchCompletionEmail
 }

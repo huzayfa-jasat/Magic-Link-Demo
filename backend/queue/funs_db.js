@@ -385,28 +385,24 @@ async function checkAndCompleteUserBatch(trx, user_batch_id, check_type) {
         try {
             // Get batch details
             const [batch_ok, batch_details] = await getBatchDetails(user_batch_id, check_type);
-            if (batch_ok && batch_details) {
-                // Get user email
-                const [email_ok, user_email] = await getUserEmail(batch_details.user_id);
-                if (email_ok && user_email) {
-                    // Send batch completion email
-                    const email_result = await resend_sendBatchCompletionEmail(
-                        user_email,
-                        batch_details.title || 'Untitled Batch',
-                        check_type,
-                        user_batch_id
-                    );
-                    
-                    if (email_result.error) {
-                        console.log(`⚠️ Failed to send batch completion email for batch ${user_batch_id}:`, email_result.error);
-                    } else {
-                        console.log(`📧 Batch completion email sent for batch ${user_batch_id}`);
-                    }
-                } else {
-                    console.log(`⚠️ Could not get user email for batch ${user_batch_id}`);
-                }
+            if (!batch_ok) return;
+
+            // Get user email
+            const [email_ok, user_email] = await getUserEmail(batch_details.user_id);
+            if (!email_ok) return;
+
+            // Send batch completion email
+            const email_result = await resend_sendBatchCompletionEmail(
+                user_email,
+                batch_details.title || 'Untitled Batch',
+                check_type,
+                user_batch_id
+            );
+            
+            if (email_result.error) {
+                console.log(`⚠️ Failed to send batch completion email for batch ${user_batch_id}:`, email_result.error);
             } else {
-                console.log(`⚠️ Could not get batch details for batch ${user_batch_id}`);
+                console.log(`📧 Batch completion email sent for batch ${user_batch_id}`);
             }
         } catch (email_error) {
             console.log(`⚠️ Error sending batch completion email for batch ${user_batch_id}:`, email_error);
@@ -527,8 +523,4 @@ module.exports = {
     // Rate Limiting
     db_checkRateLimit,
     db_recordRateLimit,
-    
-    // User and Batch Details
-    getUserEmail,
-    getBatchDetails,
 };
