@@ -11,6 +11,7 @@ import { LoadingCircle } from "../../ui/components/LoadingCircle";
 import getMailServerDisplay from "./utils/getMailServerDisplay";
 import DetailStats from "./components/DetailStats";
 import ResultsTable from "./components/ResultsTable";
+import ExportLoadingModal from "./components/ExportLoadingModal";
 
 // Hook Imports
 import useBatchData from "./hooks/useBatchData";
@@ -24,7 +25,6 @@ import {
 
 // Style Imports
 import styles from "./styles/Emails.module.css";
-import settingsStyles from "../Settings/Settings.module.css";
 
 // Constants
 const FILTER_MAP = {
@@ -288,46 +288,10 @@ export default function EmailsBatchDetailsController({
       )} */}
       
       {/* Export Loading Modal */}
-      {isExporting && (
-        <div className={settingsStyles.modalOverlay}>
-          <div className={settingsStyles.modal}>
-            <h2 className={settingsStyles.modalTitle}>Downloading Results</h2>
-            <p className={settingsStyles.modalDescription}>
-              Please wait while we prepare your export...
-            </p>
-            
-            {/* Progress Bar */}
-            <div style={{ marginBottom: '20px' }}>
-              <div style={{
-                width: '100%',
-                height: '8px',
-                backgroundColor: 'var(--bg-light)',
-                borderRadius: '4px',
-                overflow: 'hidden'
-              }}>
-                <div style={{
-                  width: exportProgress.total > 0 ? `${(exportProgress.current / exportProgress.total) * 100}%` : '0%',
-                  height: '100%',
-                  backgroundColor: 'var(--main-hl)',
-                  transition: 'width 0.3s ease'
-                }} />
-              </div>
-              <div style={{
-                marginTop: '8px',
-                fontSize: '14px',
-                color: 'var(--txt-light)',
-                textAlign: 'center'
-              }}>
-                {exportProgress.total > 0 ? (
-                  `Processing page ${exportProgress.current} of ${exportProgress.total}`
-                ) : (
-                  'Initializing...'
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ExportLoadingModal 
+        isOpen={isExporting} 
+        progress={exportProgress} 
+      />
     </div>
   );
 }
