@@ -59,7 +59,7 @@ export default function UploadStageFileUpload({
               {UPLOAD_ICON}
             </div>
             <p className={styles.uploadText}>
-              Drag and drop your CSV or Excel file here
+              Drag and drop your CSV or XLSX file here
             </p>
             <p className={styles.uploadSubtext}>
               or click to browse

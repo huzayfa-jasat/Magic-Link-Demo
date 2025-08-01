@@ -89,6 +89,7 @@
 .logo {
   width: auto;
   height: 24px;
+  cursor: pointer !important;
 }
 
 .divider {

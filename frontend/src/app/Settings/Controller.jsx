@@ -171,17 +171,14 @@ export default function SettingsController() {
         <div className={styles.profileCard}>
           <h3 className={styles.fieldTitle}>Update Password</h3>
           <button onClick={() => setShowPasswordModal(true)} className={styles.generateButton}>
-            Continue
+            Update
           </button>
         </div>
 
         {/* Sign Out Section */}
-        <div className={styles.profileCard}>
-          <h3 className={styles.fieldTitle}>Sign Out</h3>
-          <button onClick={handleLogout} className={styles.signOutButton}>
-            Continue
-          </button>
-        </div>
+        <button onClick={handleLogout} className={styles.signOutButton}>
+          Sign Out
+        </button>
       </div>
     </>
   );

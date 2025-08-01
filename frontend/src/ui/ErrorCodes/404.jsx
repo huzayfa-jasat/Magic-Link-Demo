@@ -19,7 +19,7 @@ export default function NotFoundPage() {
 					</div>
 					<h1>We can't find that page!</h1>
 					<p>The page you're looking for either doesn't exist, or has been moved.</p>
-					<NavLink to="/home" className={styles.button}>
+					<NavLink to="/validate" className={styles.button}>
 						Back to Home
 					</NavLink>
 				</div>

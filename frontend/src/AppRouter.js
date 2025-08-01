@@ -70,7 +70,7 @@ function RulesRouter({ rule }) {
       else return <Navigate to="/login" />;
     case 1: // Logged in
       if (rule === "private") return <Outlet />;
-      else return <Navigate to="/home" />;
+      else return <Navigate to="/validate" />;
     default: // Loading
       return <></>;
   }
@@ -96,9 +96,9 @@ export default function App() {
           {/* Only logged-in users */}
           <Route element={<RulesRouter rule="private" />}>
             <Route exact path="/" element={
-              <Navigate to="/home" />}
+              <Navigate to="/validate" />}
             />
-            <Route exact path="/home" element={
+            <Route exact path="/validate" element={
               <AppLayout title="Home">
                 <EmailsHome />
               </AppLayout>

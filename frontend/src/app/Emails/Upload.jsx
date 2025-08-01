@@ -228,7 +228,7 @@ export default function EmailsUploadController() {
       }
 
       // Navigate to home after successful upload and start
-      navigate(`/home`);
+      navigate(`/validate`);
 
     } catch (err) {
       // Check if it's a 402 status code (insufficient credits)
