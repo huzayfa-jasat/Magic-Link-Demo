@@ -751,7 +751,9 @@ async function db_deductCreditsForActualBatch(user_id, check_type, batch_id) {
 				'user_id': user_id,
 				'credits_used': actual_email_count,
 				'event_typ': 'usage',
-				'usage_ts': knex.fn.now()
+				'usage_ts': knex.fn.now(),
+				'batch_id': batch_id,
+				'batch_type': check_type
 			});
 
 			// Calculate new balance after deduction
