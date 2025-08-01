@@ -17,7 +17,7 @@ function getEventIcon(event_typ) {
 		return GIFT_ICON;
 	}
 }
-function getEventTitle(event_typ, list_name) {
+function getEventTitle(event_typ, list_name = null) {
 	switch (event_typ) {
 	case 'usage':
 		return list_name || 'Verified Emails';
