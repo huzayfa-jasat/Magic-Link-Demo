@@ -95,8 +95,10 @@ export default function HomeController() {
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Welcome back!</h1>
-      {(stats !== null) && <DashboardOverviewStats stats={stats} />}
-      <br/>
+      {(stats !== null && (stats.bounced > 0 || stats.mins > 0 || stats.cost > 0)) && <>
+        <DashboardOverviewStats stats={stats} />
+        <br/>
+      </>}
       <div className={packageStyles.pageSelector}>
         <CategorySelectorButton title={<>All <span className={packageStyles.hideMobile}>Requests</span></>} category="all" setCategory={setCurrFilter} isActive={currFilter === "all"} />
         <CategorySelectorButton title={<>Email <span className={packageStyles.hideMobile}>Validation</span></>} category="deliverable" setCategory={setCurrFilter} isActive={currFilter === "deliverable"} />

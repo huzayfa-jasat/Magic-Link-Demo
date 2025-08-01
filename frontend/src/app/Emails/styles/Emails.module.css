@@ -94,7 +94,7 @@
 
 /* Typography */
 .title {
-  margin: 0;
+  margin: 0 0 25px 0;
   font-family: "Circular", "Geist", sans-serif;
   font-size: 32px;
   font-weight: 400;
