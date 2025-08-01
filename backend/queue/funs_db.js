@@ -366,10 +366,9 @@ async function checkAndCompleteUserBatch(trx, user_batch_id, check_type) {
     const incomplete_emails = await trx(batch_email_table)
         .where('batch_id', user_batch_id)
         .where('did_complete', 0)
-        .count('* as count')
-        .first();
+        .limit(1);
 
-    if (incomplete_emails.count === 0) {
+    if (incomplete_emails.length === 0) {
         // All emails are complete - mark user batch as completed
         await trx(batch_table)
             .where('id', user_batch_id)
