@@ -17,31 +17,20 @@ export default function ExportLoadingModal({ isOpen, progress }) {
         </p>
         
         {/* Progress Bar */}
-        <div style={{ marginBottom: '20px' }}>
-          <div style={{
-            width: '100%',
-            height: '8px',
-            backgroundColor: 'var(--bg-light)',
-            borderRadius: '4px',
-            overflow: 'hidden'
-          }}>
-            <div style={{
-              width: progress.total > 0 ? `${(progress.current / progress.total) * 100}%` : '0%',
-              height: '100%',
-              backgroundColor: 'var(--main-hl)',
-              transition: 'width 0.3s ease'
-            }} />
+        <div className={settingsStyles.progressContainer}>
+          <div className={settingsStyles.progressBar}>
+            <div 
+              className={settingsStyles.progressFill}
+              style={{
+                width: progress.total > 0 ? `${(progress.current / progress.total) * 100}%` : '0%'
+              }} 
+            />
           </div>
-          <div style={{
-            marginTop: '8px',
-            fontSize: '14px',
-            color: 'var(--txt-light)',
-            textAlign: 'center'
-          }}>
+          <div className={settingsStyles.progressText}>
             {progress.total > 0 ? (
               `Processing page ${progress.current} of ${progress.total}`
             ) : (
-              'Initializing...'
+              'Loading...'
             )}
           </div>
         </div>
