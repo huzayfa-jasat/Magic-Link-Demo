@@ -1,10 +1,13 @@
-// Constant Imports
+ // Constant Imports
 const {
-	DASHBOARD_URL,
+	FRONTEND_URL_PREFIX,
 } = require('../constants');
 
-// Welcome Template
-const resend_template_Welcome = () => {
+// Batch Completion Template
+const resend_template_BatchCompletion = (batchTitle, checkType, batchId) => {
+	const detailsUrl = `${FRONTEND_URL_PREFIX}/${(checkType === 'deliverable') ? 'verify' : 'catchall'}/${batchId}/details`;
+	const checkTypeDisplay = checkType === 'deliverable' ? 'Email Validation' : 'Catchall Validation';
+	
 	return (`
 		<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 		<html dir="ltr" lang="en">
@@ -15,7 +18,7 @@ const resend_template_Welcome = () => {
 			<body style='background-color:rgb(245,245,245);font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";padding-top:40px;padding-bottom:40px'>
 				<!--$-->
 				<div style="display:none;overflow:hidden;line-height:1px;opacity:0;max-height:0;max-width:0">
-					Welcome to OmniVerifier - Your account has been created successfully!
+					Your batch "${batchTitle}" has been completed
 				</div>
 				<table
 					align="center"
@@ -54,42 +57,11 @@ const resend_template_Welcome = () => {
 														<tr>
 															<td>
 																<h1 style="font-size:24px;font-weight:700;color:rgb(0,0,0);text-align:center;margin:0px;margin-bottom:16px">
-																	Welcome to OmniVerifier
+																	Batch Completed
 																</h1>
 																<p style="font-size:16px;line-height:24px;color:rgb(0,0,0);margin-bottom:24px;margin-top:16px;text-align:center">
-																	Welcome to OmniVerifier! Your account has been successfully created and you&#x27;re ready to start verifying emails with confidence.
+																	Great news! Your ${checkTypeDisplay} batch "${batchTitle}" has been completed successfully. You can now view the detailed results and export your data.
 																</p>
-																<p style="font-size:16px;line-height:24px;color:rgb(0,0,0);margin-bottom:24px;margin-top:16px;text-align:center">
-																	With OmniVerifier, you can:
-																</p>
-																<table
-																	align="center"
-																	width="100%"
-																	border="0"
-																	cellpadding="0"
-																	cellspacing="0"
-																	role="presentation"
-																	style="margin-bottom:24px"
-																>
-																	<tbody>
-																		<tr>
-																			<td>
-																				<p style="font-size:16px;line-height:24px;color:rgb(0,0,0);margin-bottom:0px;margin:0px;margin-top:0px;margin-left:0px;margin-right:0px;text-align:center">
-																					✅ Verify email addresses in real-time
-																				</p>
-																				<p style="font-size:16px;line-height:24px;color:rgb(0,0,0);margin-bottom:0px;margin:0px;margin-top:0px;margin-left:0px;margin-right:0px;text-align:center">
-																					✅ Bulk verify email lists
-																				</p>
-																				<p style="font-size:16px;line-height:24px;color:rgb(0,0,0);margin-bottom:0px;margin:0px;margin-top:0px;margin-left:0px;margin-right:0px;text-align:center">
-																					✅ Improve email deliverability
-																				</p>
-																				<p style="font-size:16px;line-height:24px;color:rgb(0,0,0);margin:0px;margin-bottom:0px;margin-top:0px;margin-left:0px;margin-right:0px;text-align:center">
-																					✅ Protect your sender reputation
-																				</p>
-																			</td>
-																		</tr>
-																	</tbody>
-																</table>
 																<table
 																	align="center"
 																	width="100%"
@@ -103,7 +75,7 @@ const resend_template_Welcome = () => {
 																		<tr>
 																			<td>
 																				<a
-																					href="${DASHBOARD_URL}"
+																					href="${detailsUrl}"
 																					target="_blank"
 																					style="background-color:#BBE8FF;border-radius:4px;color:rgb(0,0,0);font-weight:700;font-size:16px;padding-left:24px;padding-right:24px;padding-top:12px;padding-bottom:12px;text-decoration-line:none;text-align:center;display:inline-block;box-sizing:border-box;line-height:100%;text-decoration:none;max-width:100%;mso-padding-alt:0px;padding:12px 24px 12px 24px"
 																				>
@@ -113,7 +85,7 @@ const resend_template_Welcome = () => {
 																						<![endif]-->
 																					</span>
 																					<span style="max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:9px">
-																						Get Started
+																						View Results
 																					</span>
 																					<span>
 																						<!--[if mso]>
@@ -133,6 +105,25 @@ const resend_template_Welcome = () => {
 										</tr>
 									</tbody>
 								</table>
+								<table
+									align="center"
+									width="100%"
+									border="0"
+									cellpadding="0"
+									cellspacing="0"
+									role="presentation"
+									style="margin-top:32px;text-align:center"
+								>
+									<tbody>
+										<tr>
+											<td>
+												<p style="font-size:14px;line-height:24px;color:rgb(0,0,0);margin:0px;margin-bottom:0px;margin-top:0px;margin-left:0px;margin-right:0px">
+													© OmniVerifier. All Rights Reserved.
+												</p>
+											</td>
+										</tr>
+									</tbody>
+								</table>
 							</td>
 						</tr>
 					</tbody>
@@ -144,5 +135,5 @@ const resend_template_Welcome = () => {
 }
 
 module.exports = {
-	resend_template_Welcome,
+	resend_template_BatchCompletion,
 }

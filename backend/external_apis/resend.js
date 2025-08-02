@@ -9,6 +9,7 @@ const {
   resend_template_PasswordReset,
   resend_template_PasswordResetFromSettings,
   resend_template_LowCredits,
+  resend_template_BatchCompletion,
 } = require('./resend_utils/templates/index');
 
 // Sender Constants
@@ -108,6 +109,23 @@ async function resend_sendLowCreditsEmail(recipient_email, checkType, balance) {
   }
 }
 
+/**
+ * Send batch completion notification email
+ * @param {string} recipient_email - The email address of the recipient
+ * @param {string} batchTitle - The title of the completed batch
+ * @param {string} checkType - The type of check (deliverable or catchall)
+ * @param {number} batchId - The ID of the completed batch
+ * @returns {Promise<object>}
+*/
+async function resend_sendBatchCompletionEmail(recipient_email, batchTitle, checkType, batchId) {
+  try {
+    const html = resend_template_BatchCompletion(batchTitle, checkType, batchId);
+    return await resend_sendEmail(recipient_email, `Your batch "${batchTitle}" has been completed`, html);
+  } catch (error) {
+    return { error };
+  }
+}
+
 // Export
 module.exports = {
     resend_sendWelcomeEmail,
@@ -115,4 +133,5 @@ module.exports = {
     resend_sendPasswordResetEmail,
     resend_sendPasswordResetEmailFromSettings,
     resend_sendLowCreditsEmail,
+    resend_sendBatchCompletionEmail,
 };

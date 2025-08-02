@@ -48,7 +48,7 @@ export default function InviteCodeController() {
     try {
       const response = await redeemReferralInviteCode(code);
       if (response.status === 200) {
-        setMessage("5,000 credits have been added to your account.");
+        setMessage("You've claimed 25k in free credits");
         setIsError(false);
         setIsSuccess(true);
       } else {
