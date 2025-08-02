@@ -27,10 +27,11 @@ export default function UploadStageFileUploadWithColumn({
 	// Auto-select email column when fileData changes
 	useEffect(() => {
 		if (fileData && fileData.headers && fileData.headers.length > 0) {
-			// Find first column that exactly matches "Email" or "Email Address"
-			const emailColumnIndex = fileData.headers.findIndex(header => 
-				header === 'Email' || header === 'Email Address'
-			);
+			// Find first column that matches email variations (case-insensitive)
+			const emailColumnIndex = fileData.headers.findIndex(header => {
+				const lowerHeader = header.toLowerCase();
+				return lowerHeader === 'email' || lowerHeader === 'email address';
+			});
 			
 			if (emailColumnIndex !== -1) {
 				setSelectedColumnIndex(emailColumnIndex);
