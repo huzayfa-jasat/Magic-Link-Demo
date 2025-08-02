@@ -175,6 +175,12 @@ export default function SettingsController() {
           </button>
         </div>
 
+        {/* Contact Support Section */}
+        <div className={styles.profileCard}>
+          <h3 className={styles.fieldTitle}>Contact Support</h3>
+          <div className={styles.fieldValue}>support@omniverifier.com</div>
+        </div>
+
         {/* Sign Out Section */}
         <button onClick={handleLogout} className={styles.signOutButton}>
           Sign Out
