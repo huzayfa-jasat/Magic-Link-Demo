@@ -65,30 +65,7 @@ const resend_template_LowCredits = (checkType, balance) => {
 											cellpadding="0"
 											cellspacing="0"
 											role="presentation"
-											style="padding-left:32px;padding-right:32px;padding-top:32px;padding-bottom:20px;text-align:center;background-color:rgb(110,207,255)"
-										>
-											<tbody>
-												<tr>
-													<td>
-														<img
-															alt="OmniVerifier Logo"
-															height="80"
-															src="${LOGO_URL}"
-															style="width:80px;height:auto;object-fit:cover;margin-left:auto;margin-right:auto;display:block;outline:none;border:none;text-decoration:none"
-															width="80"
-														/>
-													</td>
-												</tr>
-											</tbody>
-										</table>
-										<table
-											align="center"
-											width="100%"
-											border="0"
-											cellpadding="0"
-											cellspacing="0"
-											role="presentation"
-											style="padding-left:32px;padding-right:32px;padding-bottom:16px"
+											style="padding-left:32px;padding-right:32px;padding-top:80px;padding-bottom:80px"
 										>
 											<tbody>
 												<tr>
@@ -96,10 +73,10 @@ const resend_template_LowCredits = (checkType, balance) => {
 														<h1 style="font-size:24px;font-weight:700;color:rgb(0,0,0);text-align:center;margin:0px;margin-bottom:16px">
 															Credits Running Low
 														</h1>
-														<p style="font-size:16px;line-height:24px;color:rgb(0,0,0);margin-bottom:24px;margin-top:16px">
+														<p style="font-size:16px;line-height:24px;color:rgb(0,0,0);margin-bottom:24px;margin-top:16px;text-align:center">
 															Your OmniVerifier credits are running low. You currently have ${balance} credits remaining for ${checkTypeInfo.display_string}.
 														</p>
-														<p style="font-size:16px;line-height:24px;color:rgb(0,0,0);margin-bottom:24px;margin-top:16px">
+														<p style="font-size:16px;line-height:24px;color:rgb(0,0,0);margin-bottom:24px;margin-top:16px;text-align:center">
 															To continue verifying emails, purchase more credits now.
 														</p>
 														<table
@@ -109,14 +86,14 @@ const resend_template_LowCredits = (checkType, balance) => {
 															cellpadding="0"
 															cellspacing="0"
 															role="presentation"
-															style="margin-bottom:32px;text-align:center"
+															style="margin-bottom:0px;text-align:center"
 														>
 															<tbody>
 																<tr>
 																	<td>
 																		<a
 																			href="${checkTypeInfo.url}"
-																			style="background-color:rgb(110,207,255);border-radius:4px;color:rgb(0,0,0);font-weight:700;font-size:16px;padding-left:24px;padding-right:24px;padding-top:12px;padding-bottom:12px;text-decoration-line:none;text-align:center;display:inline-block;box-sizing:border-box;line-height:100%;text-decoration:none;max-width:100%;mso-padding-alt:0px;padding:12px 24px 12px 24px"
+																			style="background-color:#BBE8FF;border-radius:4px;color:rgb(0,0,0);font-weight:700;font-size:16px;padding-left:24px;padding-right:24px;padding-top:12px;padding-bottom:12px;text-decoration-line:none;text-align:center;display:inline-block;box-sizing:border-box;line-height:100%;text-decoration:none;max-width:100%;mso-padding-alt:0px;padding:12px 24px 12px 24px"
 																			target="_blank"
 																		>
 																			<span>
@@ -125,7 +102,7 @@ const resend_template_LowCredits = (checkType, balance) => {
 																				<![endif]-->
 																			</span>
 																			<span style="max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:9px">
-																				Buy More Credits
+																				Get More Credits
 																			</span>
 																			<span>
 																				<!--[if mso]>
@@ -137,26 +114,6 @@ const resend_template_LowCredits = (checkType, balance) => {
 																</tr>
 															</tbody>
 														</table>
-													</td>
-												</tr>
-											</tbody>
-										</table>
-										<table
-											align="center"
-											width="100%"
-											border="0"
-											cellpadding="0"
-											cellspacing="0"
-											role="presentation"
-											style="padding-left:32px;padding-right:32px;padding-top:20px;padding-bottom:20px;background-color:rgb(110,207,255);border-top-width:1px;border-style:solid;border-color:rgb(221,221,221)"
-										>
-											<tbody>
-												<tr>
-													<td>
-														<p
-														style="font-size:14px;line-height:20px;color:rgb(0,0,0);text-align:center;margin:0px;margin-bottom:0px;margin-top:0px;margin-left:0px;margin-right:0px">
-														This is an automated message from OmniVerifier.
-														</p>
 													</td>
 												</tr>
 											</tbody>

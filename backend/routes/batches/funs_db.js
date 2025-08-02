@@ -2,6 +2,7 @@
 const knex = require('knex')(require('../../knexfile.js').development);
 
 // Function Imports
+const { resend_sendBatchCompletionEmail } = require('../../external_apis/resend.js');
 const {
 	getCreditTableName,
 	getCreditHistoryTableName,
@@ -9,6 +10,40 @@ const {
 	getResultsTableName,
 	getEmailBatchAssociationTableName
 } = require('./funs_db_utils.js');
+
+/**
+ * Send batch completion email notification
+ * @param {number} user_id - User ID
+ * @param {string} check_type - 'deliverable' or 'catchall'
+ * @param {number} batch_id - Batch ID
+ */
+async function db_sendBatchCompletionEmail(user_id, check_type, batch_id) {
+	// Get batch details
+	const [batch_ok, batch_details] = await db_getBatchDetails(user_id, check_type, batch_id);
+	if (!batch_ok) return;
+
+	// Get user email
+	const [email_ok, user_email] = await db_getUserEmail(user_id);
+	if (!email_ok) return;
+
+	// Send batch completion email
+	try {
+		const email_result = await resend_sendBatchCompletionEmail(
+			user_email,
+			batch_details.title || 'Untitled Batch',
+			check_type,
+			batch_id
+		);
+		
+		if (email_result.error) {
+			console.log(`⚠️ Failed to send batch completion email for batch ${batch_id}:`, email_result.error);
+		} else {
+			console.log(`📧 Batch completion email sent for batch ${batch_id}`);
+		}
+	} catch (email_error) {
+		console.log(`⚠️ Error sending batch completion email for batch ${batch_id}:`, email_error);
+	}
+}
 
 // Helper Functions
 const formatResultsByCheckType = (results, check_type) => {
@@ -61,6 +96,20 @@ const applyBatchStatusFilter = (query, statusValues) => {
 		return query.whereIn('status', statusValues);
 	}
 	return query;
+}
+
+/**
+ * Get user email by user_id
+ * @param {number} user_id - User ID
+ * @returns {Promise<[boolean, string|null]>} - [success, email]
+ */
+async function db_getUserEmail(user_id) {
+	let err_code;
+	
+	const db_resp = await knex('Users').where('id', user_id).select('email AS email').limit(1).catch((err)=>{if (err) err_code = err.code});
+	if (err_code || db_resp.length <= 0) return [false, null];
+	
+	return [true, db_resp[0].email];
 }
 
 // -------------------
@@ -160,6 +209,9 @@ async function db_createBatch(user_id, check_type, title, emails) {
 			console.log("BATCH INSERT ERR 5 (update to completed) = ", err_code);
 			return [false, null];
 		}
+		
+		// Send batch completion email notification
+		await db_sendBatchCompletionEmail(user_id, check_type, batch_id);
 	}
 
 	// Return
@@ -721,7 +773,7 @@ async function db_deductCreditsForActualBatch(user_id, check_type, batch_id) {
 	
 	try {
 		const result = await knex.transaction(async (trx) => {
-			// Get actual number of emails associated with this batch
+			// Get total number of emails associated with this batch (including cached ones)
 			const email_count = await trx(email_batch_association_table)
 				.where({ 'batch_id': batch_id })
 				.count('* as count')
@@ -748,15 +800,15 @@ async function db_deductCreditsForActualBatch(user_id, check_type, batch_id) {
 				.where({ 'user_id': user_id })
 				.decrement('current_balance', actual_email_count);
 
-			// Log usage in history
-			await trx(credit_history_table).insert({
-				'user_id': user_id,
-				'credits_used': actual_email_count,
-				'event_typ': 'usage',
-				'usage_ts': knex.fn.now(),
-				'batch_id': batch_id,
-				'batch_type': check_type
-			});
+			// Log usage in history (only if credits were actually deducted)
+			if (actual_email_count > 0) {
+				await trx(credit_history_table).insert({
+					'user_id': user_id,
+					'credits_used': actual_email_count,
+					'event_typ': 'usage',
+					'usage_ts': knex.fn.now()
+				});
+			}
 
 			// Calculate new balance after deduction
 			const new_balance = curr_balance.current_balance - actual_email_count;
@@ -772,7 +824,6 @@ async function db_deductCreditsForActualBatch(user_id, check_type, batch_id) {
 		return [false, null, 0];
 	}
 }
-
 
 // -------------------
 // DELETE Functions
@@ -867,9 +918,13 @@ async function db_startBatchProcessing(user_id, check_type, batch_id) {
 
 	// Construct status update dict
 	let status_update_dict = { 'status': 'queued' };
-	if (non_cached_email.length === 0) status_update_dict = {
-		'status': 'completed',
-		'completed_ts': knex.fn.now()
+	let is_completed = false;
+	if (non_cached_email.length === 0) {
+		status_update_dict = {
+			'status': 'completed',
+			'completed_ts': knex.fn.now()
+		};
+		is_completed = true;
 	}
 
 	// Update status accordingly
@@ -880,6 +935,11 @@ async function db_startBatchProcessing(user_id, check_type, batch_id) {
 		status_update_dict,
 	).catch((err)=>{if (err) err_code = err.code});
 	if (err_code) return false;
+
+	// Send batch completion email notification if batch was completed
+	if (is_completed) {
+		await db_sendBatchCompletionEmail(user_id, check_type, batch_id);
+	}
 
 	// Return
 	return true;
@@ -951,6 +1011,23 @@ async function db_createBatchDraft(user_id, check_type, title, emails) {
 	const existing_results_set = new Set(existing_results);
 	const fresh_email_ids = emails.filter((email)=>!existing_results_set.has(email.global_id)).map((email)=>email.global_id);
 
+	// Handle edge case: if all emails were cached, mark batch as completed immediately
+	if (fresh_email_ids.length === 0 && existing_results.length === emails.length) {
+		await knex(batch_table).where({
+			'id': batch_id
+		}).update({
+			'status': 'completed',
+			'completed_ts': knex.fn.now()
+		}).catch((err)=>{if (err) err_code = err.code});
+		if (err_code) {
+			console.log("BATCH INSERT ERR 5 (update to completed) = ", err_code);
+			return [false, null];
+		}
+		
+		// Send batch completion email notification
+		await db_sendBatchCompletionEmail(user_id, check_type, batch_id);
+	}
+
 	// Return
 	return [true, batch_id, fresh_email_ids];
 }
@@ -998,5 +1075,6 @@ module.exports = {
 	db_startBatchProcessing,
 	db_checkCreditsOnly,
 	db_deductCreditsForActualBatch,
-	db_createBatchWithEstimate
+	db_createBatchWithEstimate,
+	db_sendBatchCompletionEmail
 }
