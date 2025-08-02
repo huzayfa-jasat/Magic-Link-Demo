@@ -2,9 +2,10 @@
 const knex = require('knex')(require('../../knexfile.js').development);
 
 // Constants
-const REFERRAL_CREDITS_REWARD = 5000;
+const REFERRAL_CREDITS_REWARD = 25000;
 const MIN_SAVED_PER_100K_EMAILS = 18;
 const COST_SAVED_PER_100K_EMAILS = 19;
+const MIN_PURCHASE_FOR_REFERRAL_ELIGIBILITY = 100000;
 
 
 // -------------------
@@ -60,7 +61,13 @@ async function db_getReferralInviteCode(user_id) {
 
 async function db_getReferralInviteList(user_id) {
 	let err_code;
-	const db_resp = await knex('Referrals as r')
+	
+	// Check user's eligibility based on lifetime purchases
+	const userEligibility = await db_checkUserReferralEligibility(user_id);
+	if (!userEligibility[0]) return [false, null];
+	
+	// Get approved referrals
+	const approved_referrals = await knex('Referrals as r')
 		.select(
 			knex.raw('COUNT(DISTINCT r.referred_id) as num_referrals'),
 			knex.raw('SUM(r.credits_reward) as total_referral_credits'),
@@ -73,19 +80,55 @@ async function db_getReferralInviteList(user_id) {
 		.where('r.referrer_id', user_id)
 		.groupBy('r.referred_id', 'u.id', 'u.email', 'u.created_ts', 'r.credits_reward')
 		.catch((err)=>{if (err) err_code = err.code});
-
+	
+	if (err_code) return [false, null];
+	
+	// Get pending referrals
+	const pending_referrals = await knex('Pending_Referrals as pr')
+		.select(
+			knex.raw('COUNT(DISTINCT pr.referred_id) as num_pending'),
+			knex.raw('SUM(pr.credits_reward) as total_pending_credits'),
+			'u.id as referred_user_id',
+			'u.email as referred_user_email',
+			'u.created_ts as referred_user_joined_ts',
+			'pr.credits_reward as credits_reward',
+			'pr.referrer_eligible',
+			'pr.referred_eligible',
+			'pr.status'
+		)
+		.leftJoin('Users as u', 'pr.referred_id', 'u.id')
+		.where('pr.referrer_id', user_id)
+		.where('pr.status', 'pending')
+		.groupBy('pr.referred_id', 'u.id', 'u.email', 'u.created_ts', 'pr.credits_reward', 'pr.referrer_eligible', 'pr.referred_eligible', 'pr.status')
+		.catch((err)=>{if (err) err_code = err.code});
+	
 	if (err_code) return [false, null];
 
 	// Transform the data into the requested format
 	const result = {
-		num_referrals: db_resp.length,
-		total_referral_credits: db_resp.reduce((sum, row) => sum + row.credits_reward, 0),
-		referred_users: db_resp.map(row => ({
+		num_referrals: approved_referrals.length,
+		total_referral_credits: approved_referrals.reduce((sum, row) => sum + row.credits_reward, 0),
+		referred_users: approved_referrals.map(row => ({
 			id: row.referred_user_id,
 			email: row.referred_user_email,
 			joined_ts: row.referred_user_joined_ts,
-			credits: row.credits_reward
-		}))
+			credits: row.credits_reward,
+			status: 'approved'
+		})),
+		// New fields for pending referrals
+		num_pending_referrals: pending_referrals.length,
+		total_pending_credits: pending_referrals.reduce((sum, row) => sum + row.credits_reward, 0),
+		pending_referrals: pending_referrals.map(row => ({
+			id: row.referred_user_id,
+			email: row.referred_user_email,
+			joined_ts: row.referred_user_joined_ts,
+			credits: row.credits_reward,
+			status: 'pending',
+			referrer_eligible: row.referrer_eligible,
+			referred_eligible: row.referred_eligible
+		})),
+		user_eligible: userEligibility[1].is_eligible,
+		user_lifetime_purchases: userEligibility[1].lifetime_purchases
 	};
 
 	return [true, result];
@@ -133,6 +176,103 @@ async function db_getCreditBalanceHistory(user_id) {
 		.catch((err)=>{if (err) err_code = err.code});
 	if (err_code) return [false, null];
 	return [true, db_resp];
+}
+
+async function db_checkUserReferralEligibility(user_id) {
+	let err_code;
+	
+	// Get total purchased credits
+	const [purchased_credits, purchased_catchall_credits] = await Promise.all([
+		knex('Users_Credit_Balance_History')
+			.where('user_id', user_id)
+			.where('event_typ', 'purchase')
+			.sum('credits_used as total_purchased')
+			.first()
+			.catch((err)=>{if (err) err_code = err.code}),
+		knex('Users_Catchall_Credit_Balance_History')
+			.where('user_id', user_id)
+			.where('event_typ', 'purchase')
+			.sum('credits_used as total_purchased')
+			.first()
+			.catch((err)=>{if (err) err_code = err.code})
+	]);
+	
+	if (err_code) return [false, null];
+	
+	const total_purchased = (parseInt(purchased_credits.total_purchased) || 0) + (parseInt(purchased_catchall_credits.total_purchased) || 0);
+	const is_eligible = total_purchased >= MIN_PURCHASE_FOR_REFERRAL_ELIGIBILITY;
+	
+	return [true, {
+		is_eligible: is_eligible,
+		lifetime_purchases: total_purchased,
+		remaining_for_eligibility: is_eligible ? 0 : (MIN_PURCHASE_FOR_REFERRAL_ELIGIBILITY - total_purchased)
+	}];
+}
+
+async function db_processPendingReferralsForUser(user_id) {
+	let err_code;
+	
+	// Check if user is now eligible
+	const eligibility = await db_checkUserReferralEligibility(user_id);
+	if (!eligibility[0] || !eligibility[1].is_eligible) return false;
+	
+	// Get all pending referrals where this user is involved
+	const pending_referrals = await knex('Pending_Referrals')
+		.where('status', 'pending')
+		.where(function() {
+			this.where('referrer_id', user_id).orWhere('referred_id', user_id);
+		})
+		.catch((err)=>{if (err) err_code = err.code});
+	
+	if (err_code || !pending_referrals.length) return false;
+	
+	// Process each pending referral
+	for (const pending of pending_referrals) {
+		// Update eligibility status for this user
+		if (pending.referrer_id === user_id) {
+			await knex('Pending_Referrals')
+				.where('id', pending.id)
+				.update({ referrer_eligible: 1 })
+				.catch((err)=>{if (err) err_code = err.code});
+		}
+		if (pending.referred_id === user_id) {
+			await knex('Pending_Referrals')
+				.where('id', pending.id)
+				.update({ referred_eligible: 1 })
+				.catch((err)=>{if (err) err_code = err.code});
+		}
+		
+		// Check if both users are now eligible
+		const updated_pending = await knex('Pending_Referrals')
+			.where('id', pending.id)
+			.first()
+			.catch((err)=>{if (err) err_code = err.code});
+		
+		if (updated_pending && updated_pending.referrer_eligible && updated_pending.referred_eligible) {
+			// Both users are eligible, approve the referral
+			await knex.transaction(async trx => {
+				// Create approved referral
+				await trx('Referrals').insert({
+					referrer_id: updated_pending.referrer_id,
+					referred_id: updated_pending.referred_id,
+					credits_reward: updated_pending.credits_reward,
+				});
+				
+				// Credit both users
+				await Promise.all([
+					db_creditReferralUser(updated_pending.referrer_id, updated_pending.credits_reward),
+					db_creditReferralUser(updated_pending.referred_id, updated_pending.credits_reward),
+				]);
+				
+				// Update pending referral status
+				await trx('Pending_Referrals')
+					.where('id', pending.id)
+					.update({ status: 'approved', approved_ts: knex.fn.now() });
+			});
+		}
+	}
+	
+	return true;
 }
 
 async function db_getLifetimeStats(user_id) {
@@ -223,24 +363,54 @@ async function db_redeemInviteCode(user_id, code) {
 	
 	// Can't self-refer (check for string equality)
 	if (`${referrer_user.id}` === `${user_id}`) return false;
-
-	// Create referral record
-	await knex('Referrals').insert({
-		referrer_id: referrer_user.id,
-		referred_id: user_id,
-		credits_reward: REFERRAL_CREDITS_REWARD,
-	}).catch((err)=>{if (err) err_code = err.code});
-	if (err_code) return false;
 	
-	// Credit referred user
-	const [referred_ok, referrer_ok] = await Promise.all([
-		db_creditReferralUser(user_id, REFERRAL_CREDITS_REWARD),
-		db_creditReferralUser(referrer_user.id, REFERRAL_CREDITS_REWARD),
+	// Check if both users meet the 100k purchase requirement
+	const [referrerEligibility, referredEligibility] = await Promise.all([
+		db_checkUserReferralEligibility(referrer_user.id),
+		db_checkUserReferralEligibility(user_id)
 	]);
-	if (!referred_ok || !referrer_ok) return false;
+	
+	if (!referrerEligibility[0] || !referredEligibility[0]) return false;
+	
+	const referrer_eligible = referrerEligibility[1].is_eligible;
+	const referred_eligible = referredEligibility[1].is_eligible;
+	
+	// If both users are eligible, create approved referral and credit immediately
+	if (referrer_eligible && referred_eligible) {
+		// Create referral record
+		await knex('Referrals').insert({
+			referrer_id: referrer_user.id,
+			referred_id: user_id,
+			credits_reward: REFERRAL_CREDITS_REWARD,
+		}).catch((err)=>{if (err) err_code = err.code});
+		if (err_code) return false;
+		
+		// Credit both users
+		const [referred_ok, referrer_ok] = await Promise.all([
+			db_creditReferralUser(user_id, REFERRAL_CREDITS_REWARD),
+			db_creditReferralUser(referrer_user.id, REFERRAL_CREDITS_REWARD),
+		]);
+		if (!referred_ok || !referrer_ok) return false;
+	} else {
+		// Create pending referral record
+		await knex('Pending_Referrals').insert({
+			referrer_id: referrer_user.id,
+			referred_id: user_id,
+			credits_reward: REFERRAL_CREDITS_REWARD,
+			referrer_eligible: referrer_eligible ? 1 : 0,
+			referred_eligible: referred_eligible ? 1 : 0,
+			status: 'pending'
+		}).catch((err)=>{if (err) err_code = err.code});
+		if (err_code) return false;
+	}
 
-	// Return success
-	return true;
+	// Return success with status information
+	return {
+		success: true,
+		status: (referrer_eligible && referred_eligible) ? 'approved' : 'pending',
+		referrer_eligible: referrer_eligible,
+		referred_eligible: referred_eligible
+	};
 }
 
 
@@ -258,4 +428,5 @@ module.exports = {
 	db_getReferralInviteList,
 	db_redeemInviteCode,
 	db_getLifetimeStats,
+	db_processPendingReferralsForUser,
 };

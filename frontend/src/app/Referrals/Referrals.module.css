@@ -168,6 +168,100 @@
   color: var(--fg-neg);
 }
 
+/* Eligibility Notice */
+.eligibilityNotice {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  background-color: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.noticeIcon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fb923c;
+  border-radius: 50%;
+  color: white;
+}
+
+.noticeIcon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.noticeContent {
+  flex: 1;
+}
+
+.noticeContent h3 {
+  margin: 0 0 10px 0;
+  font-family: "Circular", "Geist", sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--black);
+}
+
+.noticeContent p {
+  margin: 0 0 10px 0;
+  font-family: "Circular", "Geist", sans-serif;
+  font-size: 14px;
+  color: var(--txt-light);
+  line-height: 1.5;
+}
+
+.purchaseButton {
+  margin-top: 15px;
+  padding: 8px 20px;
+  background-color: var(--main-hl);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-family: "Sohne", sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.purchaseButton:hover {
+  filter: brightness(1.1);
+}
+
+/* Pending referral styles */
+.pending_card {
+  opacity: 0.7;
+  border-style: dashed;
+}
+
+.pending_badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background-color: #fef3c7;
+  color: #d97706;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.pending_credits {
+  color: var(--txt-light);
+}
+
+.pendingCount {
+  margin: 5px 0 0 0;
+  font-family: "Circular", "Geist", sans-serif;
+  font-size: 12px;
+  color: var(--txt-light);
+}
+
 @media (max-width: 1100px) {
   .metricsContainer {
     display: flex;
