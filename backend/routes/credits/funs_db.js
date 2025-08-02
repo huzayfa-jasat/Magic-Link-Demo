@@ -209,14 +209,8 @@ async function db_checkUserReferralEligibility(user_id) {
 	}];
 }
 
-async function db_processPendingReferralsForUser(user_id) {
+async function db_getPendingReferralsForUser(user_id) {
 	let err_code;
-	
-	// Check if user is now eligible
-	const eligibility = await db_checkUserReferralEligibility(user_id);
-	if (!eligibility[0] || !eligibility[1].is_eligible) return false;
-	
-	// Get all pending referrals where this user is involved
 	const pending_referrals = await knex('Pending_Referrals')
 		.where('status', 'pending')
 		.where(function() {
@@ -224,51 +218,79 @@ async function db_processPendingReferralsForUser(user_id) {
 		})
 		.catch((err)=>{if (err) err_code = err.code});
 	
-	if (err_code || !pending_referrals.length) return false;
+	if (err_code) return [false, null];
+	return [true, pending_referrals || []];
+}
+
+async function db_updateUserReferralEligibility(user_id, pending_referral_id, is_referrer) {
+	let err_code;
+	const field_to_update = is_referrer ? 'referrer_eligible' : 'referred_eligible';
+	
+	await knex('Pending_Referrals')
+		.where('id', pending_referral_id)
+		.update({ [field_to_update]: 1 })
+		.catch((err)=>{if (err) err_code = err.code});
+	
+	if (err_code) return false;
+	return true;
+}
+
+async function db_approveEligibleReferral(pending_referral) {
+	let err_code;
+	
+	// Use a transaction to ensure atomicity
+	await knex.transaction(async trx => {
+		// Create approved referral
+		await trx('Referrals').insert({
+			referrer_id: pending_referral.referrer_id,
+			referred_id: pending_referral.referred_id,
+			credits_reward: pending_referral.credits_reward,
+		});
+		
+		// Update pending referral status
+		await trx('Pending_Referrals')
+			.where('id', pending_referral.id)
+			.update({ status: 'approved', approved_ts: knex.fn.now() });
+	}).catch((err)=>{if (err) err_code = err.code});
+	
+	if (err_code) return false;
+	
+	// Credit both users (outside transaction to avoid locking issues)
+	const [referred_ok, referrer_ok] = await Promise.all([
+		db_creditReferralUser(pending_referral.referred_id, pending_referral.credits_reward),
+		db_creditReferralUser(pending_referral.referrer_id, pending_referral.credits_reward),
+	]);
+	
+	return referred_ok && referrer_ok;
+}
+
+async function db_processPendingReferralsForUser(user_id) {
+	// Check if user is now eligible
+	const eligibility = await db_checkUserReferralEligibility(user_id);
+	if (!eligibility[0] || !eligibility[1].is_eligible) return false;
+	
+	// Get all pending referrals where this user is involved
+	const [ok, pending_referrals] = await db_getPendingReferralsForUser(user_id);
+	if (!ok || !pending_referrals.length) return false;
 	
 	// Process each pending referral
 	for (const pending of pending_referrals) {
 		// Update eligibility status for this user
-		if (pending.referrer_id === user_id) {
-			await knex('Pending_Referrals')
-				.where('id', pending.id)
-				.update({ referrer_eligible: 1 })
-				.catch((err)=>{if (err) err_code = err.code});
+		if (pending.referrer_id === user_id && !pending.referrer_eligible) {
+			await db_updateUserReferralEligibility(user_id, pending.id, true);
 		}
-		if (pending.referred_id === user_id) {
-			await knex('Pending_Referrals')
-				.where('id', pending.id)
-				.update({ referred_eligible: 1 })
-				.catch((err)=>{if (err) err_code = err.code});
+		if (pending.referred_id === user_id && !pending.referred_eligible) {
+			await db_updateUserReferralEligibility(user_id, pending.id, false);
 		}
 		
-		// Check if both users are now eligible
+		// Re-fetch to get updated eligibility status
 		const updated_pending = await knex('Pending_Referrals')
 			.where('id', pending.id)
-			.first()
-			.catch((err)=>{if (err) err_code = err.code});
+			.first();
 		
+		// If both users are now eligible, approve the referral
 		if (updated_pending && updated_pending.referrer_eligible && updated_pending.referred_eligible) {
-			// Both users are eligible, approve the referral
-			await knex.transaction(async trx => {
-				// Create approved referral
-				await trx('Referrals').insert({
-					referrer_id: updated_pending.referrer_id,
-					referred_id: updated_pending.referred_id,
-					credits_reward: updated_pending.credits_reward,
-				});
-				
-				// Credit both users
-				await Promise.all([
-					db_creditReferralUser(updated_pending.referrer_id, updated_pending.credits_reward),
-					db_creditReferralUser(updated_pending.referred_id, updated_pending.credits_reward),
-				]);
-				
-				// Update pending referral status
-				await trx('Pending_Referrals')
-					.where('id', pending.id)
-					.update({ status: 'approved', approved_ts: knex.fn.now() });
-			});
+			await db_approveEligibleReferral(updated_pending);
 		}
 	}
 	
