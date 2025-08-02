@@ -17,6 +17,8 @@ const {
     logoutUser,
     requestPasswordReset,
     validatePasswordReset,
+    requestPasswordResetFromSettings,
+    validatePasswordResetFromSettings,
 } = require('./controller.js');
 
 // ------------
@@ -36,6 +38,8 @@ authRouter.patch('/pw/touch', checkUserAuth, changePassword);
 authRouter.get('/logout', checkUserAuth, logoutUser);
 authRouter.post('/forgot-password/send', requestPasswordReset);
 authRouter.post('/forgot-password/validate', validatePasswordReset);
+authRouter.post('/reset-password/send', checkUserAuth, requestPasswordResetFromSettings);
+authRouter.post('/reset-password/validate', validatePasswordResetFromSettings);
 
 // Export routes
 module.exports = authRouter; 

@@ -124,7 +124,7 @@ export default function SettingsController() {
     <>
       {/* Modals */}
       {(showApiKeyModal) && <ApiKeyModal apiKey={newApiKey} onClose={handleCloseApiKeyModal} />}
-      {(showPasswordModal) && <PasswordResetModal onClose={handleClosePasswordModal} />}
+      {(showPasswordModal) && <PasswordResetModal userEmail={profileEmail} onClose={handleClosePasswordModal} />}
       {(showEmailModal) && <EmailUpdateModal onSuccess={handleUpdateEmailSuccess} onClose={handleCloseEmailModal} />}
 
       {/* Main Content */}

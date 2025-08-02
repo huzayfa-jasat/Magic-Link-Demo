@@ -3,7 +3,7 @@ import { useState } from "react";
 
 // API Imports
 import {
-	updatePassword,
+	sendResetPasswordEmail,
 } from "../../../api/auth.js";
 
 // Style Imports
@@ -12,10 +12,9 @@ import styles from "../Settings.module.css";
 // Modal Component
 export default function PasswordResetModal({
 	onClose,
+	userEmail,
 }) {
 	// States
-	const [newPassword, setNewPassword] = useState("");
-	const [confirmPassword, setConfirmPassword] = useState("");
 	const [passwordError, setPasswordError] = useState("");
 	const [passwordSuccess, setPasswordSuccess] = useState(false);
 
@@ -25,38 +24,20 @@ export default function PasswordResetModal({
 		setPasswordError("");
 		setPasswordSuccess(false);
 
-		// Validation
-		if (!newPassword || !confirmPassword) {
-			setPasswordError("Please fill in both password fields");
-			return;
-		}
-
-		if (newPassword !== confirmPassword) {
-			setPasswordError("Passwords do not match");
-			return;
-		}
-
-		if (newPassword.length < 8) {
-			setPasswordError("Password must be at least 8 characters long");
-			return;
-		}
-
 		try {
-			const response = await updatePassword(newPassword);
+			const response = await sendResetPasswordEmail();
 			if (response.status === 200) {
 				setPasswordSuccess(true);
 				setPasswordError("");
-				// Clear form after 2 seconds
+				// Close modal after 3 seconds
 				setTimeout(() => {
-					setNewPassword("");
-					setConfirmPassword("");
 					setPasswordSuccess(false);
 					onClose();
-				}, 2000);
+				}, 3000);
 			}
 		} catch (err) {
-			setPasswordError("Failed to update password. Please try again.");
-			console.error("Password update error:", err);
+			setPasswordError("Failed to send reset email. Please try again.");
+			console.error("Password reset error:", err);
 		}
 	};
 
@@ -65,9 +46,20 @@ export default function PasswordResetModal({
 		<div className={styles.modalOverlay} onClick={onClose}>
 			<div className={styles.modal} onClick={(e) => e.stopPropagation()}>
 				<h2 className={styles.modalTitle}>Reset Password</h2>
-				<p className={styles.modalDescription}>
-					Enter your new password below.
-				</p>
+				{!passwordSuccess ? (
+					<>
+						<p className={styles.modalDescription}>
+							We'll send a password reset link to:
+						</p>
+						<p className={styles.modalDescription} style={{ fontWeight: "bold", marginTop: "8px" }}>
+							{userEmail}
+						</p>
+					</>
+				) : (
+					<p className={styles.modalDescription}>
+						Password reset instructions have been sent to your email!
+					</p>
+				)}
 				<div className={styles.passwordForm}>
 					{(passwordError) && (
 						<div className={styles.errorMessage}>
@@ -76,35 +68,22 @@ export default function PasswordResetModal({
 					)}
 					{(passwordSuccess) && (
 						<div className={styles.successMessage}>
-							Password updated successfully!
+							Check your email for password reset instructions!
 						</div>
 					)}
-					<input
-						type="password"
-						placeholder="New password"
-						value={newPassword}
-						onChange={(e) => setNewPassword(e.target.value)}
-						className={styles.passwordInput}
-					/>
-					<input
-						type="password"
-						placeholder="Confirm new password"
-						value={confirmPassword}
-						onChange={(e) => setConfirmPassword(e.target.value)}
-						className={styles.passwordInput}
-					/>
 				</div>
 				<div className={styles.modalActions}>
 					<button onClick={onClose} className={styles.closeButton}>
-						Cancel
+						{passwordSuccess ? "Close" : "Cancel"}
 					</button>
-					<button 
-						onClick={handlePasswordReset} 
-						className={styles.copyButton}
-						disabled={passwordSuccess}
-					>
-						{passwordSuccess ? "Done!" : "Update Password"}
-					</button>
+					{!passwordSuccess && (
+						<button 
+							onClick={handlePasswordReset} 
+							className={styles.copyButton}
+						>
+							Send Reset Link
+						</button>
+					)}
 				</div>
 			</div>
 		</div>

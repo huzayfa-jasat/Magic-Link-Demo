@@ -18,6 +18,7 @@ const {
     resend_sendWelcomeEmail,
     resend_sendOtpEmail,
     resend_sendPasswordResetEmail,
+    resend_sendPasswordResetEmailFromSettings,
 } = require('../../external_apis/resend.js');
 
 /**
@@ -202,6 +203,51 @@ async function validatePasswordReset(req, res) {
     }
 }
 
+/**
+ * Send password reset email from settings (authenticated users)
+ */
+async function requestPasswordResetFromSettings(req, res) {
+    try {
+        // Get user email from authenticated user
+        const [ok, userDetails] = await db_getUserDetails(req.user.id);
+        if (!ok) return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+        
+        const email = userDetails.email;
+        
+        // Create password reset code
+        const [codeOk, result] = await db_createPasswordResetCode(email);
+        
+        if (codeOk) {
+            // Send password reset email
+            const resetLink = `${process.env.FRONTEND_URL_PREFIX}/reset-password?email=${encodeURIComponent(email)}&code=${result.code}`;
+            await resend_sendPasswordResetEmailFromSettings(email, resetLink);
+        }
+        
+        return res.sendStatus(HttpStatus.SUCCESS_STATUS);
+    } catch (err) {
+        return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+    }
+}
+
+/**
+ * Validate password reset code from settings flow
+ */
+async function validatePasswordResetFromSettings(req, res) {
+    try {
+        const { email, code, newPassword } = req.body;
+        if (!email || !code || !newPassword) {
+            return res.status(HttpStatus.FAILED_STATUS).send("Email, code, and new password are required");
+        }
+        // Validate code and update password
+        const [ok, result] = await db_validatePassResetCode(email, code, newPassword);
+        if (!ok) return res.status(HttpStatus.UNAUTHORIZED_STATUS).send("Invalid or expired password reset code");
+        
+        return res.sendStatus(HttpStatus.SUCCESS_STATUS);
+    } catch (err) {
+        return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+    }
+}
+
 // Export controllers
 module.exports = {
     authPass,
@@ -214,5 +260,7 @@ module.exports = {
     changePassword,
     logoutUser,
     requestPasswordReset,
-    validatePasswordReset
+    validatePasswordReset,
+    requestPasswordResetFromSettings,
+    validatePasswordResetFromSettings
 };
