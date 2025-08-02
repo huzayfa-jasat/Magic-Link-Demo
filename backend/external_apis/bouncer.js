@@ -136,7 +136,7 @@ class BouncerAPI {
     /**
      * Check status and results of a deliverability batch
      * @param {string} batchId - The batch ID returned from createDeliverabilityBatch
-     * @returns {Promise<boolean>} - Returns true if batch is completed, false if still processing
+     * @returns {Promise<Object>} - Returns object with completed status and processed count
      */
     async checkDeliverabilityBatch(batchId) {
 		/// Validate params & keys
@@ -149,8 +149,11 @@ class BouncerAPI {
             apiKey: this.deliverableApiKey
         });
 
-		// Return status
-        return response.status === 'completed';
+		// Return status and processed count
+        return {
+            isCompleted: response.status === 'completed',
+            processed: response.processed || 0
+        };
     }
 
     /**

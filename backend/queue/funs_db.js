@@ -223,6 +223,34 @@ async function db_markBouncerBatchFailed(bouncer_batch_id, check_type) {
     return [true, result || 0];
 }
 
+/**
+ * Update processed count for a bouncer batch
+ * @param {string} bouncer_batch_id - ID from bouncer API
+ * @param {number} processed_count - Number of emails processed so far
+ * @returns {[boolean, number]} - [success, affected_count]
+ */
+async function db_updateBouncerBatchProcessed(bouncer_batch_id, processed_count) {
+    // Get table names - only for deliverable batches
+    const bouncer_batch_table = getBouncerBatchTableName('deliverable');
+    if (!bouncer_batch_table) return [false, 0];
+
+    // Update processed count
+    let err_code;
+    const result = await knex(bouncer_batch_table)
+        .where('bouncer_batch_id', bouncer_batch_id)
+        .update({ 
+            processed: processed_count,
+            updated_ts: knex.fn.now()
+        })
+        .catch((err) => { if (err) err_code = err.code });
+    if (err_code) {
+        console.error('Error updating bouncer batch processed count:', err_code);
+        return [false, 0];
+    }
+
+    return [true, result || 0];
+}
+
 // ==========================================
 // 3. RESULT PROCESSING FUNCTIONS
 // ==========================================
@@ -516,6 +544,7 @@ module.exports = {
     // Status Checks (Simplified)
     db_getOutstandingBouncerBatches,
     db_markBouncerBatchFailed,
+    db_updateBouncerBatchProcessed,
     
     // Result Processing (Fire-and-Forget)
     db_processBouncerResults,
