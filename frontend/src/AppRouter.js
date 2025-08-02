@@ -30,6 +30,7 @@ import {
   Login,
   Register,
   ForgotPassword,
+  ResetPassword,
   LoginOTP,
   InviteCode,
   Settings,
@@ -141,6 +142,11 @@ export default function App() {
             <Route exact path="/invite" element={<InviteCode />} />
             <Route exact path="/payment/:result" element={
               <Navigate to="/credits" />
+            } />
+            <Route exact path="/reset-password" element={
+              <AppLayout title="Reset Password">
+                <ResetPassword />
+              </AppLayout>
             } />
           </Route>
           {/* Public to everyone */}

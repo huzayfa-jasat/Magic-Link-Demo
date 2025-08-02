@@ -7,6 +7,7 @@ const {
   resend_template_Welcome,
   resend_template_OtpLogin,
   resend_template_PasswordReset,
+  resend_template_PasswordResetFromSettings,
   resend_template_LowCredits,
   resend_template_BatchCompletion,
 } = require('./resend_utils/templates/index');
@@ -79,6 +80,21 @@ async function resend_sendPasswordResetEmail(recipient_email, resetLink) {
 }
 
 /**
+ * Send password reset email from settings
+ * @param {string} recipient_email - The email address of the recipient
+ * @param {string} resetLink - The link to reset the password
+ * @returns {Promise<object>}
+*/
+async function resend_sendPasswordResetEmailFromSettings(recipient_email, resetLink) {
+  try {
+    const html = resend_template_PasswordResetFromSettings(resetLink);
+    return await resend_sendEmail(recipient_email, 'Reset Your OmniVerifier Password', html);
+  } catch (error) {
+    return { error };
+  }
+}
+
+/**
  * Send low credits warning email
  * @param {string} recipient_email - The email address of the recipient
  * @param {number} balance - The balance of the user
@@ -115,6 +131,7 @@ module.exports = {
     resend_sendWelcomeEmail,
     resend_sendOtpEmail,
     resend_sendPasswordResetEmail,
+    resend_sendPasswordResetEmailFromSettings,
     resend_sendLowCreditsEmail,
     resend_sendBatchCompletionEmail,
 };

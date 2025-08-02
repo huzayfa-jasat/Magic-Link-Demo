@@ -2,6 +2,7 @@
 export { default as Login } from "../app/Auth/Login.jsx";
 export { default as Register } from "../app/Auth/Register.jsx";
 export { default as ForgotPassword } from "../app/Auth/ForgotPassword.jsx";
+export { default as ResetPassword } from "../app/Auth/ResetPassword.jsx";
 export { default as LoginOTP } from "../app/Auth/LoginOTP.jsx";
 
 /* InviteCode */

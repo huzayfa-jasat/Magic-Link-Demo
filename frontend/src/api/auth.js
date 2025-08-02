@@ -77,6 +77,22 @@ export const validateForgotPasswordReset = async (email, code, newPassword) => {
   );
 };
 
+export const sendResetPasswordEmail = async () => {
+  return await http.post(
+    "/auth/reset-password/send",
+    {},
+    { withCredentials: true }
+  );
+};
+
+export const validateResetPassword = async (code, newPassword) => {
+  return await http.post(
+    "/auth/reset-password/validate",
+    { code, newPassword },
+    { withCredentials: true }
+  );
+};
+
 export const logoutUser = async () => {
   return await http.get("/auth/logout", { withCredentials: true });
 };
