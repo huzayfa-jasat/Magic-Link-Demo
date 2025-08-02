@@ -1,5 +1,6 @@
 // Dependencies
 const knex = require('knex')(require('../../knexfile.js').development);
+const { db_processPendingReferralsForUser } = require('../credits/funs_db');
 
 
 /**
@@ -49,6 +50,8 @@ async function handleSuccessfulPayment(userId, credits, sessionId) {
         });
 
         // Transaction completed successfully
+        // Check if user is now eligible for pending referrals
+        await db_processPendingReferralsForUser(userId);
         
     } catch (error) {
         console.error('Error handling successful payment:', error);
@@ -94,11 +97,20 @@ async function handleSuccessfulCatchallPayment(userId, credits, sessionId) {
                 status: 'completed',
                 created_at: knex.fn.now()
             }).catch((error) => { err = error; });
+            
+            await trx('Users_Catchall_Credit_Balance_History').insert({
+                user_id: userId,
+                credits_used: credits,
+                event_typ: 'purchase'
+            }).catch((error) => { err = error; });
 
             if (err) throw err;
         });
 
         console.log(`[${userId}] Added ${credits} catchall credits from purchase`);
+        
+        // Check if user is now eligible for pending referrals
+        await db_processPendingReferralsForUser(userId);
     } catch (error) {
         console.error('Error handling successful catchall payment:', error);
         throw error;
