@@ -404,13 +404,8 @@ async function db_redeemInviteCode(user_id, code) {
 		if (err_code) return false;
 	}
 
-	// Return success with status information
-	return {
-		success: true,
-		status: (referrer_eligible && referred_eligible) ? 'approved' : 'pending',
-		referrer_eligible: referrer_eligible,
-		referred_eligible: referred_eligible
-	};
+	// Return success
+	return true;
 }
 
 

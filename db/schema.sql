@@ -63,11 +63,29 @@ DROP TABLE IF EXISTS `Referrals`;
 CREATE TABLE Referrals (
 	`referrer_id` int NOT NULL,
 	`referred_id` int NOT NULL,
-	`credits_reward` int NOT NULL DEFAULT 5000,
+	`credits_reward` int NOT NULL DEFAULT 25000,
 	`created_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (`referred_id`),
 	FOREIGN KEY (`referrer_id`) REFERENCES Users(`id`) ON DELETE CASCADE,
 	FOREIGN KEY (`referred_id`) REFERENCES Users(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+
+DROP TABLE IF EXISTS `Pending_Referrals`;
+CREATE TABLE Pending_Referrals (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`referrer_id` int NOT NULL,
+	`referred_id` int NOT NULL,
+	`credits_reward` int NOT NULL DEFAULT 25000,
+	`referrer_eligible` TINYINT(1) NOT NULL DEFAULT 0,
+	`referred_eligible` TINYINT(1) NOT NULL DEFAULT 0,
+	`status` enum('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+	`created_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	`approved_ts` TIMESTAMP NULL DEFAULT NULL,
+	PRIMARY KEY (`id`),
+	UNIQUE KEY (`referred_id`),
+	FOREIGN KEY (`referrer_id`) REFERENCES Users(`id`) ON DELETE CASCADE,
+	FOREIGN KEY (`referred_id`) REFERENCES Users(`id`) ON DELETE CASCADE,
+	INDEX idx_pending_status (`status`, `referrer_eligible`, `referred_eligible`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
 -- Payment Tables

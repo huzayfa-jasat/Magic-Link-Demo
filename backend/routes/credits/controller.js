@@ -95,14 +95,8 @@ async function redeemInviteCode(req, res) {
 		if (!code) return res.status(HttpStatus.BAD_REQUEST_STATUS).send("Code is required");
 
 		// Redeem referral invite code
-		const result = await db_redeemInviteCode(req.user.id, code);
-		if (result && result.success) {
-			return res.status(HttpStatus.SUCCESS_STATUS).json({
-				status: result.status,
-				referrer_eligible: result.referrer_eligible,
-				referred_eligible: result.referred_eligible
-			});
-		}
+		const ok = await db_redeemInviteCode(req.user.id, code);
+		if (ok) return res.sendStatus(HttpStatus.SUCCESS_STATUS);
 		return res.status(HttpStatus.FAILED_STATUS).send("Failed to redeem referral invite code");
 
 	} catch (err) {

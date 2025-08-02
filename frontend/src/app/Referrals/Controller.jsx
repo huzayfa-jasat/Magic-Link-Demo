@@ -127,7 +127,7 @@ export default function ReferralsController() {
         <div className={styles.eligibilityNotice}>
           <div className={styles.noticeIcon}>{WALLET_ICON}</div>
           <div className={styles.noticeContent}>
-            <h3>Referral Rewards Eligibility</h3>
+            <h3>Eligibility</h3>
             <p>Both you and your referrals must purchase at least 100,000 credits to be eligible for referral bonuses.</p>
             <p>You've purchased {userLifetimePurchases.toLocaleString()} credits so far. You need {(100000 - userLifetimePurchases).toLocaleString()} more credits to unlock your referral rewards.</p>
             <button onClick={() => navigate('/purchase')} className={styles.purchaseButton}>

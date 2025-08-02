@@ -48,20 +48,7 @@ export default function InviteCodeController() {
     try {
       const response = await redeemReferralInviteCode(code);
       if (response.status === 200) {
-        const data = response.data;
-        if (data.status === 'approved') {
-          setMessage("25,000 credits have been added to your account!");
-        } else {
-          let msg = "Your referral has been recorded. ";
-          if (!data.referrer_eligible && !data.referred_eligible) {
-            msg += "You'll both receive 25,000 credits once each of you has purchased at least 100,000 credits.";
-          } else if (!data.referrer_eligible) {
-            msg += "You'll both receive 25,000 credits once the referrer has purchased at least 100,000 credits.";
-          } else {
-            msg += "You'll both receive 25,000 credits once you've purchased at least 100,000 credits.";
-          }
-          setMessage(msg);
-        }
+        setMessage("You've claimed 25k in free credits");
         setIsError(false);
         setIsSuccess(true);
       } else {
