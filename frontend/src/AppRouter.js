@@ -91,7 +91,6 @@ export default function App() {
             <Route exact path="/login" element={<Login />} />
             <Route exact path="/register" element={<Register />} />
             <Route exact path="/forgot-password" element={<ForgotPassword />} />
-            <Route exact path="/reset-password" element={<ResetPassword />} />
             <Route exact path="/otp" element={<LoginOTP />} />
             <Route exact path="/" element={<Navigate to="/login" />} />
           </Route>
@@ -143,6 +142,11 @@ export default function App() {
             <Route exact path="/invite" element={<InviteCode />} />
             <Route exact path="/payment/:result" element={
               <Navigate to="/credits" />
+            } />
+            <Route exact path="/reset-password" element={
+              <AppLayout title="Reset Password">
+                <ResetPassword />
+              </AppLayout>
             } />
           </Route>
           {/* Public to everyone */}

@@ -12,7 +12,7 @@ import styles from "../Settings.module.css";
 // Modal Component
 export default function PasswordResetModal({
 	onClose,
-	userEmail,
+	email,
 }) {
 	// States
 	const [passwordError, setPasswordError] = useState("");
@@ -29,11 +29,6 @@ export default function PasswordResetModal({
 			if (response.status === 200) {
 				setPasswordSuccess(true);
 				setPasswordError("");
-				// Close modal after 3 seconds
-				setTimeout(() => {
-					setPasswordSuccess(false);
-					onClose();
-				}, 3000);
 			}
 		} catch (err) {
 			setPasswordError("Failed to send reset email. Please try again.");
@@ -52,7 +47,7 @@ export default function PasswordResetModal({
 							We'll send a password reset link to:
 						</p>
 						<p className={styles.modalDescription} style={{ fontWeight: "bold", marginTop: "8px" }}>
-							{userEmail}
+							{email}
 						</p>
 					</>
 				) : (

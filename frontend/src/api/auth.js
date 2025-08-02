@@ -85,10 +85,10 @@ export const sendResetPasswordEmail = async () => {
   );
 };
 
-export const validateResetPassword = async (email, code, newPassword) => {
+export const validateResetPassword = async (code, newPassword) => {
   return await http.post(
     "/auth/reset-password/validate",
-    { email, code, newPassword },
+    { code, newPassword },
     { withCredentials: true }
   );
 };

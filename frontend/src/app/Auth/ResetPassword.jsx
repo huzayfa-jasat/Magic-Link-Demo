@@ -18,7 +18,6 @@ import {
 // Functional Component
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
-  const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
@@ -30,11 +29,9 @@ export default function ResetPassword() {
   } = useForm();
 
   useEffect(() => {
-    const urlEmail = searchParams.get('email');
     const urlCode = searchParams.get('code');
     
-    if (urlEmail && urlCode) {
-      setEmail(decodeURIComponent(urlEmail));
+    if (urlCode) {
       setCode(decodeURIComponent(urlCode));
     }
   }, [searchParams]);
@@ -48,7 +45,7 @@ export default function ResetPassword() {
     }
 
     try {
-      const resp = await validateResetPassword(email, code, data.newPassword);
+      const resp = await validateResetPassword(code, data.newPassword);
       if (resp.status !== 200) {
         setMessage("Invalid or expired password reset code. Please try again.");
         setIsError(true);
@@ -71,7 +68,7 @@ export default function ResetPassword() {
           {OMNI_LOGO}
         </div>
         
-        <h1 className={s.title}>Reset Your Password</h1>
+        <h1 className={s.title}>Reset Password</h1>
         <h2 className={s.formSubtitle}>
           Enter your new password below.
         </h2>
@@ -103,8 +100,8 @@ export default function ResetPassword() {
         
         {isSuccess && (
           <div className={s.buttons}>
-            <a href="/login" className={s.button}>
-              Go to Login
+            <a href="/validate" className={s.button}>
+              Continue
             </a>
           </div>
         )}

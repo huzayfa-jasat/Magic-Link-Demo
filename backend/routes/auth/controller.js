@@ -218,8 +218,8 @@ async function requestPasswordResetFromSettings(req, res) {
         const [codeOk, result] = await db_createPasswordResetCode(email);
         
         if (codeOk) {
-            // Send password reset email
-            const resetLink = `${process.env.FRONTEND_URL_PREFIX}/reset-password?email=${encodeURIComponent(email)}&code=${result.code}`;
+            // Send password reset email - only include code in URL
+            const resetLink = `${process.env.FRONTEND_URL_PREFIX}/reset-password?code=${result.code}`;
             await resend_sendPasswordResetEmailFromSettings(email, resetLink);
         }
         
@@ -234,13 +234,18 @@ async function requestPasswordResetFromSettings(req, res) {
  */
 async function validatePasswordResetFromSettings(req, res) {
     try {
-        const { email, code, newPassword } = req.body;
-        if (!email || !code || !newPassword) {
-            return res.status(HttpStatus.FAILED_STATUS).send("Email, code, and new password are required");
+        const { code, newPassword } = req.body;
+        if (!code || !newPassword) {
+            return res.status(HttpStatus.FAILED_STATUS).send("Code and new password are required");
         }
+        
+        // Get user email from authenticated session
+        const [ok, userDetails] = await db_getUserDetails(req.user.id);
+        if (!ok) return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+        
         // Validate code and update password
-        const [ok, result] = await db_validatePassResetCode(email, code, newPassword);
-        if (!ok) return res.status(HttpStatus.UNAUTHORIZED_STATUS).send("Invalid or expired password reset code");
+        const [validateOk, result] = await db_validatePassResetCode(userDetails.email, code, newPassword);
+        if (!validateOk) return res.status(HttpStatus.UNAUTHORIZED_STATUS).send("Invalid or expired password reset code");
         
         return res.sendStatus(HttpStatus.SUCCESS_STATUS);
     } catch (err) {
