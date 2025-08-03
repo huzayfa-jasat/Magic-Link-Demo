@@ -75,9 +75,12 @@ async function db_getEmailsForGreedyBatch(check_type, max_emails = 10000) {
             'bd.created_ts'
         )
         .whereIn('bd.status', ['queued', 'processing'])
-        .where('bed.used_cached', 0)
-        .where('bed.did_complete', 0)
-        .whereNull('bet.email_global_id')  // Only emails not yet assigned to any bouncer batch
+        .where({
+            'bd.is_archived': 0,
+            'bed.used_cached': 0,
+            'bed.did_complete': 0,
+            'bet.email_global_id': null,
+        })
         .orderBy('bd.created_ts', 'asc')
         .orderBy('bed.email_global_id', 'asc')
         .limit(max_emails)
