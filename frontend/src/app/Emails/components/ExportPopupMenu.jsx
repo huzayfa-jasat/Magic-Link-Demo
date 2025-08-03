@@ -16,11 +16,11 @@ import styles from "../styles/Emails.module.css";
 export default function ExportPopupMenu({
 	title,
 	checkTyp,
+	handleExport,
 	showExportPrefix=false,
 	customButton=null,
-	handleExport,
-	showValid=true, showInvalid=true, showCatchall=true,
-	showGood=true, showRisky=true, showBad=true,
+	showValid=1, showInvalid=1, showCatchall=1,
+	showGood=1, showRisky=1, showBad=1,
 }) {
 	return (		
 		<Popup
@@ -42,7 +42,7 @@ export default function ExportPopupMenu({
 					{EMAIL_ICON}
 					{(showExportPrefix) ? "Export All" : "All Emails"}
 				</button>
-				{(checkTyp === 'verify') && (<>
+				{(checkTyp === 'deliverable' || checkTyp === 'verify') && (<>
 					{(showValid > 0) && (
 						<button className={styles.valid} onClick={() => handleExport("valid", title)}>
 							{VERIFY_VALID_ICON}
