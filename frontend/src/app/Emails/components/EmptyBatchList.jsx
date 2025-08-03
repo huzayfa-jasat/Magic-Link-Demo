@@ -17,7 +17,7 @@ export default function EmptyBatchList() {
 			<div className={styles.emptyIcon}>
 				{EMAIL_QUESTION_ICON}
 			</div>
-			<p className={styles.emptyText}>No emails found</p>
+			<p className={styles.emptyText}>No lists found</p>
 			<p className={styles.emptySubtext}>Start by validating some emails.</p>
 			<NavLink to="/upload" className={styles.uploadButton}>
 				{UPLOAD_ICON}
