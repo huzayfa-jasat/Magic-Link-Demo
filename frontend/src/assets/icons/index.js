@@ -20,6 +20,7 @@ export { BACK_ICON } from "./back_icon";
 export { VERIFY_VALID_ICON } from "./verify_valid_icon";
 export { VERIFY_INVALID_ICON } from "./verify_invalid_icon";
 export { VERIFY_CATCHALL_ICON } from "./verify_catchall_icon";
+export { VERIFY_UNKNOWN_ICON } from "./verify_unknown_icon";
 export { CIRCLE_CHECK_ICON } from "./circle_check_icon";
 export { MONEY_ICON } from "./money_icon";
 export { PERSON_ICON } from "./person_icon";

@@ -212,7 +212,7 @@ export default function BatchCard({
 			{(isCompleted) &&
 				<ExportPopupMenu
 					title={request.title} showExportPrefix={true}
-					showValid={true} showInvalid={true} showCatchall={true}
+					checkTyp={request.category}
 					handleExport={handleExport}
 					customButton={
 						<button className={styles.cardButton}>
@@ -225,9 +225,7 @@ export default function BatchCard({
 				<ProcessingPopupMenu
 					requestId={request.id}
 					isPaused={isPaused}
-					handlePause={handlePause}
-					handleResume={handleResume}
-					handleRemove={handleRemove}
+					handlePause={handlePause} handleResume={handleResume} handleRemove={handleRemove}
 					customButton={
 						<div className={styles.cardButton}>
 							{DOTS_ICON}
@@ -257,6 +255,10 @@ export default function BatchCard({
 	// Return clickable if completed/processing/paused, otherwise just the card
 	return (
 		<>
+			<ExportLoadingModal
+				isOpen={isExporting}
+				progress={exportProgress}
+			/>
 			{(isCompleted || isProcessing || isPaused) ? (
 				<div
 					key={request.id}
@@ -271,10 +273,6 @@ export default function BatchCard({
 					{cardContent}
 				</div>
 			)}
-			<ExportLoadingModal
-				isOpen={isExporting}
-				progress={exportProgress}
-			/>
 		</>
 	);
 }

@@ -128,80 +128,79 @@ export default function EmailsBatchDetailsController({
     );
   }
 
-  // Main render - batch details page
+  // Main Render - batch details page
   return (
-    <div className={styles.detailsContainer}>
-      {/* Navigation back to home */}
-      <Link to="/validate" className={styles.backLink}>
-        {BACK_ICON}
-        Go Back
-      </Link>
-
-      {/* Page header with title and export dropdown */}
-      <div className={styles.detailsHeader}>
-        <h1 className={styles.detailsTitle}>{details.title ?? "Details"}</h1>
-        {(checkTyp === 'verify') && (
-          <ExportPopupMenu
-            title={details.title}
-            handleExport={handleExportFiltered}
-            showValid={details.stats.valid}
-            showInvalid={details.stats.invalid}
-            showCatchall={details.stats.catchall}
-          />
-        )}
-      </div>
-
-      {/* Search input for filtering results */}
-      <div className={styles.searchContainer}>
-        <input
-          type="text"
-          placeholder="Search emails..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className={styles.searchInput}
-        />
-        {SEARCH_ICON}
-      </div>
-
-      {/* Statistics cards showing batch summary */}
-      {(checkTyp === 'verify') && (
-        <DetailStats
-          valid={details.stats.valid}
-          invalid={details.stats.invalid}
-          catchall={details.stats.catchall}
-        />
-      )}
-
-      {/* Results table */}
-      <div className={styles.tableContainer}>
-        {resultsLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
-            <LoadingCircle relative={true} />
-          </div>
-        ) : (
-          <ResultsTable typ={checkTyp} results={results} />
-        )}
-      </div>
-
-      {/* Infinite scroll loading indicator */}
-      {(loadingMore) && (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
-          <LoadingCircle relative={true} />
-        </div>
-      )}
-      
-      {/* End of results indicator */}
-      {/* {(!hasMore && results.length > 0) && (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem', color: '#666' }}>
-          <p>No more results to load</p>
-        </div>
-      )} */}
-      
+    <>
       {/* Export Loading Modal */}
       <ExportLoadingModal 
         isOpen={isExporting} 
         progress={exportProgress} 
       />
-    </div>
+
+      {/* Details Container */}
+      <div className={styles.detailsContainer}>
+        {/* Navigation back to home */}
+        <Link to="/validate" className={styles.backLink}>
+          {BACK_ICON}
+          Go Back
+        </Link>
+
+        {/* Page header with title and export dropdown */}
+        <div className={styles.detailsHeader}>
+          <h1 className={styles.detailsTitle}>{details.title ?? "Details"}</h1>
+          <ExportPopupMenu
+            title={details.title}
+            checkTyp={checkTyp}
+            handleExport={handleExportFiltered}
+            showValid={details.stats.valid} showInvalid={details.stats.invalid} showCatchall={details.stats.catchall}
+            showGood={details.stats.good} showRisky={details.stats.risky} showBad={details.stats.bad}
+          />
+        </div>
+
+        {/* Search input for filtering results */}
+        <div className={styles.searchContainer}>
+          <input
+            type="text"
+            placeholder="Search emails..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className={styles.searchInput}
+          />
+          {SEARCH_ICON}
+        </div>
+
+        {/* Statistics cards showing batch summary */}
+        <DetailStats
+          checkTyp={checkTyp}
+          valid={details.stats.valid} invalid={details.stats.invalid} catchall={details.stats.catchall}
+          good={details.stats.good} risky={details.stats.risky} bad={details.stats.bad}
+        />
+
+        {/* Results table */}
+        <div className={styles.tableContainer}>
+          {(resultsLoading) ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+              <LoadingCircle relative={true} />
+            </div>
+          ) : (
+            <ResultsTable typ={checkTyp} results={results} />
+          )}
+        </div>
+
+        {/* Infinite scroll loading indicator */}
+        {(loadingMore) && (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+            <LoadingCircle relative={true} />
+          </div>
+        )}
+        
+        {/* End of results indicator */}
+        {/* {(!hasMore && results.length > 0) && (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem', color: '#666' }}>
+            <p>No more results to load</p>
+          </div>
+        )} */}
+      </div>
+    </>
   );
 }

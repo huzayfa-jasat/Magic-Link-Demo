@@ -510,6 +510,13 @@
   stroke: var(--result-catchall);
 }
 
+.resultUnknown {
+  color: var(--txt-light) !important;
+}
+.resultUnknown svg path {
+  stroke: var(--txt-light);
+}
+
 .tableContainer {
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);

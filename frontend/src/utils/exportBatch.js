@@ -6,7 +6,10 @@ const FILTER_MAP = {
   'valid': 'deliverable',
   'invalid': 'undeliverable',
   'catch-all': 'catchall',
-  'all': 'all'
+  'all': 'all',
+  'good': 'good',
+  'risky': 'risky',
+  'bad': 'bad'
 };
 
 // Export batch results to CSV
@@ -56,22 +59,33 @@ export async function exportBatchToCSV({
   }
 
   // Build CSV content from all filtered results
-  const headers = ["Email", "Result", "Mail Server"];
+  let headers;
+  if (checkTyp === 'verify') headers = ["Email", "Result", "Mail Server"];
+  else if (checkTyp === 'catchall') headers = ["Email", "Deliverability"];
+
+  // Build CSV content
   const csvContent = [
     headers.join(","),
     ...allResults.map((item) => {
       // Map result values: 1=deliverable, 2=catchall, 0=undeliverable
       let resultText;
-      if (item.result === 1) resultText = "Valid";
-      else if (item.result === 2) resultText = "Catch-All";
-      else resultText = "Invalid";
+      if (checkTyp === 'verify') {
+        if (item.result === 1) resultText = "Valid";
+        else if (item.result === 2) resultText = "Catch-All";
+        else resultText = "Invalid";
 
-      // Return CSV row
-      return [
-        item.email,
-        resultText,
-        item.provider || "",
-      ].join(",");
+        // Return CSV row
+        return [ item.email, resultText, item.provider || "" ].join(",");
+
+      } else if (checkTyp === 'catchall') {
+        if (item.score === 'good') resultText = "Good";
+        else if (item.score === 'risky') resultText = "Risky";
+        else if (item.score === 'bad') resultText = "Bad";
+        else resultText = "Unknown";
+
+        // Return CSV row
+        return [ item.email, resultText ].join(",");
+      }
     }),
   ].join("\n");
 
@@ -86,15 +100,19 @@ export async function exportBatchToCSV({
   if (filter === 'valid') prefix = 'Valid_Only';
   else if (filter === 'invalid') prefix = 'Invalid_Only';
   else if (filter === 'catch-all') prefix = 'Catchall_Only';
+  else if (filter === 'good') prefix = 'Good_Only';
+  else if (filter === 'risky') prefix = 'Risky_Only';
+  else if (filter === 'bad') prefix = 'Bad_Only';
   else prefix = 'All_Emails';
+  const filename = `${(checkTyp === "catchall" ? "Catchall_" : "")}${prefix}_OmniVerifier_${batchName}.csv`;
 
-  const filename = `${prefix}_OmniVerifier_${batchName}.csv`;
-
+  // Download file
   link.setAttribute("href", url);
   link.setAttribute("download", filename);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
 
+  // Return
   return { success: true, recordCount: allResults.length };
 }

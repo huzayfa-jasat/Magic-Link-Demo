@@ -6,6 +6,7 @@ import {
 	VERIFY_VALID_ICON,
 	VERIFY_INVALID_ICON,
 	VERIFY_CATCHALL_ICON,
+	VERIFY_UNKNOWN_ICON,
 } from '../../../assets/icons';
 
 // Style Imports
@@ -28,6 +29,11 @@ const RESULT_DISPLAY_MAP = {
 		icon: VERIFY_CATCHALL_ICON,
 		className: styles.resultCatchAll,
 	},
+	4: {
+		text: "Unknown",
+		icon: VERIFY_UNKNOWN_ICON,
+		className: styles.resultUnknown,
+	}
 }
 
 // Helper Functions
@@ -47,15 +53,16 @@ const getScoreDisplay = (score) => {
 
 	// Get score "category" (just match up with colors from resutls map)
 	let score_category;
-	if (score >= 70) score_category = 1;
-	else if (score >= 50) score_category = 2;
-	else score_category = 0;
+	if (score === 'good') score_category = 1;
+	else if (score === 'risky') score_category = 2;
+	else if (score === 'bad') score_category = 0;
+	else score_category = 4;
 	
 	// Return
 	return (
 		<div className={`${styles.tableCellResult} ${RESULT_DISPLAY_MAP[score_category].className}`}>
 			{RESULT_DISPLAY_MAP[score_category].icon}
-			{score} / 100
+			{score}
 		</div>
 	)
 }
@@ -76,7 +83,7 @@ export default function ResultsTable({
 						<th className={styles.tableHeaderCell}>Mail Server</th>
 					</>)}
 					{(typ === 'catchall') && (
-						<th className={styles.tableHeaderCell}>Deliverability Score</th>
+						<th className={styles.tableHeaderCell}>Deliverability</th>
 					)}
 				</tr>
 			</thead>

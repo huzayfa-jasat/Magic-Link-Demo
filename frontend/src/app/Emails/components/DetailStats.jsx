@@ -10,13 +10,13 @@ import styles from '../styles/Emails.module.css';
 
 // Component
 export default function DetailStats({
-	valid,
-	invalid,
-	catchall,
+	checkTyp,
+	valid, invalid, catchall,
+	good, risky, bad,
 }) {
-	const valid_count = parseInt(valid) || 0;
-	const invalid_count = parseInt(invalid) || 0;
-	const catchall_count = parseInt(catchall) || 0;
+	const valid_count = (checkTyp === 'verify') ? parseInt(valid) : parseInt(good);
+	const invalid_count = (checkTyp === 'verify') ? parseInt(invalid) : parseInt(risky);
+	const catchall_count = (checkTyp === 'verify') ? parseInt(catchall) : parseInt(bad);
 	return (
 		<div className={styles.detailsMeta}>
 			{/* <div className={styles.metaCard}>
@@ -31,17 +31,17 @@ export default function DetailStats({
 				</div>
 			</div>
 			<div className={styles.metaCard}>
-				<div className={styles.metaLabel}>Invalid</div>
-				<div className={`${styles.metaValue} ${styles.resultInvalid}`}>
-					{VERIFY_INVALID_ICON}
-					{invalid_count.toLocaleString()}
-				</div>
-			</div>
-			<div className={styles.metaCard}>
 				<div className={styles.metaLabel}>Catch-All</div>
 				<div className={`${styles.metaValue} ${styles.resultCatchAll}`}>
 					{VERIFY_CATCHALL_ICON}
 					{catchall_count.toLocaleString()}
+				</div>
+			</div>
+			<div className={styles.metaCard}>
+				<div className={styles.metaLabel}>Invalid</div>
+				<div className={`${styles.metaValue} ${styles.resultInvalid}`}>
+					{VERIFY_INVALID_ICON}
+					{invalid_count.toLocaleString()}
 				</div>
 			</div>
 		</div>

@@ -61,6 +61,12 @@ const VALID_BATCHRESULTS_FILTER_PARAMS = new Set([
 	'undeliverable', // Undeliverable results
 	'catchall', // Potential catchall results
 ]);
+const VALID_BATCHRESULTS_CATCHALL_FILTER_PARAMS = new Set([
+	'all', // All results
+	'good', // Good results
+	'risky', // Risky results
+	'bad', // Bad results
+]);
 
 // Helper Functions
 function returnBadRequest(res, msg, status=HttpStatus.BAD_REQUEST_STATUS) {
@@ -123,7 +129,8 @@ async function getBatchResults(req, res) {
 		if (page < 1) return returnBadRequest(res, 'Page must be at least 1');
 		if (limit < 1) return returnBadRequest(res, 'Limit must be at least 1');
 		if (!VALID_BATCHRESULTS_ORDER_PARAMS.has(order)) return returnBadRequest(res, 'Invalid order');
-		if (!VALID_BATCHRESULTS_FILTER_PARAMS.has(filter)) return returnBadRequest(res, 'Invalid filter');
+		if (checkType === 'deliverable' && !VALID_BATCHRESULTS_FILTER_PARAMS.has(filter)) return returnBadRequest(res, 'Invalid filter');
+		if (checkType === 'catchall' && !VALID_BATCHRESULTS_CATCHALL_FILTER_PARAMS.has(filter)) return returnBadRequest(res, 'Invalid filter');
 
 		// Get batch results
 		const [ok, data, metadata] = await db_getBatchResults(req.user.id, checkType, batchId, page, limit, order, filter, search);
