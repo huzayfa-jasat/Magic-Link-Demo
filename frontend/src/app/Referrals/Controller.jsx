@@ -26,7 +26,7 @@ export default function ReferralsController() {
   const [referralInfo, setReferralInfo] = useState(null);
   const [referralHistory, setReferralHistory] = useState([]);
   const [pendingReferrals, setPendingReferrals] = useState([]);
-  const [userEligible, setUserEligible] = useState(false);
+  const [userEligible, setUserEligible] = useState(null);
   const [userLifetimePurchases, setUserLifetimePurchases] = useState(0);
   const [shareSuccess, setShareSuccess] = useState(false);
 
@@ -95,7 +95,7 @@ export default function ReferralsController() {
   return (
     <div className={styles.container}>
       {/* Eligibility Notice */}
-      {(!userEligible) && <>
+      {(userEligible === false) && <>
         <ReferralEligibilityNotice purchases={userLifetimePurchases} />
         <br /><br />
         <h1 className={styles.title}>Referral Code</h1>
