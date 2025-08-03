@@ -10,7 +10,8 @@ import {
   addToVerifyBatch,
   addToCatchallBatch,
   startVerifyBatchProcessing,
-  startCatchallBatchProcessing 
+  startCatchallBatchProcessing,
+  checkDuplicateFilename
 } from '../../api/batches';
 
 // Context Imports
@@ -19,6 +20,7 @@ import { useCreditsContext } from '../../context/useCreditsContext';
 // Component Imports
 import { LoadingCircle } from '../../ui/components/LoadingCircle';
 import CreditsModal from '../../ui/components/CreditsModal';
+import DuplicateFileModal from './components/DuplicateFileModal';
 import UploadStageFileUploadWithColumn from './UploadStages/FileUploadWithColumn';
 import UploadStageFinalize from './UploadStages/Finalize';
 
@@ -44,6 +46,8 @@ export default function EmailsUploadController() {
   const [isProcessingFile, setIsProcessingFile] = useState(false);
   const [showCreditsModal, setShowCreditsModal] = useState(false);
   const [creditsModalType, setCreditsModalType] = useState('verify');
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [pendingColumnIndex, setPendingColumnIndex] = useState(null);
 
   // Handle parsing CSV
   const parseCSV = useCallback((text) => {
@@ -251,8 +255,8 @@ export default function EmailsUploadController() {
     }
   };
 
-  // Handle column selection
-  const handleColumnSelect = useCallback((columnIndex) => {
+  // Handle column selection with duplicate check
+  const handleColumnSelect = useCallback(async (columnIndex) => {
     try {
       // Extract emails from selected column
       const extractedEmails = fileData.rows
@@ -263,6 +267,26 @@ export default function EmailsUploadController() {
         throw new Error('No emails found in the selected column');
       }
       
+      // Check for duplicate filename
+      if (file) {
+        setIsProcessingFile(true);
+        try {
+          const response = await checkDuplicateFilename(file.name);
+          if (response.data.is_duplicate) {
+            // Show duplicate modal
+            setPendingColumnIndex(columnIndex);
+            setShowDuplicateModal(true);
+            return;
+          }
+        } catch (err) {
+          console.log('Error checking duplicate:', err);
+          // Continue anyway if check fails
+        } finally {
+          setIsProcessingFile(false);
+        }
+      }
+      
+      // Proceed if no duplicate or check failed
       setSelectedColumnIndex(columnIndex);
       setEmails(extractedEmails);
       setError(null);
@@ -270,7 +294,7 @@ export default function EmailsUploadController() {
     } catch (err) {
       setError(err.message);
     }
-  }, [fileData]);
+  }, [fileData, file]);
 
   // Handle remove file
   const handleRemoveFile = () => {
@@ -280,7 +304,31 @@ export default function EmailsUploadController() {
     setEmails([]);
     setError(null);
     setPage('upload');
+    setPendingColumnIndex(null);
   };
+
+  // Handle duplicate modal confirm
+  const handleDuplicateConfirm = useCallback(() => {
+    if (pendingColumnIndex !== null) {
+      const extractedEmails = fileData.rows
+        .map(row => row[pendingColumnIndex]?.trim() || '')
+        .filter(email => email);
+      
+      setSelectedColumnIndex(pendingColumnIndex);
+      setEmails(extractedEmails);
+      setError(null);
+      setPage('finalize');
+      setShowDuplicateModal(false);
+      setPendingColumnIndex(null);
+    }
+  }, [pendingColumnIndex, fileData]);
+
+  // Handle duplicate modal cancel
+  const handleDuplicateCancel = useCallback(() => {
+    setShowDuplicateModal(false);
+    setPendingColumnIndex(null);
+    handleRemoveFile();
+  }, []);
 
   // Render
   return (
@@ -290,6 +338,11 @@ export default function EmailsUploadController() {
         isOpen={showCreditsModal}
         onClose={() => setShowCreditsModal(false)}
         checkType={creditsModalType}
+      />
+      <DuplicateFileModal 
+        isOpen={showDuplicateModal}
+        onClose={handleDuplicateCancel}
+        onConfirm={handleDuplicateConfirm}
       />
       <div className={styles.uploadContainer}>
         <h1 className={styles.title}>

@@ -130,3 +130,9 @@ export async function resumeVerifyBatchProcessing(batchId) {
 export async function resumeCatchallBatchProcessing(batchId) {
   return await handler_resumeBatchProcessing('catchall', batchId);
 };
+
+export async function checkDuplicateFilename(filename) {
+  return await http.post(`${MODULE_PREFIX}/check-duplicate`, { filename }, {
+    withCredentials: true,
+  });
+};

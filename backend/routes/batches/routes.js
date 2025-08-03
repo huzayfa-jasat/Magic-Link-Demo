@@ -22,7 +22,8 @@ const {
 	startBatchProcessing,
 	pauseBatchProcessing,
 	resumeBatchProcessing,
-	createNewBatch
+	createNewBatch,
+	checkDuplicateFilename
 } = require('./controller.js');
 
 // ---------------
@@ -34,6 +35,7 @@ batchesRouter.use(checkUserAuth);
 
 // Routes
 batchesRouter.get('/list', getBatchesList);
+batchesRouter.post('/check-duplicate', checkDuplicateFilename);
 batchesRouter.post('/:checkType/new', checkValidCheckType, createNewBatch);
 batchesRouter.post('/:checkType/add', checkValidCheckType, addToBatch);
 batchesRouter.post('/:checkType/batch/:batchId/add', checkValidCheckType, checkUserBatchAccess, addToBatch);
