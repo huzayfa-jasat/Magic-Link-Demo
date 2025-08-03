@@ -17,6 +17,7 @@ const {
 	db_checkCreditsOnly,
 	db_deductCreditsForActualBatch,
 	db_createBatchWithEstimate,
+	db_checkDuplicateFilename,
 } = require('./funs_db.js');
 
 // External API Function Imports
@@ -328,6 +329,35 @@ async function createNewBatch(req, res) {
 	}
 }
 
+async function checkDuplicateFilename(req, res) {
+	try {
+		// Extract params
+		const { filename } = req.body;
+
+		// Validate body
+		if (!filename || typeof filename !== 'string') {
+			return returnBadRequest(res, 'Invalid filename provided');
+		}
+
+		// Check for duplicate filename
+		const [ok, duplicate_info] = await db_checkDuplicateFilename(req.user.id, filename);
+		if (!ok) {
+			return returnBadRequest(res, 'Failed to check duplicate filename');
+		}
+
+		// Return response
+		return res.status(HttpStatus.SUCCESS_STATUS).json({
+			is_duplicate: duplicate_info !== null,
+			check_type: duplicate_info?.check_type || null,
+			batch_id: duplicate_info?.batch_id || null
+		});
+
+	} catch (err) {
+		console.error("CHECK DUPLICATE FILENAME ERR = ", err);
+		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+	}
+}
+
 // Exports
 module.exports = {
 	getBatchesList,
@@ -339,5 +369,6 @@ module.exports = {
 	startBatchProcessing,
 	pauseBatchProcessing,
 	resumeBatchProcessing,
-	createNewBatch
+	createNewBatch,
+	checkDuplicateFilename
 }
