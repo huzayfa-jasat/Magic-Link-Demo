@@ -47,7 +47,7 @@ export default function EmailsUploadController() {
   const [showCreditsModal, setShowCreditsModal] = useState(false);
   const [creditsModalType, setCreditsModalType] = useState('verify');
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
-  const [pendingColumnIndex, setPendingColumnIndex] = useState(null);
+  const [pendingFile, setPendingFile] = useState(null);
 
   // Handle parsing CSV
   const parseCSV = useCallback((text) => {
@@ -153,6 +153,21 @@ export default function EmailsUploadController() {
     setError(null);
 
     try {
+      // Check for duplicate filename first
+      try {
+        const response = await checkDuplicateFilename(selectedFile.name);
+        if (response.data.is_duplicate) {
+          // Store the file temporarily and show duplicate modal
+          setPendingFile(selectedFile);
+          setShowDuplicateModal(true);
+          setIsProcessingFile(false);
+          return;
+        }
+      } catch (err) {
+        console.log('Error checking duplicate:', err);
+        // Continue anyway if check fails
+      }
+
       let parsedData;
       
       if (isCSV) {
@@ -255,8 +270,8 @@ export default function EmailsUploadController() {
     }
   };
 
-  // Handle column selection with duplicate check
-  const handleColumnSelect = useCallback(async (columnIndex) => {
+  // Handle column selection
+  const handleColumnSelect = useCallback((columnIndex) => {
     try {
       // Extract emails from selected column
       const extractedEmails = fileData.rows
@@ -267,26 +282,6 @@ export default function EmailsUploadController() {
         throw new Error('No emails found in the selected column');
       }
       
-      // Check for duplicate filename
-      if (file) {
-        setIsProcessingFile(true);
-        try {
-          const response = await checkDuplicateFilename(file.name);
-          if (response.data.is_duplicate) {
-            // Show duplicate modal
-            setPendingColumnIndex(columnIndex);
-            setShowDuplicateModal(true);
-            return;
-          }
-        } catch (err) {
-          console.log('Error checking duplicate:', err);
-          // Continue anyway if check fails
-        } finally {
-          setIsProcessingFile(false);
-        }
-      }
-      
-      // Proceed if no duplicate or check failed
       setSelectedColumnIndex(columnIndex);
       setEmails(extractedEmails);
       setError(null);
@@ -294,7 +289,7 @@ export default function EmailsUploadController() {
     } catch (err) {
       setError(err.message);
     }
-  }, [fileData, file]);
+  }, [fileData]);
 
   // Handle remove file
   const handleRemoveFile = () => {
@@ -304,30 +299,59 @@ export default function EmailsUploadController() {
     setEmails([]);
     setError(null);
     setPage('upload');
-    setPendingColumnIndex(null);
+    setPendingFile(null);
   };
 
   // Handle duplicate modal confirm
-  const handleDuplicateConfirm = useCallback(() => {
-    if (pendingColumnIndex !== null) {
-      const extractedEmails = fileData.rows
-        .map(row => row[pendingColumnIndex]?.trim() || '')
-        .filter(email => email);
-      
-      setSelectedColumnIndex(pendingColumnIndex);
-      setEmails(extractedEmails);
-      setError(null);
-      setPage('finalize');
+  const handleDuplicateConfirm = useCallback(async () => {
+    if (pendingFile) {
       setShowDuplicateModal(false);
-      setPendingColumnIndex(null);
+      setIsProcessingFile(true);
+      
+      try {
+        let parsedData;
+        const isCSV = pendingFile.type === 'text/csv' || pendingFile.name.toLowerCase().endsWith('.csv');
+        const isExcel = pendingFile.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
+                        pendingFile.type === 'application/vnd.ms-excel' || 
+                        pendingFile.name.toLowerCase().endsWith('.xlsx') || 
+                        pendingFile.name.toLowerCase().endsWith('.xls');
+        
+        if (isCSV) {
+          const text = await pendingFile.text();
+          parsedData = parseCSV(text);
+        } else if (isExcel) {
+          const buffer = await pendingFile.arrayBuffer();
+          parsedData = parseExcel(buffer);
+        }
+        
+        if (parsedData.rows.length === 0) {
+          throw new Error('No data found in the file');
+        }
+
+        setFile(pendingFile);
+        setFileData(parsedData);
+        setError(null);
+        setPendingFile(null);
+      } catch (err) {
+        setError(err.message);
+        setFile(null);
+        setFileData({ headers: [], rows: [] });
+        setPendingFile(null);
+      } finally {
+        setIsProcessingFile(false);
+      }
     }
-  }, [pendingColumnIndex, fileData]);
+  }, [pendingFile, parseCSV, parseExcel]);
 
   // Handle duplicate modal cancel
   const handleDuplicateCancel = useCallback(() => {
     setShowDuplicateModal(false);
-    setPendingColumnIndex(null);
-    handleRemoveFile();
+    setPendingFile(null);
+    // Clear the file input
+    const fileInput = document.querySelector('input[type="file"]');
+    if (fileInput) {
+      fileInput.value = '';
+    }
   }, []);
 
   // Render
