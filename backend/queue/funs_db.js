@@ -219,6 +219,7 @@ async function db_markBouncerBatchFailed(bouncer_batch_id, check_type) {
     
     // TODO: Could also mark associated user batches as failed if all their bouncer batches have failed
     // For now, individual bouncer batch failures don't fail the entire user batch
+    // However ... this would cause permanent "processing" status for user batch.
     
     return [true, result || 0];
 }

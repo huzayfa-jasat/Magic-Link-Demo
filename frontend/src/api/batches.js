@@ -43,6 +43,16 @@ async function handler_startBatchProcessing(checkType, batchId) {
     withCredentials: true,
   });
 };
+async function handler_pauseBatchProcessing(checkType, batchId) {
+  return await http.patch(`${MODULE_PREFIX}/${checkType}/batch/${batchId}/pause`, {}, {
+    withCredentials: true,
+  });
+};
+async function handler_resumeBatchProcessing(checkType, batchId) {
+  return await http.patch(`${MODULE_PREFIX}/${checkType}/batch/${batchId}/resume`, {}, {
+    withCredentials: true,
+  });
+};
 async function handler_createNewBatch(checkType, emailCount, title) {
   return await http.post(`${MODULE_PREFIX}/${checkType}/new`, { emails: emailCount, title }, {
     withCredentials: true,
@@ -105,4 +115,18 @@ export async function createNewVerifyBatch(emailCount, title) {
 };
 export async function createNewCatchallBatch(emailCount, title) {
   return await handler_createNewBatch('catchall', emailCount, title);
+};
+
+export async function pauseVerifyBatchProcessing(batchId) {
+  return await handler_pauseBatchProcessing('deliverable', batchId);
+};
+export async function pauseCatchallBatchProcessing(batchId) {
+  return await handler_pauseBatchProcessing('catchall', batchId);
+};
+
+export async function resumeVerifyBatchProcessing(batchId) {
+  return await handler_resumeBatchProcessing('deliverable', batchId);
+};
+export async function resumeCatchallBatchProcessing(batchId) {
+  return await handler_resumeBatchProcessing('catchall', batchId);
 };

@@ -23,6 +23,7 @@ export default function UploadStageFileUploadWithColumn({
 	const [isDragging, setIsDragging] = useState(false);
 	const [selectedColumnIndex, setSelectedColumnIndex] = useState(null);
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+	const [sampleEmails, setSampleEmails] = useState([]);
 
 	// Auto-select email column when fileData changes
 	useEffect(() => {
@@ -38,6 +39,33 @@ export default function UploadStageFileUploadWithColumn({
 			}
 		}
 	}, [fileData]);
+
+	// Function to extract sample emails
+	const updateSampleEmails = () => {
+		if (selectedColumnIndex === null || !fileData || !fileData.rows || !fileData.rows.length) {
+			setSampleEmails([]);
+			return;
+		}
+		
+		const validEmails = fileData.rows
+			.slice(0, 10)
+			.filter((row) => (
+				row[selectedColumnIndex] !== undefined &&
+				row[selectedColumnIndex] !== null &&
+				row[selectedColumnIndex] !== '' &&
+				// VERY simple email regex
+				/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row[selectedColumnIndex])
+			))
+			.map(row => row[selectedColumnIndex] || '-')
+			.slice(0, 5);
+			
+		setSampleEmails(validEmails);
+	};
+
+	// Update sample emails when column selection changes
+	useEffect(() => {
+		updateSampleEmails();
+	}, [selectedColumnIndex, fileData]);
 
 	// Handle drag over
 	const handleDragOver = useCallback((event) => {
@@ -81,18 +109,6 @@ export default function UploadStageFileUploadWithColumn({
 		}
 	};
 
-	// Get sample data for selected column
-	const getSampleData = () => {
-		if (selectedColumnIndex === null || !fileData.rows.length) return [];
-		
-		return fileData.rows.slice(0, 10).filter((row) => (
-			row[selectedColumnIndex] !== undefined &&
-			row[selectedColumnIndex] !== null &&
-			row[selectedColumnIndex] !== '' &&
-			// VERY simple email regex
-			/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row[selectedColumnIndex])
-		)).map(row => row[selectedColumnIndex] || '-').slice(0,5);
-	};
 
 	// Render
 	return (
@@ -158,7 +174,7 @@ export default function UploadStageFileUploadWithColumn({
 						<div className={styles.columnSelectInfo}>
 							<h3 className={styles.columnSelectTitle}>Select Email Column</h3>
 							<p className={styles.columnSelectSubtitle}>
-								Select the column that contains email addresses
+								Select the column that contains email addresses.
 							</p>
 						</div>
 						<ColumnSelectorPopup
@@ -175,11 +191,17 @@ export default function UploadStageFileUploadWithColumn({
 						<div className={styles.sampleDataContainer}>
 							<h4 className={styles.sampleDataTitle}>Sample</h4>
 							<div className={styles.sampleDataList}>
-								{getSampleData().map((sample, index) => (
-									<div key={index} className={styles.sampleDataItem}>
-										{sample}
+								{sampleEmails.length > 0 ? (
+									sampleEmails.map((sample, index) => (
+										<div key={index} className={styles.sampleDataItem}>
+											{sample}
+										</div>
+									))
+								) : (
+									<div className={styles.emptySample}>
+										No valid email samples found in the selected column.
 									</div>
-								))}
+								)}
 							</div>
 						</div>
 					)}

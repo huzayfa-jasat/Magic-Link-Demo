@@ -30,3 +30,6 @@ export { TIME_ICON } from "./time_icon";
 export { WHATSAPP_ICON } from "./whatsapp_icon";
 export { SLACK_ICON } from "./slack_icon";
 export { ARROW_DOWN_ICON } from "./arrow_down_icon";
+export { DOTS_ICON } from "./dots_icon";
+export { PAUSE_ICON } from "./pause_icon";
+export { PLAY_ICON } from "./play_icon";

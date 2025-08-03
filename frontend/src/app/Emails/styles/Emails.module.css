@@ -7,17 +7,20 @@
 
 /* Card styles */
 .card {
+  height: 100%;
   background: var(--brd-light-2);
   border: 1px solid var(--brd-light);
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 0;
   transition: all 0.2s ease-in-out;
+  display: flex;
+  flex-direction: column;
 }
 
 .card:hover {
   transform: translateY(-2px);
-  background-color: var(--brd-light);
+  background-color: var(--brd-light-3);
 }
 
 .cardHeader {
@@ -26,23 +29,40 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 15px;
-  margin-bottom: 0;
+  margin-bottom: 15px;
 }
-/* Link styles */
+
+.cardButton {
+  margin: -5px -5px -35px auto;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--brd-light);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--brd-light);
+  color: var(--txt-light);
+  transition: all 0.2s ease-in-out;
+  z-index: 995;
+  cursor: pointer;
+}
+.cardButton:hover {
+  background-color: var(--txt-light-3) !important;
+  color: var(--txt-light) !important;
+}
+
 .link {
   text-decoration: none;
   color: inherit;
   display: block;
 }
 
-/* Grid layout */
 .grid {
   display: grid;
   gap: 15px;
   grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
 }
-
-/* Status badge styles */
 
 .statusContainer {
   display: flex;
@@ -103,11 +123,18 @@
 }
 
 .subtitle {
+  margin: -10px 0 30px 0;
+  font-family: "Circular", "Geist", sans-serif;
+  font-size: 17px;
+  font-weight: 400;
+  color: var(--txt-light);
+}
+.cardSubtitle {
   margin: 0;
   font-family: "Circular", "Geist", sans-serif;
   font-size: 18px;
   font-weight: 400;
-  color: #fff;
+  color: var(--black);
 }
 
 .text {
@@ -124,7 +151,7 @@
 .stats {
   display: flex;
   gap: 35px;
-  margin-top: 15px;
+  margin-top: auto;
 }
 
 .stat {
@@ -669,6 +696,9 @@
   width: auto;
   stroke: var(--main-hl);
 }
+.exportMenu button svg.lrg {
+  height: 20px;
+}
 .exportMenu button.valid svg path {
   stroke: var(--result-valid);
 }
@@ -835,6 +865,9 @@
 }
 .failed {
   color: var(--fg-neg);
+}
+.paused {
+  color: var(--txt-light);
 }
 
 .statusText {
@@ -1088,6 +1121,20 @@
   font-family: "PP Supply Mono", sans-serif;
 }
 
+.emptySample {
+  width: 100%;
+  height: 80px;
+  background-color: var(--white);
+  border: 1px solid var(--brd-light);
+  color: var(--txt-light);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "PP Supply Mono", sans-serif;
+  font-size: 14px;
+}
+
 .continueButton {
   background-color: var(--main-hl);
   color: var(--white);
@@ -1240,13 +1287,15 @@
   .detailsMeta {
     margin-top: -10px;
     gap: 10px;
+    flex-direction: column;
   }
   .metaLabel {
     font-size: 14px;
+    margin-bottom: -5px;
   }
-  .metaValue {
+  /* .metaValue {
     font-size: 18px;
-  }
+  } */
   .metaValue svg {
     display: none !important;
   }

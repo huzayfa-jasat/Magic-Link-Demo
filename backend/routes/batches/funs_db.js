@@ -296,6 +296,9 @@ async function db_getBatchesList(user_id, page, limit, order, category, status) 
 		case 'processing':
 			status_filter = ['processing', 'queued', 'draft', 'pending'];
 			break;
+		case 'paused':
+			status_filter = ['paused'];
+			break;
 		case 'completed':
 			status_filter = ['completed'];
 			break;
@@ -369,27 +372,57 @@ async function db_getBatchesList(user_id, page, limit, order, category, status) 
 			status: (batch.status === 'queued' || batch.status === 'draft' || batch.status === 'pending') ? 'processing' : batch.status
 		};
 		
-		// Add progress for deliverable batches that are processing
-		if (batch.type === 'deliverable' && formatted.status === 'processing' && batch.status === 'processing') {
-			try {
-				// Calculate progress from bouncer batches
-				const processed_result = await knex('Bouncer_Batches_Deliverable')
-					.where('user_batch_id', batch.id)
-					.sum('processed as total_processed')
-					.first();
-				
-				const total_processed = parseInt(processed_result.total_processed) || 0;
-				const total_with_cached = total_processed + (batch.cached_results || 0);
-				
-				// Calculate percentage
-				const progress = batch.emails > 0 
-					? Math.round((total_with_cached / batch.emails) * 100)
-					: 0;
-				
-				formatted.progress = Math.min(progress, 99); // Cap at 99% until batch is marked completed
-			} catch (error) {
-				console.error(`Error calculating progress for batch ${batch.id}:`, error);
-				formatted.progress = 0;
+		// Add progress for any processing batch
+		if (formatted.status === 'processing') {
+			// Determine batch type from the batch row itself
+			// When category='all', batch.category is set from the query
+			// Otherwise, we need to infer it from the category parameter
+			const batchType = batch.category || category;
+			
+			if (batchType === 'deliverable') {
+				try {
+					// Calculate progress from bouncer batches
+					const processed_result = await knex('Bouncer_Batches_Deliverable')
+						.where('user_batch_id', batch.id)
+						.sum('processed as total_processed')
+						.first();
+					
+					const total_processed = parseInt(processed_result.total_processed) || 0;
+					const total_with_cached = total_processed + (batch.cached_results || 0);
+					
+					// Calculate percentage
+					const progress = batch.emails > 0 
+						? Math.round((total_with_cached / batch.emails) * 100)
+						: 0;
+					
+					formatted.progress = Math.min(progress, 99); // Cap at 99% until batch is marked completed
+				} catch (error) {
+					console.error(`Error calculating progress for deliverable batch ${batch.id}:`, error);
+					formatted.progress = 0;
+				}
+			} else if (batchType === 'catchall') {
+				try {
+					// Count completed emails in the batch
+					const completed_result = await knex('Batch_Emails_Catchall')
+						.where({
+							'batch_id': batch.id,
+							'did_complete': 1
+						})
+						.count('* as total_completed')
+						.first();
+					
+					const total_completed = parseInt(completed_result.total_completed) || 0;
+					
+					// Calculate percentage (completed emails / total emails)
+					const progress = batch.emails > 0 
+						? Math.round((total_completed / batch.emails) * 100)
+						: 0;
+					
+					formatted.progress = Math.min(progress, 99); // Cap at 99% until batch is marked completed
+				} catch (error) {
+					console.error(`Error calculating progress for catchall batch ${batch.id}:`, error);
+					formatted.progress = 0;
+				}
 			}
 		}
 		
@@ -1035,6 +1068,47 @@ async function db_startBatchProcessing(user_id, check_type, batch_id) {
 	return true;
 }
 
+async function db_pauseBatchProcessing(user_id, check_type, batch_id) {
+	let err_code;
+
+	// Get batch table name
+	const batch_table = getBatchTableName(check_type);
+	if (!batch_table) return false;
+	
+	// Update status to paused
+	await knex(batch_table).where({
+		'id': batch_id,
+		'user_id': user_id,
+	}).whereIn('status', ['draft', 'queued', 'processing']).update({
+		'status': 'paused'
+	}).catch((err)=>{if (err) err_code = err.code});
+	if (err_code) return false;
+
+	// Return
+	return true;
+}
+
+async function db_resumeBatchProcessing(user_id, check_type, batch_id) {
+	let err_code;
+
+	// Get batch table name
+	const batch_table = getBatchTableName(check_type);
+	if (!batch_table) return false;
+	
+	// Update status to processing
+	await knex(batch_table).where({
+		'id': batch_id,
+		'user_id': user_id,
+		'status': 'paused'
+	}).update({
+		'status': 'processing'
+	}).catch((err)=>{if (err) err_code = err.code});
+	if (err_code) return false;
+
+	// Return
+	return true;
+}
+
 // Modify db_createBatch to create batches in draft status initially
 async function db_createBatchDraft(user_id, check_type, title, emails) {
 	// Get batch table names
@@ -1164,6 +1238,8 @@ module.exports = {
 	db_removeBatch,
 	db_addToBatch,
 	db_startBatchProcessing,
+	db_pauseBatchProcessing,
+	db_resumeBatchProcessing,
 	db_checkCreditsOnly,
 	db_deductCreditsForActualBatch,
 	db_createBatchWithEstimate,

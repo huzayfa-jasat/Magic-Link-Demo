@@ -9,15 +9,14 @@ const {
 	db_getBatchDetails,
 	db_getBatchResults,
 	db_getBatchProgress,
-	db_checkAndDeductCredits,
 	db_removeBatch,
 	db_addToBatch,
 	db_startBatchProcessing,
-	db_createBatchDraft,
+	db_pauseBatchProcessing,
+	db_resumeBatchProcessing,
 	db_checkCreditsOnly,
 	db_deductCreditsForActualBatch,
 	db_createBatchWithEstimate,
-	db_getUserBatchAccess
 } = require('./funs_db.js');
 
 // External API Function Imports
@@ -32,7 +31,6 @@ const {
 } = require('../../utils/processEmails.js');
 
 // Constants
-const MAX_EMAILS_PER_BATCH = 1000000; // Increased limit for progressive uploads
 const VALID_BATCHLIST_ORDER_PARAMS = new Set([
 	'timehl', // Time High-Low (newest first)
 	'timelh', // Time Low-High (oldest first)
@@ -261,6 +259,40 @@ async function startBatchProcessing(req, res) {
 	}
 }
 
+async function pauseBatchProcessing(req, res) {
+	try {
+		const { checkType, batchId } = req.params;
+
+		// Pause batch processing
+		const ok = await db_pauseBatchProcessing(req.user.id, checkType, batchId);
+		if (!ok) return returnBadRequest(res, 'Failed to pause batch processing');
+
+		// Return response
+		return res.status(HttpStatus.SUCCESS_STATUS).json({ message: 'Batch processing paused' });
+
+	} catch (err) {
+		console.error("MTE = ", err);
+		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+	}
+}
+
+async function resumeBatchProcessing(req, res) {
+	try {
+		const { checkType, batchId } = req.params;
+
+		// Resume batch processing
+		const ok = await db_resumeBatchProcessing(req.user.id, checkType, batchId);
+		if (!ok) return returnBadRequest(res, 'Failed to resume batch processing');
+
+		// Return response
+		return res.status(HttpStatus.SUCCESS_STATUS).json({ message: 'Batch processing resumed' });
+
+	} catch (err) {
+		console.error("MTE = ", err);
+		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+	}
+}
+
 async function createNewBatch(req, res) {
 	try {
 		const { checkType } = req.params;
@@ -305,5 +337,7 @@ module.exports = {
 	removeBatch,
 	addToBatch,
 	startBatchProcessing,
+	pauseBatchProcessing,
+	resumeBatchProcessing,
 	createNewBatch
 }

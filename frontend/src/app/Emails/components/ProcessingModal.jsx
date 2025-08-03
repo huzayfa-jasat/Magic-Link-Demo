@@ -4,16 +4,16 @@ import React from "react";
 // Style Imports
 import settingsStyles from "../../Settings/Settings.module.css";
 
-// Export Loading Modal Component
-export default function ExportLoadingModal({ isOpen, progress }) {
+// Processing Modal Component
+export default function ProcessingModal({ isOpen, progress, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className={settingsStyles.modalOverlay}>
-      <div className={settingsStyles.modal}>
-        <h2 className={settingsStyles.modalTitle}>Downloading...</h2>
+    <div className={settingsStyles.modalOverlay} onClick={onClose}>
+      <div className={settingsStyles.modal} onClick={(e) => e.stopPropagation()}>
+        <h2 className={settingsStyles.modalTitle}>Processing...</h2>
         <p className={settingsStyles.modalDescription}>
-          Please wait while we prepare your export.
+          Your list is currently in progress.
         </p>
         
         {/* Progress Bar */}
@@ -22,16 +22,12 @@ export default function ExportLoadingModal({ isOpen, progress }) {
             <div 
               className={settingsStyles.progressFill}
               style={{
-                width: progress.total > 0 ? `${(progress.current / progress.total) * 100}%` : '0%'
+                width: `${progress}%`
               }} 
             />
           </div>
           <div className={settingsStyles.progressText}>
-            {progress.total > 0 ? (
-              `${(100 * (progress.current / progress.total)).toFixed(0)}%`
-            ) : (
-              'Loading...'
-            )}
+            {`${progress}% complete`}
           </div>
         </div>
       </div>

@@ -40,25 +40,13 @@ export default function PasswordResetModal({
   	return (
 		<div className={styles.modalOverlay} onClick={onClose}>
 			<div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-				<h2 className={styles.modalTitle}>Reset Password</h2>
-				{!passwordSuccess ? (
-					<>
-						<p className={styles.modalDescription}>
-							We'll send a password reset link to:
-						</p>
-						<p className={styles.modalDescription} style={{ fontWeight: "bold", marginTop: "8px" }}>
-							{email}
-						</p>
-					</>
-				) : (
-					<p className={styles.modalDescription}>
-						Password reset instructions have been sent to your email!
-					</p>
-				)}
+				<h2 className={styles.modalTitle}>Update Password</h2>
+				<p className={styles.modalDescription}>We'll send a password reset link to your email.</p>
+				{(!passwordSuccess) && <p className={styles.modalField}>{email}</p>}
 				<div className={styles.passwordForm}>
 					{(passwordError) && (
 						<div className={styles.errorMessage}>
-						{passwordError}
+							There was an error sending the reset link. Please try again.
 						</div>
 					)}
 					{(passwordSuccess) && (

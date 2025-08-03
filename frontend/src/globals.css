@@ -155,6 +155,7 @@
   --main-hl: #BBE8FF;
   --brd-light: #242b38;
   --brd-light-2: #242b3850;
+  --brd-light-3: #242b3870;
   --txt-light: #9fabc2;
   --txt-light-2: #9fabc275;
   --txt-light-3: #3d4554;
@@ -166,6 +167,7 @@
   --fg-neu: #e3d10e;
   --fg-neg: #F58680;
   --bg-neg: #692a27;
+  --bg-neg-fade: #43201f;
   --result-valid: #50f5ac;
   --result-valid-fade: #50f5ac20;
   --result-invalid: #ea3b59;

@@ -258,7 +258,7 @@
   border-radius: 3px;
   background-color: var(--main-hl);
   color: var(--white);
-  font-size: 15px;
+  font-size: 14px;
   font-family: "Circular", "Geist", sans-serif;
   font-weight: 400;
   transition: background-color 0.2s ease-in-out, opacity 0.2s ease-in-out, color 0.2s ease-in-out;
@@ -267,13 +267,13 @@
 .creditsPill .creditBalanceAmount {
   margin: 0 0 5px 0;
   font-family: "PP Supply Mono", sans-serif;
-  font-size: 28px;
+  font-size: 20px;
   font-weight: 400;
   letter-spacing: 1px;
 }
 .creditsPill .creditBalanceLabel {
   font-family: "Circular", "Geist", sans-serif;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 400;
   color: var(--main-hl);
 }
@@ -496,7 +496,7 @@
 }
 
 .mobileMenuCloseButton {
-  height: 40px;
+  height: 35px;
   width: 40px;
   display: flex;
   align-items: center;
@@ -656,5 +656,10 @@
   }
   .content {
     padding: 30px 30px 0 30px !important;
+  }
+}
+@media screen and (max-height: 1050px) {
+  .collapseButton {
+    display: none !important;
   }
 }

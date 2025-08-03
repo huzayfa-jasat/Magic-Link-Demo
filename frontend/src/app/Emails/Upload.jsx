@@ -293,9 +293,14 @@ export default function EmailsUploadController() {
       />
       <div className={styles.uploadContainer}>
         <h1 className={styles.title}>
-          {(page === 'upload') && 'Upload File'}
+          {(page === 'upload') && 'Upload List'}
           {(page === 'finalize') && 'Choose Validation'}
         </h1>
+        {(page === 'upload') && (
+          <p className={styles.subtitle}>
+            We automatically find & remove duplicates and non-email entries from your list.
+          </p>
+        )}
         {(page === 'upload') && (
           <UploadStageFileUploadWithColumn
             error={error}

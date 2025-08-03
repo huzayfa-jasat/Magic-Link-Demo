@@ -1,52 +1,26 @@
 // Dependencies
-import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useMemo, useContext } from "react";
 
 // API Imports
 import { getReferralInviteCode, getReferralInviteList } from "../../api/credits";
+
+// Context Imports
+import { ErrorContext } from "../../ui/Context/ErrorContext";
+
+// Component Imports
+import ReferralEligibilityNotice from "./components/ReferralEligibilityNotice";
+import ReferralCard from "./components/ReferralCard";
 
 // Style Imports
 import styles from "./Referrals.module.css";
 
 // Icon Imports
-import { COMPLETE_CHECK_ICON, GIFT_ICON, WALLET_ICON } from "../../assets/icons";
-
-// Helper Functions
-function formatTransactionDate(date) {
-  return new Date(date).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
-
-// Helper Component
-function ReferralCard({ referral }) {
-  const isPending = referral.status === 'pending';
-  // Render
-  return (
-    <div className={`${styles.history_card} ${isPending ? styles.pending_card : ''}`}>
-      <div className={styles.history_card_left}>
-        <div className={styles.history_card_icon}>
-          {GIFT_ICON}
-        </div>
-        <div className={styles.history_card_title}>
-          <h5>{referral.email}</h5>
-          <p>{formatTransactionDate(referral.joined_ts)}</p>
-          {isPending && <span className={styles.pending_badge}>Pending</span>}
-        </div>
-      </div>
-      <div className={`${styles.credits_used} ${isPending ? styles.pending_credits : ''}`}>
-        +&nbsp;{referral.credits.toLocaleString()}
-      </div>
-    </div>
-  );
-}
+import { COMPLETE_CHECK_ICON } from "../../assets/icons";
 
 // Functional Component
 export default function ReferralsController() {
-  const navigate = useNavigate();
-  
+  const errorContext = useContext(ErrorContext);
+
   // Data states
   const [referralCode, setReferralCode] = useState(null);
   const [referralInfo, setReferralInfo] = useState(null);
@@ -60,11 +34,10 @@ export default function ReferralsController() {
   const fetchReferralCode = async () => {
     try {
       const response = await getReferralInviteCode();
-      setReferralCode(response.data.data);
-      return true;
+      if (response.status !== 200) errorContext.showError();
+      else setReferralCode(response.data.data);
     } catch (err) {
       console.error("Error fetching transactions:", err);
-      return false;
     }
   };
   useEffect(() => {
@@ -74,16 +47,19 @@ export default function ReferralsController() {
   // Fetch referral history
   const fetchReferralHistory = async () => {
     const response = await getReferralInviteList();
-    setReferralInfo({
-      num_referrals: response.data.data.num_referrals,
-      total_referral_credits: response.data.data.total_referral_credits,
-      num_pending_referrals: response.data.data.num_pending_referrals,
-      total_pending_credits: response.data.data.total_pending_credits,
-    });
-    setReferralHistory(response.data.data.referred_users || []);
-    setPendingReferrals(response.data.data.pending_referrals || []);
-    setUserEligible(response.data.data.user_eligible);
-    setUserLifetimePurchases(response.data.data.user_lifetime_purchases);
+    if (response.status !== 200) errorContext.showError();
+    else {
+      setReferralInfo({
+        num_referrals: response.data.data.num_referrals,
+        total_referral_credits: response.data.data.total_referral_credits,
+        num_pending_referrals: response.data.data.num_pending_referrals,
+        total_pending_credits: response.data.data.total_pending_credits,
+      });
+      setReferralHistory(response.data.data.referred_users || []);
+      setPendingReferrals(response.data.data.pending_referrals || []);
+      setUserEligible(response.data.data.user_eligible);
+      setUserLifetimePurchases(response.data.data.user_lifetime_purchases);
+    }
   };
   useEffect(() => {
     fetchReferralHistory();
@@ -118,26 +94,14 @@ export default function ReferralsController() {
   // Render
   return (
     <div className={styles.container}>
-      {/* Referral Code */}
-      <h1 className={styles.title}>Referrals</h1>
-      <br />
-      
       {/* Eligibility Notice */}
-      {!userEligible && (
-        <div className={styles.eligibilityNotice}>
-          <div className={styles.noticeIcon}>{WALLET_ICON}</div>
-          <div className={styles.noticeContent}>
-            <h3>Eligibility</h3>
-            <p>Both you and your referrals must purchase at least 100,000 credits to be eligible for referral bonuses.</p>
-            <p>You've purchased {userLifetimePurchases.toLocaleString()} credits so far. You need {(100000 - userLifetimePurchases).toLocaleString()} more credits to unlock your referral rewards.</p>
-            <button onClick={() => navigate('/purchase')} className={styles.purchaseButton}>
-              Purchase Credits
-            </button>
-          </div>
-        </div>
-      )}
-      <br />
-      
+      {(!userEligible) && <>
+        <ReferralEligibilityNotice purchases={userLifetimePurchases} />
+        <br /><br />
+        <h1 className={styles.title}>Referral Code</h1>
+        <br />
+      </>}
+      {/* Referral Code */}
       <div className={styles.metricsContainer}>
         <div className={styles.referralCodeContainer}>
           <h2 className={styles.verificationText}>Referral Code</h2>
@@ -145,12 +109,18 @@ export default function ReferralsController() {
             {(referralCode !== null) && (referralCode)}
           </div>
           <div className={styles.referralActions}>
-            <button onClick={handleShare} className={(shareSuccess) ? styles.copySuccess : ""}>
+            <button onClick={handleShare} className={`${styles.referralActionsButton} ${(shareSuccess) ? styles.copySuccess : ""}`}>
               {shareSuccess && COMPLETE_CHECK_ICON}
               {shareSuccess ? "Copied!" : "Copy Link"}
             </button>
           </div>
         </div>
+      </div>
+      <br /><br />
+      {/* Referral Metrics */}
+      <h1 className={styles.title}>Referrals</h1>
+      <br/>
+      <div className={styles.metricsContainer}>
         <div className={styles.referralCodeContainer}>
           <h2 className={styles.verificationText}>Total Referrals</h2>
           <div className={`${styles.availableCredits} ${styles.mini}`}>
@@ -158,8 +128,8 @@ export default function ReferralsController() {
               referralInfo.num_referrals + referralInfo.num_pending_referrals
             )}
           </div>
-          {referralInfo && referralInfo.num_pending_referrals > 0 && (
-            <p className={styles.pendingCount}>{referralInfo.num_pending_referrals} pending</p>
+          {(referralInfo && referralInfo.num_pending_referrals > 0) && (
+            <p className={styles.pendingCount}>{referralInfo.num_pending_referrals} Pending</p>
           )}
         </div>
         <div className={styles.referralCodeContainer}>
@@ -167,14 +137,14 @@ export default function ReferralsController() {
           <div className={`${styles.availableCredits} ${styles.mini}`}>
             {(referralInfo !== null) && (referralInfo.total_referral_credits.toLocaleString())}
           </div>
-          {referralInfo && referralInfo.total_pending_credits > 0 && (
+          {(referralInfo && referralInfo.num_pending_referrals > 0) && (
             <p className={styles.pendingCount}>
-              +{referralInfo.total_pending_credits.toLocaleString()} pending
+              +{referralInfo.total_pending_credits.toLocaleString()} Pending
             </p>
           )}
         </div>
       </div>
-      <br /><br /><br />
+      <br /><br />
       {/* Referral History */}
       {(referralHistory !== null && referralHistory.length > 0) && (
         <>
