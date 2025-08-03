@@ -821,7 +821,7 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 12px;
+  gap: 15px;
 }
 .finalizeIcon {
   height: 40px;
@@ -835,6 +835,11 @@
 }
 .finalizeIcon svg {
   color: var(--main-hl);
+}
+.finalizeSubtitle {
+  color: var(--black);
+  font-size: 18px;
+  margin: auto 0;
 }
 .finalizeText {
   margin-bottom: 10px;
@@ -1323,6 +1328,24 @@
   }
   .uploadSubtext {
     font-size: 14px;
+  }
+  .finalizeRow {
+    padding: 20px;
+  }
+  .finalizeIcon {
+    height: 32px;
+    width: 32px;
+  }
+  .finalizeIcon svg {
+    height: 18px;
+    width: auto;
+  }
+  .finalizeSubtitle {
+    font-size: 16px;
+  }
+  .finalizeText {
+    font-size: 15px;
+    margin-bottom: 5px;
   }
 }
 @media screen and (max-width: 450px) {

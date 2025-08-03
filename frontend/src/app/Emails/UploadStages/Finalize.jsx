@@ -23,7 +23,7 @@ export default function UploadStageFinalize({
               <div className={styles.finalizeIcon}>
                 {EMAIL_ICON}
               </div>
-              <h2 className={styles.subtitle}>Email Validation</h2>
+              <h2 className={styles.finalizeSubtitle}>Email Validation</h2>
             </div>
             <p className={styles.finalizeText}>
               Test if emails are valid, invalid, or potential catch-alls.
@@ -37,7 +37,7 @@ export default function UploadStageFinalize({
               <div className={styles.finalizeIcon}>
                 {EMAIL_SHREDDER_ICON}
               </div>
-              <h2 className={styles.subtitle}>Catchall Validation</h2>
+              <h2 className={styles.finalizeSubtitle}>Catchall Validation</h2>
             </div>
             <p className={styles.finalizeText}>
               Test the deliverability of catchall emails.
