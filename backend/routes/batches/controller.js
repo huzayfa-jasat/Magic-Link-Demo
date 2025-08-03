@@ -8,6 +8,7 @@ const {
 	db_getEmailGlobalIds,
 	db_getBatchDetails,
 	db_getBatchResults,
+	db_getBatchProgress,
 	db_checkAndDeductCredits,
 	db_removeBatch,
 	db_addToBatch,
@@ -134,6 +135,32 @@ async function getBatchResults(req, res) {
 			results: data,
 			metadata: metadata
 		});
+
+	} catch (err) {
+		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+	}
+}
+
+async function getBatchProgress(req, res) {
+	try {
+		const { checkType, batchId } = req.params;
+
+		// Only supported for deliverable batches
+		if (checkType !== 'deliverable') {
+			return res.status(HttpStatus.SUCCESS_STATUS).json({
+				progress: 100,
+				processed: 0,
+				total: 0,
+				message: 'Progress tracking is only available for deliverable batches'
+			});
+		}
+
+		// Get batch progress
+		const [ok, progressData] = await db_getBatchProgress(req.user.id, batchId);
+		if (!ok) return returnBadRequest(res, 'Failed to get batch progress');
+
+		// Return response
+		return res.status(HttpStatus.SUCCESS_STATUS).json(progressData);
 
 	} catch (err) {
 		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
@@ -274,6 +301,7 @@ module.exports = {
 	getBatchesList,
 	getBatchDetails,
 	getBatchResults,
+	getBatchProgress,
 	removeBatch,
 	addToBatch,
 	startBatchProcessing,

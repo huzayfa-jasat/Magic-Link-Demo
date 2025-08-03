@@ -270,12 +270,14 @@ CREATE TABLE Bouncer_Batches_Deliverable (
     `user_batch_id` int NOT NULL, -- Which user batch this bouncer batch belongs to
     `status` enum('pending', 'processing', 'completed', 'failed') NOT NULL DEFAULT 'pending',
     `email_count` int NOT NULL DEFAULT 0, -- Number of emails in this bouncer batch
+    `processed` int NOT NULL DEFAULT 0, -- Number of emails already processed by bouncer API
     `created_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`bouncer_batch_id`),
     FOREIGN KEY (`user_batch_id`) REFERENCES Batches_Deliverable(`id`) ON DELETE CASCADE,
     INDEX idx_status_lookup (`status`, `created_ts`),
-    INDEX idx_user_batch_mapping (`user_batch_id`, `status`)
+    INDEX idx_user_batch_mapping (`user_batch_id`, `status`),
+    INDEX idx_processing_progress (`user_batch_id`, `status`, `processed`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
 DROP TABLE IF EXISTS `Bouncer_Batches_Catchall`;

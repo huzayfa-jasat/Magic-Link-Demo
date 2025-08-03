@@ -16,6 +16,7 @@ const {
 	getBatchesList,
     getBatchDetails,
     getBatchResults,
+    getBatchProgress,
 	removeBatch,
 	addToBatch,
 	startBatchProcessing,
@@ -37,6 +38,7 @@ batchesRouter.post('/:checkType/batch/:batchId/add', checkValidCheckType, checkU
 batchesRouter.post('/:checkType/batch/:batchId/start', checkValidCheckType, checkUserBatchAccess, startBatchProcessing);
 batchesRouter.get('/:checkType/batch/:batchId/details', checkValidCheckType, checkUserBatchAccess, getBatchDetails);
 batchesRouter.get('/:checkType/batch/:batchId/results', checkValidCheckType, checkUserBatchAccess, getBatchResults);
+batchesRouter.get('/:checkType/batch/:batchId/progress', checkValidCheckType, checkUserBatchAccess, getBatchProgress);
 batchesRouter.delete('/:checkType/batch/:batchId/rm', checkValidCheckType, checkUserBatchAccess, removeBatch);
 
 // Export routes

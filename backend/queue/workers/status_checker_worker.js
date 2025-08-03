@@ -7,7 +7,8 @@ const {
     db_markBouncerBatchFailed,
     db_processBouncerResults,
     db_checkRateLimit,
-    db_recordRateLimit
+    db_recordRateLimit,
+    db_updateBouncerBatchProcessed
 } = require('../funs_db.js');
 
 // Status Checker Worker
@@ -74,17 +75,27 @@ class StatusCheckerWorker {
 
         // Check batch status (& download results if completed)
         let isCompleted = false;
+        let processedCount = 0;
         try {
-            if (check_type === 'deliverable') isCompleted = await this.bouncerAPI.checkDeliverabilityBatch(bouncerBatchId);
-            else if (check_type === 'catchall') isCompleted = await this.bouncerAPI.checkCatchallBatch(bouncerBatchId);
-            else throw new Error(`Invalid check_type: ${check_type}`);
+            if (check_type === 'deliverable') {
+                const statusResult = await this.bouncerAPI.checkDeliverabilityBatch(bouncerBatchId);
+                isCompleted = statusResult.isCompleted;
+                processedCount = statusResult.processed;
+            } else if (check_type === 'catchall') {
+                isCompleted = await this.bouncerAPI.checkCatchallBatch(bouncerBatchId);
+            } else throw new Error(`Invalid check_type: ${check_type}`);
 
             // Record rate limit usage
             await db_recordRateLimit(check_type, 'check_status');
 
+            // Update processed count in DB for deliverable batches
+            if (check_type === 'deliverable') {
+                await db_updateBouncerBatchProcessed(bouncerBatchId, processedCount);
+            }
+
             // Log status
             if (!isCompleted) {
-                console.log(`⏳ Batch ${bouncerBatchId} still processing`);
+                console.log(`⏳ Batch ${bouncerBatchId} still processing (${processedCount} processed)`);
                 return;
             } else console.log(`✅ Batch ${bouncerBatchId} is completed, downloading results immediately`);
 
