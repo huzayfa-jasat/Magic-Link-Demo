@@ -1226,50 +1226,58 @@ async function db_createBatchWithEstimate(user_id, check_type, title, estimated_
 }
 
 async function db_checkDuplicateFilename(user_id, filename) {
-	try {
-		// Check deliverable batches first
-		const deliverable_table = getBatchTableName('deliverable');
-		const deliverable_result = await knex(deliverable_table)
-			.where({
-				'user_id': user_id,
-				'title': filename,
-				'is_archived': 0
-			})
-			.select('id')
-			.first();
+	let err_code;
 
-		if (deliverable_result) {
-			return [true, {
-				check_type: 'deliverable',
-				batch_id: deliverable_result.id
-			}];
-		}
-
-		// Check catchall batches
-		const catchall_table = getBatchTableName('catchall');
-		const catchall_result = await knex(catchall_table)
-			.where({
-				'user_id': user_id,
-				'title': filename,
-				'is_archived': 0
-			})
-			.select('id')
-			.first();
-
-		if (catchall_result) {
-			return [true, {
-				check_type: 'catchall',
-				batch_id: catchall_result.id
-			}];
-		}
-
-		// No duplicate found
-		return [true, null];
-
-	} catch (err) {
-		console.log("CHECK DUPLICATE FILENAME ERR = ", err);
+	// Check deliverable batches first
+	const deliverable_table = getBatchTableName('deliverable');
+	const deliverable_result = await knex(deliverable_table)
+		.where({
+			'user_id': user_id,
+			'title': filename,
+			'is_archived': 0
+		})
+		.select('id')
+		.first()
+		.catch((err)=>{if (err) err_code = err.code});
+	
+	if (err_code) {
+		console.log("CHECK DUPLICATE FILENAME DELIVERABLE ERR = ", err_code);
 		return [false, null];
 	}
+
+	if (deliverable_result) {
+		return [true, {
+			check_type: 'deliverable',
+			batch_id: deliverable_result.id
+		}];
+	}
+
+	// Check catchall batches
+	const catchall_table = getBatchTableName('catchall');
+	const catchall_result = await knex(catchall_table)
+		.where({
+			'user_id': user_id,
+			'title': filename,
+			'is_archived': 0
+		})
+		.select('id')
+		.first()
+		.catch((err)=>{if (err) err_code = err.code});
+	
+	if (err_code) {
+		console.log("CHECK DUPLICATE FILENAME CATCHALL ERR = ", err_code);
+		return [false, null];
+	}
+
+	if (catchall_result) {
+		return [true, {
+			check_type: 'catchall',
+			batch_id: catchall_result.id
+		}];
+	}
+
+	// No duplicate found
+	return [true, null];
 }
 
 // Exports
