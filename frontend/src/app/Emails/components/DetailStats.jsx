@@ -15,8 +15,8 @@ export default function DetailStats({
 	good, risky, bad,
 }) {
 	const valid_count = (checkTyp === 'verify') ? parseInt(valid) : parseInt(good);
-	const invalid_count = (checkTyp === 'verify') ? parseInt(invalid) : parseInt(risky);
-	const catchall_count = (checkTyp === 'verify') ? parseInt(catchall) : parseInt(bad);
+	const catchall_count = (checkTyp === 'verify') ? parseInt(catchall) : parseInt(risky);
+	const invalid_count = (checkTyp === 'verify') ? parseInt(invalid) : parseInt(bad);
 	return (
 		<div className={styles.detailsMeta}>
 			{/* <div className={styles.metaCard}>
