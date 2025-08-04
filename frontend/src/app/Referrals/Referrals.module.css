@@ -171,6 +171,7 @@
 
 /* Eligibility Notice */
 .eligibilityNotice {
+  max-width: 650px;
   display: flex;
   gap: 20px;
   padding: 25px;
