@@ -1012,8 +1012,8 @@ async function db_getBatchProgress(user_id, batch_id, checkType) {
 		
 		if (!batch) return [false, null];
 		
-		// Return status for ALL non-processing batches
-		if (batch.status !== 'processing') {
+		// Return status for completed, paused, or failed batches
+		if (batch.status === 'completed' || batch.status === 'paused' || batch.status === 'failed') {
 			return [true, {
 				status: batch.status
 			}];
