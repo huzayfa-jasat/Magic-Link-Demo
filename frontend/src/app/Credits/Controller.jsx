@@ -30,10 +30,10 @@ export default function CreditsController() {
         listCatchallTransactions()
       ]);
       
-      // Combine both transaction lists
+      // Combine both transaction lists with type indicators
       const allTransactions = [
-        ...regularResponse.data.data,
-        ...catchallResponse.data.data
+        ...regularResponse.data.data.map(tx => ({ ...tx, type: 'regular' })),
+        ...catchallResponse.data.data.map(tx => ({ ...tx, type: 'catchall' }))
       ];
       
       setTransactions(allTransactions);
@@ -65,7 +65,7 @@ export default function CreditsController() {
   function sortByDateDescending(data) {
     return [...data].sort(
       (a, b) =>
-        new Date(b.date_of_transaction) - new Date(a.date_of_transaction)
+        new Date(b.usage_ts) - new Date(a.usage_ts)
     );
   }
   const sortedTransactions = useMemo(
