@@ -2,36 +2,10 @@
 const knex = require('knex')(require('../../knexfile.js').development);
 
 // Function Imports
-const { getBatchTableName } = require('../batches/funs_db_utils.js');
-
-// Helper Functions
-const formatResultsByCheckType = (results, check_type) => {
-    return results.map((result)=>{
-        let check_type_specific_result = {};
-
-        // Handle check_type specific results
-        switch (check_type) {
-            case 'deliverable':
-                // Handle "deliverable" type results (translate fields into "result")
-                if (result.status === 'deliverable' && result.is_catchall === 0) check_type_specific_result.result = 1;
-                else if ((result.is_catchall === 1) || (result.status === 'risky' && result.reason === 'low_deliverability')) check_type_specific_result.result = 2;
-                else check_type_specific_result.result = 0;
-                break;
-            case 'catchall':
-                // Handle "catchall" type results (translate fields into deliverability score)
-                check_type_specific_result.score = result.toxicity;
-                break;
-            default:
-                break;
-        }
-
-        // Return
-        return {
-            'email': result.email_nominal,
-            ...check_type_specific_result
-        }
-    });
-}
+const {
+    getBatchTableName, getResultsTableName, getEmailBatchAssociationTableName,
+    formatResultsByCheckType
+} = require('../batches/funs_db_utils.js');
 
 // -------------------
 // READ Functions

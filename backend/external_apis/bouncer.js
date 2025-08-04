@@ -122,7 +122,7 @@ class BouncerAPI {
         if (!this.catchallApiKey) throw new Error('BOUNCER_API_KEY_DEEPCATCHALL environment variable is required');
 
 		// Make request
-        const response = await this.makeHttpRequest('/v1/toxicity/list', {
+        const response = await this.makeHttpRequest('/v1.1/email/verify/batch', {
             method: 'POST',
             body: emails,
             apiKey: this.catchallApiKey
@@ -193,14 +193,26 @@ class BouncerAPI {
         if (!batchId || typeof batchId !== 'string') throw new Error('batchId must be a non-empty string');
         if (!this.catchallApiKey) throw new Error('BOUNCER_API_KEY_DEEPCATCHALL environment variable is required');
 
+		// // Make request
+        // const response = await this.makeHttpRequest(`/v1/toxicity/list/${batchId}`, {
+        //     method: 'GET',
+        //     apiKey: this.catchallApiKey
+        // });
+
+		// // Return status
+        // return response.status === 'completed';
+
 		// Make request
-        const response = await this.makeHttpRequest(`/v1/toxicity/list/${batchId}`, {
+        const response = await this.makeHttpRequest(`/v1.1/email/verify/batch/${batchId}`, {
             method: 'GET',
             apiKey: this.catchallApiKey
         });
 
-		// Return status
-        return response.status === 'completed';
+		// Return status and processed count
+        return {
+            isCompleted: response.status === 'completed',
+            processed: response.processed || 0
+        };
     }
 
     /**
@@ -213,8 +225,20 @@ class BouncerAPI {
         if (!batchId || typeof batchId !== 'string') throw new Error('batchId must be a non-empty string');
         if (!this.catchallApiKey) throw new Error('BOUNCER_API_KEY_DEEPCATCHALL environment variable is required');
 
+		// // Make request
+        // const response = await this.makeHttpRequest(`/v1/toxicity/list/${batchId}/data`, {
+        //     method: 'GET',
+        //     apiKey: this.catchallApiKey
+        // });
+
+		// // Format & return results
+		// return response.map(result => ({
+		// 	email: result.email,
+		// 	toxicity: result.toxicity,
+		// }));
+
 		// Make request
-        const response = await this.makeHttpRequest(`/v1/toxicity/list/${batchId}/data`, {
+        const response = await this.makeHttpRequest(`/v1.1/email/verify/batch/${batchId}/download?download=all`, {
             method: 'GET',
             apiKey: this.catchallApiKey
         });
@@ -222,7 +246,11 @@ class BouncerAPI {
 		// Format & return results
 		return response.map(result => ({
 			email: result.email,
-			toxicity: result.toxicity,
+			status: result.status,
+			reason: result.reason,
+			is_catchall: result.domain.acceptAll,
+            score: result.score,
+            provider: result.provider,
 		}));
     }
 }

@@ -75,6 +75,10 @@ async function s3_generateExportUrls(batch) {
 /**
  * Map verification status for exports based on check type
  */
+// TODO: This mapping logic is bad
+// ... status won't be "good"/"risky"/"bad" for catchall
+// ... "risky" & "low_deliverability" REASON should be marked as "Catch-All" for deliverable batches
+// ... "unknown" doesn't really exist for deliverable batches
 function mapStatus(status, isCatchall, checkType) {
     if (checkType === 'deliverable') {
         if (status === 'deliverable' && !isCatchall) return 'Deliverable';

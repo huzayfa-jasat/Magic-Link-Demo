@@ -192,16 +192,31 @@ CREATE TABLE Email_Deliverable_Results (
     FOREIGN KEY (`email_global_id`) REFERENCES Emails_Global(`global_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
--- Single global results table for catchall toxicity checks
+-- Single global results table for catchall checks
 DROP TABLE IF EXISTS `Email_Catchall_Results`;
 CREATE TABLE Email_Catchall_Results (
     `email_global_id` int NOT NULL,
-    `toxicity` int NOT NULL,
+    `status` enum('deliverable', 'risky', 'undeliverable', 'unknown') NOT NULL DEFAULT 'unknown',
+    `reason` varchar(50) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT 'unknown',
+    `is_catchall` TINYINT(1) NOT NULL DEFAULT 0,
+    `score` int NOT NULL DEFAULT 0,
+    `provider` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL,
     `verified_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`email_global_id`),
     FOREIGN KEY (`email_global_id`) REFERENCES Emails_Global(`global_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+
+-- Single global results table for catchall toxicity checks
+-- DROP TABLE IF EXISTS `Email_Catchall_Results`;
+-- CREATE TABLE Email_Catchall_Results (
+--     `email_global_id` int NOT NULL,
+--     `toxicity` int NOT NULL,
+--     `verified_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--     `updated_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+--     PRIMARY KEY (`email_global_id`),
+--     FOREIGN KEY (`email_global_id`) REFERENCES Emails_Global(`global_id`) ON DELETE CASCADE
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
 -- Batch tables remain mostly the same but track summary info
 DROP TABLE IF EXISTS `Batches_Deliverable`;
@@ -288,6 +303,7 @@ CREATE TABLE Bouncer_Batches_Catchall (
     `user_batch_id` int NOT NULL, -- Which user batch this bouncer batch belongs to
     `status` enum('pending', 'processing', 'completed', 'failed') NOT NULL DEFAULT 'pending',
     `email_count` int NOT NULL DEFAULT 0, -- Number of emails in this bouncer batch
+    `processed` int NOT NULL DEFAULT 0, -- Number of emails already processed by bouncer API
     `created_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`bouncer_batch_id`),

@@ -4,77 +4,11 @@ const knex = require('knex')(require('../../knexfile.js').development);
 // Function Imports
 const { resend_sendBatchCompletionEmail } = require('../../external_apis/resend.js');
 const {
-	getCreditTableName,
-	getCreditHistoryTableName,
-	getBatchTableName,
-	getResultsTableName,
-	getEmailBatchAssociationTableName
+	getCreditTableName, getCreditHistoryTableName, getBatchTableName, getResultsTableName, getEmailBatchAssociationTableName, getBouncerBatchTableName,
+	formatResultsByCheckType,
+	createBatchBaseQuery, applyBatchStatusFilter, applyBatchResultFilter,
 } = require('./funs_db_utils.js');
 
-// Helper Functions
-const translateToxicityScore = (toxicity) => {
-	switch (toxicity) {
-		case 0:
-			return 'good';
-		case 1: case 2: case 3:
-			return 'risky';
-		case 4: case 5:
-			return 'bad';
-		default:
-			return 'unknown';
-	}
-}
-const formatResultsByCheckType = (results, check_type) => {
-	return results.map((result)=>{
-		let check_type_specific_result = {};
-
-		// Handle check_type specific results
-		switch (check_type) {
-			case 'deliverable':
-				// Handle "deliverable" type results (translate fields into "result")
-				if (result.status === 'deliverable' && result.is_catchall === 0) check_type_specific_result.result = 1;
-				else if ((result.is_catchall === 1) || (result.status === 'risky' && result.reason === 'low_deliverability')) check_type_specific_result.result = 2;
-				else check_type_specific_result.result = 0;
-				// Add provider
-				check_type_specific_result.provider = result.provider;
-				break;
-			case 'catchall':
-				// Handle "catchall" type results (translate fields into deliverability score)
-				check_type_specific_result.score = translateToxicityScore(result.toxicity);
-				break;
-			default:
-				break;
-		}
-
-		// Return
-		return {
-			'email': result.email_nominal,
-			...check_type_specific_result
-		}
-	});
-}
-const createBatchBaseQuery = (knex, tableName, categoryName, user_id, category) => {
-	return knex(tableName)
-		.select(
-			'id',
-			'title',
-			'status', 
-			'total_emails',
-			'created_ts',
-			'completed_ts',
-			...(category === 'all' ? [knex.raw(`'${categoryName}' as category`)] : [])
-		)
-		.where({
-			'user_id': user_id,
-			'is_archived': 0,
-		});
-}
-const applyBatchStatusFilter = (query, statusValues) => {
-	if (statusValues && statusValues.length > 0) {
-		return query.whereIn('status', statusValues);
-	}
-	return query;
-}
 
 // -------------------
 // CREATE Functions
@@ -233,93 +167,6 @@ async function db_addToBatch(user_id, check_type, batch_id, emails) {
 	if (err_code) return [false, null];
 
 	return [true, batch_id];
-}
-
-// Modify db_createBatch to create batches in draft status initially
-async function db_createBatchDraft(user_id, check_type, title, emails) {
-	// Get batch table names
-	const batch_table = getBatchTableName(check_type);
-	const results_table = getResultsTableName(check_type);
-	const email_batch_association_table = getEmailBatchAssociationTableName(check_type);
-	if (!batch_table || !results_table || !email_batch_association_table) return [false, null];
-
-	// 1. Create batch entry in draft status
-	let err_code;
-	const insert_result = await knex(batch_table).insert({
-		'user_id': user_id,
-		'title': title ?? 'Untitled',
-		'status': 'draft', // Start as draft
-		'total_emails': emails.length,
-		'created_ts': knex.fn.now(),
-	}).catch((err)=>{if (err) err_code = err.code});
-	if (err_code) {
-		console.log("BATCH INSERT ERR 1 = ", err_code);
-		return [false, null];
-	}
-	
-	// MySQL typically returns an array with insertId
-	const [batch_id] = insert_result;
-	console.log('batch_id after destructuring:', batch_id);
-	
-	if (!batch_id) return [false, null];
-
-	// 2. Create batch emails association table entries
-	await knex(email_batch_association_table).insert(emails.map((email)=>({
-		'batch_id': batch_id,
-		'email_global_id': email.global_id,
-		'email_nominal': email.email,
-	}))).catch((err)=>{if (err) err_code = err.code});
-	if (err_code) {
-		console.log("BATCH INSERT ERR 2 = ", err_code);
-		return [false, null];
-	}
-	
-	// 3. Check cached results for existing results
-	const existing_results = await knex(results_table).whereIn(
-		'email_global_id', emails.map((email)=>email.global_id)
-	).pluck(
-		'email_global_id'
-	).catch((err)=>{if (err) err_code = err.code});
-	if (err_code) {
-		console.log("BATCH INSERT ERR 3 = ", err_code);
-		return [false, null];
-	}
-
-	// Update batch emails association table entries with cached results
-	await knex(email_batch_association_table).whereIn(
-		'email_global_id', existing_results
-	).where('batch_id', batch_id).update({
-		'used_cached': 1,
-		'did_complete': 1,
-	}).catch((err)=>{if (err) err_code = err.code});
-	if (err_code) {
-		console.log("BATCH INSERT ERR 4 = ", err_code);
-		return [false, null];
-	}
-
-	// Get "fresh" email ID's (not cached / need to be verified)
-	const existing_results_set = new Set(existing_results);
-	const fresh_email_ids = emails.filter((email)=>!existing_results_set.has(email.global_id)).map((email)=>email.global_id);
-
-	// Handle edge case: if all emails were cached, mark batch as completed immediately
-	if (fresh_email_ids.length === 0 && existing_results.length === emails.length) {
-		await knex(batch_table).where({
-			'id': batch_id
-		}).update({
-			'status': 'completed',
-			'completed_ts': knex.fn.now()
-		}).catch((err)=>{if (err) err_code = err.code});
-		if (err_code) {
-			console.log("BATCH INSERT ERR 5 (update to completed) = ", err_code);
-			return [false, null];
-		}
-		
-		// Send batch completion email notification
-		await db_sendBatchCompletionEmail(user_id, check_type, batch_id);
-	}
-
-	// Return
-	return [true, batch_id, fresh_email_ids];
 }
 
 async function db_createBatchWithEstimate(user_id, check_type, title, estimated_emails) {
@@ -516,7 +363,7 @@ async function db_getBatchesList(user_id, page, limit, order, category, status) 
 	const formatted_batches = await Promise.all(batches.map(async (batch) => {
 		const formatted = {
 			...batch,
-			status: (batch.status === 'queued' || batch.status === 'draft' || batch.status === 'pending') ? 'processing' : batch.status
+			status: (batch.status === 'completed' || batch.status === 'failed' || batch.status === 'paused') ? batch.status : 'processing'
 		};
 		
 		// Add progress for any processing batch
@@ -524,55 +371,16 @@ async function db_getBatchesList(user_id, page, limit, order, category, status) 
 			// Determine batch type from the batch row itself
 			// When category='all', batch.category is set from the query
 			// Otherwise, we need to infer it from the category parameter
-			const batchType = batch.category || category;
+			const batch_typ = batch.category || category;
 			
-			if (batchType === 'deliverable') {
-				try {
-					// Calculate progress from bouncer batches
-					const processed_result = await knex('Bouncer_Batches_Deliverable')
-						.where('user_batch_id', batch.id)
-						.sum('processed as total_processed')
-						.first();
-					
-					const total_processed = parseInt(processed_result.total_processed) || 0;
-					const total_with_cached = total_processed + (batch.cached_results || 0);
-					
-					// Calculate percentage
-					const progress = batch.emails > 0 
-						? Math.round((total_with_cached / batch.emails) * 100)
-						: 0;
-					
-					formatted.progress = Math.min(progress, 99); // Cap at 99% until batch is marked completed
-				} catch (error) {
-					console.error(`Error calculating progress for deliverable batch ${batch.id}:`, error);
-					formatted.progress = 0;
-				}
-			} else if (batchType === 'catchall') {
-				try {
-					// Count completed emails in the batch
-					const completed_result = await knex('Batch_Emails_Catchall')
-						.where({
-							'batch_id': batch.id,
-							'did_complete': 1
-						})
-						.count('* as total_completed')
-						.first();
-					
-					const total_completed = parseInt(completed_result.total_completed) || 0;
-					
-					// Calculate percentage (completed emails / total emails)
-					const progress = batch.emails > 0 
-						? Math.round((total_completed / batch.emails) * 100)
-						: 0;
-					
-					formatted.progress = Math.min(progress, 99); // Cap at 99% until batch is marked completed
-				} catch (error) {
-					console.error(`Error calculating progress for catchall batch ${batch.id}:`, error);
-					formatted.progress = 0;
-				}
-			}
+			// Get progress (using already-retrieved total # of emails in batch)
+			const [progress_ok, progress_dict] = await db_getBatchProgress(user_id, batch.id, batch_typ, batch.emails);
+			if (!progress_ok) return {
+				...formatted,
+				progress: 0,
+			};
+			formatted.progress = progress_dict.progress;
 		}
-		
 		return formatted;
 	}));
 
@@ -695,20 +503,20 @@ async function db_getCatchallBatchStats(batch_id) {
 		[`${email_batch_association_table}.batch_id`]: batch_id,
 		[`${email_batch_association_table}.did_complete`]: 1,
 	}).select(
-		knex.raw(`SUM(CASE WHEN ${results_table}.toxicity = 0 THEN 1 ELSE 0 END) as good`),
-		knex.raw(`SUM(CASE WHEN ${results_table}.toxicity IN (1, 2, 3) THEN 1 ELSE 0 END) as risky`),
-		knex.raw(`SUM(CASE WHEN ${results_table}.toxicity IN (4, 5) THEN 1 ELSE 0 END) as bad`)
+		knex.raw(`SUM(CASE WHEN ${results_table}.status = 'deliverable' THEN 1 ELSE 0 END) as valid`),
+		knex.raw(`SUM(CASE WHEN ${results_table}.status = 'risky' THEN 1 ELSE 0 END) as risky`),
+		knex.raw(`SUM(CASE WHEN ${results_table}.status = 'undeliverable' THEN 1 ELSE 0 END) as invalid`)
 	).catch((err)=>{if (err) err_code = err});
 	if (err_code || !stats) {
 		console.log("CATCHALL BATCH STATS ERR = ", err_code);
 		return [false, null];
 	}
-
+	
 	// Return
 	return [true, {
-		good: stats.good ?? 0,
+		good: stats.valid ?? 0,
 		risky: stats.risky ?? 0,
-		bad: stats.bad ?? 0,
+		bad: stats.invalid ?? 0,
 	}];
 }
 
@@ -785,7 +593,7 @@ async function db_getBatchResults(user_id, check_type, batch_id, page, limit, or
 			results_columns = ['email_nominal', 'status', 'reason', 'is_catchall', 'score', 'provider', 'updated_ts'];
 			break;
 		case 'catchall':
-			results_columns = ['email_nominal', 'toxicity', 'updated_ts'];
+			results_columns = ['email_nominal', 'status', 'reason', 'score', 'provider', 'updated_ts'];
 			break;
 		default:
 			return [false, null];
@@ -798,11 +606,11 @@ async function db_getBatchResults(user_id, check_type, batch_id, page, limit, or
 			order_column = 'updated_ts';
 			order_direction = (order === 'timehl') ? 'desc' : 'asc';
 			break;
-		case 'scorehl': case 'scorelh':
-			if (check_type === 'deliverable') return [false, null]; // Enforce catchall-only sort
-			order_column = 'toxicity';
-			order_direction = (order === 'scorehl') ? 'desc' : 'asc';
-			break;
+		// case 'scorehl': case 'scorelh':
+		// 	if (check_type === 'deliverable') return [false, null]; // Enforce catchall-only sort
+		// 	order_column = 'toxicity';
+		// 	order_direction = (order === 'scorehl') ? 'desc' : 'asc';
+		// 	break;
 		default:
 			return [false, null];
 	}
@@ -818,50 +626,7 @@ async function db_getBatchResults(user_id, check_type, batch_id, page, limit, or
 	});
 
 	// Handle filtering
-	switch (filter) {
-		case 'all':
-			break;
-		case 'deliverable':
-			base_query = base_query.where({
-				[`${results_table}.status`]: 'deliverable',
-				[`${results_table}.is_catchall`]: 0,
-			});
-			break;
-		case 'catchall':
-			base_query = base_query.where(function() {
-				this.where({
-					[`${results_table}.status`]: 'risky',
-					[`${results_table}.reason`]: 'low_deliverability',
-				}).orWhere({
-					[`${results_table}.is_catchall`]: 1,
-				});
-			});
-			break;
-		case 'undeliverable':
-			base_query = base_query.whereNot(function () {
-				this.where({
-					[`${results_table}.status`]: 'deliverable',
-					[`${results_table}.is_catchall`]: 0,
-				}).orWhere({
-					[`${results_table}.status`]: 'risky',
-					[`${results_table}.reason`]: 'low_deliverability',
-				}).orWhere({
-					[`${results_table}.is_catchall`]: 1,
-				});
-			});
-			break;
-		case 'good':
-			base_query = base_query.where('toxicity', 0);
-			break;
-		case 'risky':
-			base_query = base_query.whereIn('toxicity', [1, 2, 3]);
-			break;
-		case 'bad':
-			base_query = base_query.whereIn('toxicity', [4, 5]);
-			break;
-		default:
-			break;
-	}
+	base_query = applyBatchResultFilter(base_query, results_table, filter);
 
 	// Handle search
 	if (search && search.trim()) {
@@ -890,48 +655,7 @@ async function db_getBatchResults(user_id, check_type, batch_id, page, limit, or
 	});
 
 	// Apply same filtering to count query
-	switch (filter) {
-		case 'all':
-			break;
-		case 'deliverable':
-			count_query = count_query.where({
-				[`${results_table}.status`]: 'deliverable',
-				[`${results_table}.is_catchall`]: 0,
-			});
-			break;
-		case 'catchall':
-			count_query = count_query.where(function() {
-				this.where({
-					[`${results_table}.status`]: 'risky',
-					[`${results_table}.reason`]: 'low_deliverability',
-				}).orWhere({
-					[`${results_table}.is_catchall`]: 1,
-				});
-			});
-			break;
-		case 'undeliverable':
-			count_query = count_query.whereNot(function () {
-				this.where({
-					[`${results_table}.status`]: 'deliverable',
-					[`${results_table}.is_catchall`]: 0,
-				}).orWhere({
-					[`${results_table}.status`]: 'risky',
-					[`${results_table}.reason`]: 'low_deliverability',
-				}).orWhere({
-					[`${results_table}.is_catchall`]: 1,
-				});
-			});
-			break;
-		case 'good':
-			count_query = count_query.where('toxicity', 0);
-			break;
-		case 'risky':
-			count_query = count_query.whereIn('toxicity', [1, 2, 3]);
-			break;
-		case 'bad':
-			count_query = count_query.whereIn('toxicity', [4, 5]);
-			break;
-	}
+	count_query = applyBatchResultFilter(count_query, results_table, filter);
 
 	// Apply same search filter to count query
 	if (search && search.trim()) {
@@ -955,88 +679,71 @@ async function db_getBatchResults(user_id, check_type, batch_id, page, limit, or
 	return [true, formatted_results, metadata];
 }
 
-// Internal function to get deliverable batch progress
-async function db_getDeliverableBatchProgress(batch_id) {
-	try {
-		// Count completed emails
-		const completed_result = await knex('Batch_Emails_Deliverable')
-			.where('batch_id', batch_id)
-			.where('did_complete', 1)
-			.count('* as completed_count')
-			.first();
-		
-		// Count processed emails from bouncer batches
-		const bouncer_result = await knex('Bouncer_Batches_Deliverable')
-			.where('user_batch_id', batch_id)
-			.sum('processed as total_processed')
-			.first();
-		
-		const completed_count = parseInt(completed_result.completed_count) || 0;
-		const bouncer_processed = parseInt(bouncer_result.total_processed) || 0;
-		
-		return completed_count + bouncer_processed;
-	} catch (error) {
-		console.error('Error getting deliverable batch progress:', error);
-		return 0;
-	}
-}
+async function db_getBatchProgress(user_id, batch_id, checkType, total_emails=-1) {
+	let err_code;
+	
+	// Get batch table names
+	const batch_table = getBatchTableName(checkType);
+	const email_batch_association_table = getEmailBatchAssociationTableName(checkType);
+	const bouncer_batch_table = getBouncerBatchTableName(checkType);
+	if (!batch_table || !email_batch_association_table || !bouncer_batch_table) return [false, null];
 
-// Internal function to get catchall batch progress
-async function db_getCatchallBatchProgress(batch_id) {
-	try {
-		// Count emails where did_complete = 1
-		const completed_result = await knex('Batch_Emails_Catchall')
-			.where('batch_id', batch_id)
-			.where('did_complete', 1)
-			.count('* as completed_count')
-			.first();
-		
-		return parseInt(completed_result.completed_count) || 0;
-	} catch (error) {
-		console.error('Error getting catchall batch progress:', error);
-		return 0;
-	}
-}
-
-async function db_getBatchProgress(user_id, batch_id, checkType) {
-	try {
-		// Get batch details first to ensure it exists and user has access
-		const batch_table = getBatchTableName(checkType);
-		const batch = await knex(batch_table)
+	// Get batch details first to ensure it exists and user has access
+	// - Skip if # of total emails already provided
+	let batch_resp;
+	if (total_emails < 0) {
+		batch_resp = await knex(batch_table)
 			.where({
 				'id': batch_id,
 				'user_id': user_id
 			})
 			.select('id', 'total_emails', 'cached_results', 'status')
-			.first();
-		
-		if (!batch) return [false, null];
-		
+			.first()
+			.catch((err)=>{if (err) err_code = err.code});
+		if (err_code || !batch_resp) return [false, null];
+	
 		// Return status for completed, paused, or failed batches
-		if (batch.status === 'completed' || batch.status === 'paused' || batch.status === 'failed') {
+		if (batch_resp.status === 'completed' || batch_resp.status === 'paused' || batch_resp.status === 'failed') {
 			return [true, {
-				status: batch.status
+				status: batch_resp.status
 			}];
 		}
-		
-		// Calculate progress for processing batches
-		const processed_count = checkType === 'catchall' 
-			? await db_getCatchallBatchProgress(batch_id)
-			: await db_getDeliverableBatchProgress(batch_id);
-		
-		const progress = batch.total_emails > 0 
-			? Math.round((processed_count / batch.total_emails) * 100)
-			: 0;
-		
-		return [true, {
-			status: 'processing',
-			progress: Math.min(progress, 99) // Cap at 99% until batch is marked completed
-		}];
-		
-	} catch (error) {
-		console.error('Error getting batch progress:', error);
-		return [false, null];
+	} else {
+		// If given, use total emails provided
+		batch_resp = { total_emails };
 	}
+
+	// Get batch progress
+	let batch_progress_dict = {
+		status: 'processing',
+		progress: 0,
+	}
+
+	// 1. Count already completed emails
+	const completed_result = await knex(email_batch_association_table).where({
+		'batch_id': batch_id,
+		'did_complete': 1
+	}).count('* as completed_count').first().catch((err)=>{if (err) err_code = err.code});
+	if (err_code) return [true, batch_progress_dict];
+	
+	// 2. Count in-progress emails from bouncer batches
+	const bouncer_result = await knex(bouncer_batch_table).where({
+		'user_batch_id': batch_id,
+		'status': 'processing'
+	}).sum('processed as total_processed').first().catch((err)=>{if (err) err_code = err.code});
+	if (err_code) return [true, batch_progress_dict];
+	
+	// 3. Calculate progress percentage
+	const completed_count = parseInt(completed_result.completed_count) || 0;
+	const bouncer_processed = parseInt(bouncer_result.total_processed) || 0;
+	const total_processed = completed_count + bouncer_processed;
+	const percent_progress = (batch_resp.total_emails > 0)
+		? Math.round((total_processed / batch_resp.total_emails) * 100)
+		: 0;
+	
+	// Return
+	batch_progress_dict.progress = Math.min(percent_progress, 99); // Cap at 99% until batch is marked completed
+	return [true, batch_progress_dict];
 }
 
 async function db_checkDuplicateFilename(user_id, filename) {
@@ -1155,58 +862,6 @@ async function db_checkCreditsOnly(user_id, check_type, num_emails) {
 
 	} catch (error) {
 		console.error('Credit check failed:', error.message);
-		return [false, null];
-	}
-}
-
-async function db_checkAndDeductCredits(user_id, check_type, num_emails) {
-	// Get table names
-	const credit_table = getCreditTableName(check_type);
-	const credit_history_table = getCreditHistoryTableName(check_type);
-	if (!credit_table || !credit_history_table) return [false, null];
-	
-	// Transaction to check credit balance, deduct credits, and log usage
-	// - Automatically rolls back on any error
-	// - Row lock released after transaction completes
-	try {
-		const result = await knex.transaction(async (trx) => {
-			// Step 1: Check credit balance
-			const curr_balance = await trx(credit_table)
-				.where({ 'user_id': user_id })
-				.select('current_balance')
-				.forUpdate() // Row lock to prevent race conditions
-				.first();
-			
-			// Verify sufficient balance
-			if (!curr_balance || curr_balance.current_balance < num_emails) {
-				throw new Error('Insufficient credits');
-			}
-
-			// Step 2: Deduct credits
-			await trx(credit_table)
-				.where({ 'user_id': user_id })
-				.decrement('current_balance', num_emails);
-
-			// Step 3: Log usage in history
-			await trx(credit_history_table).insert({
-				'user_id': user_id,
-				'credits_used': num_emails,
-				'event_typ': 'usage',
-				'usage_ts': knex.fn.now()
-			});
-
-			// Calculate new balance after deduction
-			const new_balance = curr_balance.current_balance - num_emails;
-
-			// Transaction successful - return true and new balance
-			return [true, new_balance];
-		});
-
-		return result;
-
-	} catch (error) {
-		// Transaction automatically rolled back on any error
-		console.error('Credit deduction transaction failed:', error.message);
 		return [false, null];
 	}
 }

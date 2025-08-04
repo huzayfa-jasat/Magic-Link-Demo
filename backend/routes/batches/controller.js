@@ -67,8 +67,8 @@ const VALID_BATCHLIST_STATUS_PARAMS = new Set([
 const VALID_BATCHRESULTS_ORDER_PARAMS = new Set([
 	'timehl', // Time High-Low (newest first)
 	'timelh', // Time Low-High (oldest first)
-	'scorehl', // Score High-Low (highest deliverability score first)
-	'scorelh', // Score Low-High (lowest deliverability score first)
+	// 'scorehl', // Score High-Low (highest deliverability score first)
+	// 'scorelh', // Score Low-High (lowest deliverability score first)
 ]);
 const VALID_BATCHRESULTS_FILTER_PARAMS = new Set([
 	'all', // All results

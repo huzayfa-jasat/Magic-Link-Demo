@@ -233,13 +233,14 @@ async function db_markBouncerBatchFailed(bouncer_batch_id, check_type) {
 
 /**
  * Update processed count for a bouncer batch
+ * @param {string} check_type - 'deliverable' or 'catchall'
  * @param {string} bouncer_batch_id - ID from bouncer API
  * @param {number} processed_count - Number of emails processed so far
  * @returns {[boolean, number]} - [success, affected_count]
  */
-async function db_updateBouncerBatchProcessed(bouncer_batch_id, processed_count) {
-    // Get table names - only for deliverable batches
-    const bouncer_batch_table = getBouncerBatchTableName('deliverable');
+async function db_updateBouncerBatchProcessed(check_type, bouncer_batch_id, processed_count) {
+    // Get table names
+    const bouncer_batch_table = getBouncerBatchTableName(check_type);
     if (!bouncer_batch_table) return [false, 0];
 
     // Update processed count
