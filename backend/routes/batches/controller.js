@@ -22,17 +22,17 @@ const {
 
 // S3 Function Imports
 const {
-	generateUploadUrl,
-	generateExportUrls,
-	triggerS3Enrichment
+	s3_generateUploadUrl,
+	s3_generateExportUrls,
+	s3_triggerS3Enrichment
 } = require('./funs_s3.js');
 
 // S3 DB Function Imports
 const {
-	getBatchWithS3Metadata,
-	updateBatchS3Metadata,
-	getEnrichmentProgress: db_getEnrichmentProgress,
-	checkUserBatchAccess: db_checkUserBatchAccess
+	db_s3_getBatchWithS3Metadata,
+	db_s3_updateBatchS3Metadata,
+	db_s3_getEnrichmentProgress,
+	db_s3_checkUserBatchAccess
 } = require('./funs_db_s3.js');
 
 // External API Function Imports
@@ -392,7 +392,7 @@ async function generateS3UploadUrl(req, res) {
 		}
 		
 		// Generate pre-signed URL
-		const { uploadUrl, s3Key } = await generateUploadUrl(fileName, fileSize, mimeType, batchId, checkType);
+		const { uploadUrl, s3Key } = await s3_generateUploadUrl(fileName, fileSize, mimeType, batchId, checkType);
 		
 		// Return response
 		return res.status(HttpStatus.SUCCESS_STATUS).json({
@@ -425,7 +425,7 @@ async function completeS3Upload(req, res) {
 		};
 		
 		// Update batch metadata with S3 info
-		await updateBatchS3Metadata(batchId, checkType, s3Key, fileInfo);
+		await db_s3_updateBatchS3Metadata(batchId, checkType, s3Key, fileInfo);
 		
 		// Return success
 		return res.status(HttpStatus.SUCCESS_STATUS).json({
@@ -443,7 +443,7 @@ async function getExportUrls(req, res) {
 		const { checkType, batchId } = req.params;
 		
 		// Get batch with S3 metadata
-		const batch = await getBatchWithS3Metadata(batchId, checkType);
+		const batch = await db_s3_getBatchWithS3Metadata(batchId, checkType);
 		if (!batch) {
 			return returnBadRequest(res, 'Batch not found', HttpStatus.NOT_FOUND_STATUS);
 		}
@@ -451,7 +451,7 @@ async function getExportUrls(req, res) {
 		// Check if exports exist
 		if (!batch.s3_metadata?.exports) {
 			// Check if enrichment is in progress
-			const progress = await db_getEnrichmentProgress(batchId, checkType);
+			const progress = await db_s3_getEnrichmentProgress(batchId, checkType);
 			if (progress && progress.status === 'processing') {
 				return res.status(HttpStatus.SUCCESS_STATUS).json({
 					status: 'processing',
@@ -469,7 +469,7 @@ async function getExportUrls(req, res) {
 		}
 		
 		// Generate pre-signed URLs
-		const urls = await generateExportUrls(batch);
+		const urls = await s3_generateExportUrls(batch);
 		
 		// Return response
 		return res.status(HttpStatus.SUCCESS_STATUS).json({

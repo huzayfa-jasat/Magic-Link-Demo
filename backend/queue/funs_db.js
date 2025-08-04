@@ -14,6 +14,10 @@ const {
     getEmailBatchAssociationTableName
 } = require('../routes/batches/funs_db_utils.js');
 
+// S3 Function Imports
+const { s3_triggerS3Enrichment } = require('../routes/batches/funs_s3');
+const db_s3_funcs = require('../routes/batches/funs_db_s3');
+
 // Helper Functions
 
 // ==========================================
@@ -443,11 +447,8 @@ async function checkAndCompleteUserBatch(trx, user_batch_id, check_type) {
         
         // Trigger S3 enrichment (non-blocking)
         try {
-            const { triggerS3Enrichment } = require('../routes/batches/funs_s3');
-            const db_funcs = require('../routes/batches/funs_db_s3');
-            
             // Don't await - let it run in background
-            triggerS3Enrichment(user_batch_id, check_type, db_funcs)
+            s3_triggerS3Enrichment(user_batch_id, check_type, db_s3_funcs)
                 .then(() => {
                     console.log(`✅ S3 enrichment completed for batch ${user_batch_id}`);
                 })

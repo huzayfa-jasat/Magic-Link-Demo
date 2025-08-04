@@ -1,3 +1,4 @@
+// Dependencies
 const { S3Client, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
 const { Upload } = require("@aws-sdk/lib-storage");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
@@ -5,11 +6,13 @@ const { PassThrough, Transform } = require("stream");
 const { parse } = require('csv-parse');
 const { stringify } = require('csv-stringify');
 const XLSX = require('xlsx');
+
+// Util Imports
 const { stripEmailModifiers } = require('../../utils/processEmails');
 
 // Initialize S3 client
 const s3Client = new S3Client({ 
-    region: process.env.S3_REGION || 'us-east-1',
+    region: process.env.S3_REGION,
     credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID,
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
@@ -24,7 +27,7 @@ const enrichmentInProgress = new Map();
 /**
  * Generate a pre-signed URL for S3 upload
  */
-async function generateUploadUrl(fileName, fileSize, mimeType, batchId, checkType) {
+async function s3_generateUploadUrl(fileName, fileSize, mimeType, batchId, checkType) {
     const timestamp = Date.now();
     const s3Key = `uploads/${checkType}/${batchId}/original-${timestamp}-${fileName}`;
     
@@ -43,7 +46,7 @@ async function generateUploadUrl(fileName, fileSize, mimeType, batchId, checkTyp
 /**
  * Generate pre-signed URLs for export downloads
  */
-async function generateExportUrls(batch) {
+async function s3_generateExportUrls(batch) {
     if (!batch.s3_metadata?.exports) {
         return null;
     }
@@ -75,8 +78,8 @@ async function generateExportUrls(batch) {
 function mapStatus(status, isCatchall, checkType) {
     if (checkType === 'deliverable') {
         if (status === 'deliverable' && !isCatchall) return 'Deliverable';
-        if (status === 'deliverable' && isCatchall) return 'Catch-All/Risky';
-        if (status === 'risky') return 'Catch-All/Risky';
+        if (status === 'deliverable' && isCatchall) return 'Catch-All';
+        if (status === 'risky') return 'Catch-All';
         if (status === 'undeliverable') return 'Undeliverable';
         if (status === 'unknown') return 'Unknown';
         return 'Not Processed';
@@ -133,7 +136,7 @@ async function parseExcelFromStream(stream) {
 /**
  * Trigger S3 enrichment with deduplication
  */
-async function triggerS3Enrichment(batchId, checkType, db_funcs) {
+async function s3_triggerS3Enrichment(batchId, checkType, db_funcs) {
     const key = `${batchId}:${checkType}`;
     
     // Check if already processing
@@ -143,7 +146,7 @@ async function triggerS3Enrichment(batchId, checkType, db_funcs) {
     }
     
     // Start new enrichment
-    const enrichmentPromise = enrichBatchExports(batchId, checkType, db_funcs)
+    const enrichmentPromise = s3_enrichBatchExports(batchId, checkType, db_funcs)
         .finally(() => enrichmentInProgress.delete(key));
     
     enrichmentInProgress.set(key, enrichmentPromise);
@@ -153,12 +156,12 @@ async function triggerS3Enrichment(batchId, checkType, db_funcs) {
 /**
  * Main enrichment function that streams from S3, enriches, and creates exports
  */
-async function enrichBatchExports(batchId, checkType, db_funcs) {
+async function s3_enrichBatchExports(batchId, checkType, db_funcs) {
     console.log(`🚀 Starting S3 enrichment for batch ${batchId} (${checkType})`);
     
     try {
         // 1. Get batch metadata with S3 key
-        const batch = await db_funcs.getBatchWithS3Metadata(batchId, checkType);
+        const batch = await db_funcs.db_s3_getBatchWithS3Metadata(batchId, checkType);
         if (!batch || !batch.s3_metadata?.original?.s3_key) {
             throw new Error('Batch not found or missing S3 metadata');
         }
@@ -168,11 +171,11 @@ async function enrichBatchExports(batchId, checkType, db_funcs) {
         const columnMapping = batch.s3_metadata.original.column_mapping || { email: 0 };
         
         // 2. Create progress tracking entry
-        await db_funcs.createEnrichmentProgress(batchId, checkType);
+        await db_funcs.db_s3_createEnrichmentProgress(batchId, checkType);
         
         // 3. Load all results into memory for O(1) lookup
         console.log(`📊 Loading batch results for ${batchId}...`);
-        const results = await db_funcs.getAllBatchResults(batchId, checkType);
+        const results = await db_funcs.db_s3_getAllBatchResults(batchId, checkType);
         const resultsMap = new Map(
             results.map(r => [stripEmailModifiers(r.email_stripped.toLowerCase()), r])
         );
@@ -277,10 +280,10 @@ async function enrichBatchExports(batchId, checkType, db_funcs) {
             };
         });
         
-        await db_funcs.updateBatchExportMetadata(batchId, checkType, exportMetadata);
+        await db_funcs.db_s3_updateBatchExportMetadata(batchId, checkType, exportMetadata);
         
         // 11. Mark enrichment as completed
-        await db_funcs.completeEnrichmentProgress(batchId, checkType, processedRows);
+        await db_funcs.db_s3_completeEnrichmentProgress(batchId, checkType, processedRows);
         
         console.log(`✅ S3 enrichment completed for batch ${batchId}. Processed ${processedRows} rows.`);
         
@@ -288,10 +291,10 @@ async function enrichBatchExports(batchId, checkType, db_funcs) {
         console.error(`❌ Enrichment failed for batch ${batchId}:`, error);
         
         // Update progress with error
-        await db_funcs.failEnrichmentProgress(batchId, checkType, error.message);
+        await db_funcs.db_s3_failEnrichmentProgress(batchId, checkType, error.message);
         
         // Update batch metadata with error
-        await db_funcs.updateBatchExportMetadata(batchId, checkType, {
+        await db_funcs.db_s3_updateBatchExportMetadata(batchId, checkType, {
             error: {
                 message: error.message,
                 timestamp: new Date().toISOString()
@@ -322,7 +325,7 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
                 
                 // Update progress periodically
                 if (processedRows % updateInterval === 0) {
-                    db_funcs.updateEnrichmentProgress(batchId, checkType, processedRows)
+                    db_funcs.db_s3_updateEnrichmentProgress(batchId, checkType, processedRows)
                         .catch(err => console.error('Failed to update progress:', err));
                 }
                 
@@ -366,7 +369,7 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
                         stringifiers.valid_only.write(enrichedRow);
                     } else if (status === 'Undeliverable' && stringifiers.invalid_only) {
                         stringifiers.invalid_only.write(enrichedRow);
-                    } else if (status === 'Catch-All/Risky' && stringifiers.catchall_risky) {
+                    } else if (status === 'Catch-All' && stringifiers.catchall_risky) {
                         stringifiers.catchall_risky.write(enrichedRow);
                     }
                 } else if (checkType === 'catchall') {
@@ -411,8 +414,8 @@ function createUpload(batchId, exportType, stream) {
 }
 
 module.exports = {
-    generateUploadUrl,
-    generateExportUrls,
-    triggerS3Enrichment,
-    enrichBatchExports
+    s3_generateUploadUrl,
+    s3_generateExportUrls,
+    s3_triggerS3Enrichment,
+    s3_enrichBatchExports
 };

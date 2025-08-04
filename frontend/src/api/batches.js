@@ -145,14 +145,14 @@ export async function getBatchProgress(checkType, batchId) {
 
 // S3 Upload Functions
 export async function getS3UploadUrl(checkType, batchId, fileName, fileSize, mimeType) {
-  return await http.post(`${MODULE_PREFIX}/${checkType}/batch/${batchId}/s3-upload-url`, 
+  return await http.post(`${MODULE_PREFIX}/${checkType}/batch/${batchId}/upload-url`, 
     { fileName, fileSize, mimeType }, 
     { withCredentials: true }
   );
 };
 
 export async function completeS3Upload(checkType, batchId, s3Key, columnMapping, fileInfo) {
-  return await http.post(`${MODULE_PREFIX}/${checkType}/batch/${batchId}/s3-key`, 
+  return await http.post(`${MODULE_PREFIX}/${checkType}/batch/${batchId}/file-key`, 
     { s3Key, columnMapping, ...fileInfo }, 
     { withCredentials: true }
   );
@@ -165,7 +165,7 @@ export async function getExportUrls(checkType, batchId) {
 };
 
 export async function getEnrichmentProgress(checkType, batchId) {
-  return await http.get(`${MODULE_PREFIX}/${checkType}/batch/${batchId}/enrichment-progress`, {
+  return await http.get(`${MODULE_PREFIX}/${checkType}/batch/${batchId}/export-progress`, {
     withCredentials: true,
   });
 };

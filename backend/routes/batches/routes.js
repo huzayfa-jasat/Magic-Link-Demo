@@ -52,10 +52,10 @@ batchesRouter.get('/:checkType/batch/:batchId/progress', checkValidCheckType, ch
 batchesRouter.delete('/:checkType/batch/:batchId/rm', checkValidCheckType, checkUserBatchAccess, removeBatch);
 
 // S3 Upload/Export Routes
-batchesRouter.post('/:checkType/batch/:batchId/s3-upload-url', checkValidCheckType, checkUserBatchAccess, generateS3UploadUrl);
-batchesRouter.post('/:checkType/batch/:batchId/s3-key', checkValidCheckType, checkUserBatchAccess, completeS3Upload);
+batchesRouter.post('/:checkType/batch/:batchId/upload-url', checkValidCheckType, checkUserBatchAccess, generateS3UploadUrl);
+batchesRouter.post('/:checkType/batch/:batchId/file-key', checkValidCheckType, checkUserBatchAccess, completeS3Upload);
 batchesRouter.get('/:checkType/batch/:batchId/exports', checkValidCheckType, checkUserBatchAccess, getExportUrls);
-batchesRouter.get('/:checkType/batch/:batchId/enrichment-progress', checkValidCheckType, checkUserBatchAccess, getEnrichmentProgress);
+batchesRouter.get('/:checkType/batch/:batchId/export-progress', checkValidCheckType, checkUserBatchAccess, getEnrichmentProgress);
 
 // Export routes
 module.exports = batchesRouter; 

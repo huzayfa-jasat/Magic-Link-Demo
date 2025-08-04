@@ -1,24 +1,17 @@
-const knex = require('../../database');
+// Dependencies
+const knex = require('knex')(require('../../knexfile.js').development);
 
-/**
- * Get table names based on check type
- */
-function getBatchTableName(checkType) {
-    return checkType === 'deliverable' ? 'Batches_Deliverable' : 'Batches_Catchall';
-}
-
-function getResultsTableName(checkType) {
-    return checkType === 'deliverable' ? 'Email_Deliverable_Results' : 'Email_Catchall_Results';
-}
-
-function getEmailBatchAssociationTableName(checkType) {
-    return checkType === 'deliverable' ? 'Batch_Emails_Deliverable' : 'Batch_Emails_Catchall';
-}
+// Function Imports
+const {
+    getBatchTableName,
+    getResultsTableName,
+    getEmailBatchAssociationTableName
+} = require('./funs_db_utils.js');
 
 /**
  * Get batch with S3 metadata
  */
-async function getBatchWithS3Metadata(batchId, checkType) {
+async function db_s3_getBatchWithS3Metadata(batchId, checkType) {
     const tableName = getBatchTableName(checkType);
     const batch = await knex(tableName)
         .where('id', batchId)
@@ -37,7 +30,7 @@ async function getBatchWithS3Metadata(batchId, checkType) {
 /**
  * Get all batch results for enrichment
  */
-async function getAllBatchResults(batchId, checkType) {
+async function db_s3_getAllBatchResults(batchId, checkType) {
     const resultsTable = getResultsTableName(checkType);
     const batchEmailTable = getEmailBatchAssociationTableName(checkType);
     
@@ -69,7 +62,7 @@ async function getAllBatchResults(batchId, checkType) {
 /**
  * Update batch metadata with S3 info
  */
-async function updateBatchS3Metadata(batchId, checkType, s3Key, fileInfo) {
+async function db_s3_updateBatchS3Metadata(batchId, checkType, s3Key, fileInfo) {
     const tableName = getBatchTableName(checkType);
     
     const metadata = {
@@ -94,11 +87,11 @@ async function updateBatchS3Metadata(batchId, checkType, s3Key, fileInfo) {
 /**
  * Update batch export metadata
  */
-async function updateBatchExportMetadata(batchId, checkType, exports) {
+async function db_s3_updateBatchExportMetadata(batchId, checkType, exports) {
     const tableName = getBatchTableName(checkType);
     
     // Get current metadata
-    const batch = await getBatchWithS3Metadata(batchId, checkType);
+    const batch = await db_s3_getBatchWithS3Metadata(batchId, checkType);
     if (!batch || !batch.s3_metadata) {
         throw new Error('Batch metadata not found');
     }
@@ -122,7 +115,7 @@ async function updateBatchExportMetadata(batchId, checkType, exports) {
 /**
  * Create enrichment progress entry
  */
-async function createEnrichmentProgress(batchId, checkType) {
+async function db_s3_createEnrichmentProgress(batchId, checkType) {
     return await knex('S3_Enrichment_Progress')
         .insert({
             batch_id: batchId,
@@ -145,7 +138,7 @@ async function createEnrichmentProgress(batchId, checkType) {
 /**
  * Update enrichment progress
  */
-async function updateEnrichmentProgress(batchId, checkType, rowsProcessed) {
+async function db_s3_updateEnrichmentProgress(batchId, checkType, rowsProcessed) {
     return await knex('S3_Enrichment_Progress')
         .where({ batch_id: batchId, check_type: checkType })
         .update({
@@ -157,7 +150,7 @@ async function updateEnrichmentProgress(batchId, checkType, rowsProcessed) {
 /**
  * Complete enrichment progress
  */
-async function completeEnrichmentProgress(batchId, checkType, totalRows) {
+async function db_s3_completeEnrichmentProgress(batchId, checkType, totalRows) {
     return await knex('S3_Enrichment_Progress')
         .where({ batch_id: batchId, check_type: checkType })
         .update({
@@ -172,7 +165,7 @@ async function completeEnrichmentProgress(batchId, checkType, totalRows) {
 /**
  * Fail enrichment progress
  */
-async function failEnrichmentProgress(batchId, checkType, errorMessage) {
+async function db_s3_failEnrichmentProgress(batchId, checkType, errorMessage) {
     return await knex('S3_Enrichment_Progress')
         .where({ batch_id: batchId, check_type: checkType })
         .update({
@@ -185,7 +178,7 @@ async function failEnrichmentProgress(batchId, checkType, errorMessage) {
 /**
  * Get enrichment progress
  */
-async function getEnrichmentProgress(batchId, checkType) {
+async function db_s3_getEnrichmentProgress(batchId, checkType) {
     return await knex('S3_Enrichment_Progress')
         .where({ batch_id: batchId, check_type: checkType })
         .first();
@@ -194,7 +187,7 @@ async function getEnrichmentProgress(batchId, checkType) {
 /**
  * Check if user has access to batch
  */
-async function checkUserBatchAccess(userId, batchId, checkType) {
+async function db_s3_checkUserBatchAccess(userId, batchId, checkType) {
     const tableName = getBatchTableName(checkType);
     const batch = await knex(tableName)
         .where({ id: batchId, user_id: userId })
@@ -204,14 +197,14 @@ async function checkUserBatchAccess(userId, batchId, checkType) {
 }
 
 module.exports = {
-    getBatchWithS3Metadata,
-    getAllBatchResults,
-    updateBatchS3Metadata,
-    updateBatchExportMetadata,
-    createEnrichmentProgress,
-    updateEnrichmentProgress,
-    completeEnrichmentProgress,
-    failEnrichmentProgress,
-    getEnrichmentProgress,
-    checkUserBatchAccess
+    db_s3_getBatchWithS3Metadata,
+    db_s3_getAllBatchResults,
+    db_s3_updateBatchS3Metadata,
+    db_s3_updateBatchExportMetadata,
+    db_s3_createEnrichmentProgress,
+    db_s3_updateEnrichmentProgress,
+    db_s3_completeEnrichmentProgress,
+    db_s3_failEnrichmentProgress,
+    db_s3_getEnrichmentProgress,
+    db_s3_checkUserBatchAccess
 };
