@@ -94,13 +94,6 @@ export default function ReferralsController() {
   // Render
   return (
     <div className={styles.container}>
-      {/* Eligibility Notice */}
-      {(userEligible === false) && <>
-        <ReferralEligibilityNotice purchases={userLifetimePurchases} />
-        <br /><br />
-        <h1 className={styles.title}>Referral Code</h1>
-        <br />
-      </>}
       {/* Referral Code */}
       <div className={styles.metricsContainer}>
         <div className={styles.referralCodeContainer}>
@@ -157,6 +150,12 @@ export default function ReferralsController() {
           </div>
         </>
       )}
+      {/* Eligibility Notice */}
+      {(userEligible === false) && <>
+        <br /><br />
+        <ReferralEligibilityNotice purchases={userLifetimePurchases} />
+        <br /><br />
+      </>}
     </div>
   );
 }
