@@ -955,6 +955,49 @@ async function db_getBatchResults(user_id, check_type, batch_id, page, limit, or
 	return [true, formatted_results, metadata];
 }
 
+// Internal function to get deliverable batch progress
+async function db_getDeliverableBatchProgress(batch_id) {
+	try {
+		// Count completed emails
+		const completed_result = await knex('Batch_Emails_Deliverable')
+			.where('batch_id', batch_id)
+			.where('did_complete', 1)
+			.count('* as completed_count')
+			.first();
+		
+		// Count processed emails from bouncer batches
+		const bouncer_result = await knex('Bouncer_Batches_Deliverable')
+			.where('user_batch_id', batch_id)
+			.sum('processed as total_processed')
+			.first();
+		
+		const completed_count = parseInt(completed_result.completed_count) || 0;
+		const bouncer_processed = parseInt(bouncer_result.total_processed) || 0;
+		
+		return completed_count + bouncer_processed;
+	} catch (error) {
+		console.error('Error getting deliverable batch progress:', error);
+		return 0;
+	}
+}
+
+// Internal function to get catchall batch progress
+async function db_getCatchallBatchProgress(batch_id) {
+	try {
+		// Count emails where did_complete = 1
+		const completed_result = await knex('Batch_Emails_Catchall')
+			.where('batch_id', batch_id)
+			.where('did_complete', 1)
+			.count('* as completed_count')
+			.first();
+		
+		return parseInt(completed_result.completed_count) || 0;
+	} catch (error) {
+		console.error('Error getting catchall batch progress:', error);
+		return 0;
+	}
+}
+
 async function db_getBatchProgress(user_id, batch_id, checkType) {
 	try {
 		// Get batch details first to ensure it exists and user has access
@@ -977,50 +1020,18 @@ async function db_getBatchProgress(user_id, batch_id, checkType) {
 		}
 		
 		// Calculate progress for processing batches
-			if (checkType === 'catchall') {
-				// For catchall: count emails where did_complete = 1
-				const completed_result = await knex('Batch_Emails_Catchall')
-					.where('batch_id', batch_id)
-					.where('did_complete', 1)
-					.count('* as completed_count')
-					.first();
-				
-				const completed_count = parseInt(completed_result.completed_count) || 0;
-				const progress = batch.total_emails > 0 
-					? Math.round((completed_count / batch.total_emails) * 100)
-					: 0;
-				
-				return [true, {
-					status: 'processing',
-					progress: Math.min(progress, 99) // Cap at 99% until batch is marked completed
-				}];
-			} else {
-				// For deliverable: count completed emails + processed emails from bouncer batches
-				const completed_result = await knex('Batch_Emails_Deliverable')
-					.where('batch_id', batch_id)
-					.where('did_complete', 1)
-					.count('* as completed_count')
-					.first();
-				
-				const bouncer_result = await knex('Bouncer_Batches_Deliverable')
-					.where('user_batch_id', batch_id)
-					.sum('processed as total_processed')
-					.first();
-				
-				const completed_count = parseInt(completed_result.completed_count) || 0;
-				const bouncer_processed = parseInt(bouncer_result.total_processed) || 0;
-				const total_progress = completed_count + bouncer_processed;
-				
-				const progress = batch.total_emails > 0 
-					? Math.round((total_progress / batch.total_emails) * 100)
-					: 0;
-				
-				return [true, {
-					status: 'processing',
-					progress: Math.min(progress, 99) // Cap at 99% until batch is marked completed
-				}];
-			}
-		}
+		const processed_count = checkType === 'catchall' 
+			? await db_getCatchallBatchProgress(batch_id)
+			: await db_getDeliverableBatchProgress(batch_id);
+		
+		const progress = batch.total_emails > 0 
+			? Math.round((processed_count / batch.total_emails) * 100)
+			: 0;
+		
+		return [true, {
+			status: 'processing',
+			progress: Math.min(progress, 99) // Cap at 99% until batch is marked completed
+		}];
 		
 	} catch (error) {
 		console.error('Error getting batch progress:', error);
