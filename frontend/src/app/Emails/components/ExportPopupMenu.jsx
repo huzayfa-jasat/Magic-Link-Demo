@@ -70,14 +70,14 @@ export default function ExportPopupMenu({
 						</button>
 					)}
 					{(showRisky > 0) && (
-						<button className={styles.invalid} onClick={() => handleExport("risky", title)}>
-							{VERIFY_INVALID_ICON}
+						<button className={styles.catchall} onClick={() => handleExport("risky", title)}>
+							{VERIFY_CATCHALL_ICON}
 							{(showExportPrefix) ? "Export Risky" : "Only Risky"}
 						</button>
 					)}
 					{(showBad > 0) && (
-						<button className={styles.catchall} onClick={() => handleExport("bad", title)}>
-							{VERIFY_CATCHALL_ICON}
+						<button className={styles.invalid} onClick={() => handleExport("bad", title)}>
+							{VERIFY_INVALID_ICON}
 							{(showExportPrefix) ? "Export Bad" : "Only Bad"}
 						</button>
 					)}
