@@ -969,16 +969,14 @@ async function db_getBatchProgress(user_id, batch_id, checkType) {
 		
 		if (!batch) return [false, null];
 		
-		// Return status for non-processing batches (all valid enums from schema)
-		if (batch.status === 'completed' || batch.status === 'failed' || batch.status === 'paused' || 
-		    batch.status === 'draft' || batch.status === 'pending' || batch.status === 'queued') {
+		// Return status for ALL non-processing batches
+		if (batch.status !== 'processing') {
 			return [true, {
 				status: batch.status
 			}];
 		}
 		
 		// Calculate progress for processing batches
-		if (batch.status === 'processing') {
 			if (checkType === 'catchall') {
 				// For catchall: count emails where did_complete = 1
 				const completed_result = await knex('Batch_Emails_Catchall')
@@ -1023,11 +1021,6 @@ async function db_getBatchProgress(user_id, batch_id, checkType) {
 				}];
 			}
 		}
-		
-		// Default fallback for any other status
-		return [true, {
-			status: batch.status
-		}];
 		
 	} catch (error) {
 		console.error('Error getting batch progress:', error);
