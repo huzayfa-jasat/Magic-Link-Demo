@@ -136,3 +136,9 @@ export async function checkDuplicateFilename(filename) {
     withCredentials: true,
   });
 };
+
+export async function getBatchProgress(checkType, batchId) {
+  return await http.get(`${MODULE_PREFIX}/${checkType}/batch/${batchId}/progress`, {
+    withCredentials: true,
+  });
+};
