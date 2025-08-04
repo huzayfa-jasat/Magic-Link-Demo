@@ -343,6 +343,7 @@ async function db_processBouncerResults(bouncer_batch_id, results_array, check_t
                     update_object.provider = result.provider || null;
                     break;
                 case 'catchall':
+                    console.log("CATCHALL RESULT TOXICITY FOR ", result.email, " = ", result.toxicity);
                     update_object.toxicity = result.toxicity || 0;
                     break;
                 default:

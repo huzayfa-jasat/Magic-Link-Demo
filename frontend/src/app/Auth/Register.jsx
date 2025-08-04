@@ -13,8 +13,8 @@ import s from "./styles.module.css";
 import { OMNI_LOGO } from "../../assets/icons/omni_logo";
 
 // Constants
-const TOS_URL = "https://omniverifier.com/terms-of-service";
-const DPA_URL = "https://omniverifier.com/data-processing-agreement";
+const TOS_URL = "https://www.omniverifier.com/terms-of-service";
+const PP_URL = "https://www.omniverifier.com/privacy-policy";
 
 // Functional Component
 export default function Register() {
@@ -77,7 +77,7 @@ export default function Register() {
               <path d="M20 6 9 17l-5-5" />
             </svg>
           </button>
-          <p>I agree to the <a href={TOS_URL} target="_blank" rel="noopener noreferrer">Terms of Service</a> and <a href={DPA_URL} target="_blank" rel="noopener noreferrer">Data Processing Agreement</a>.</p>
+          <p>I agree to the <a href={TOS_URL} target="_blank" rel="noopener noreferrer">Terms of Service</a> and <a href={PP_URL} target="_blank" rel="noopener noreferrer">Privacy Policy</a>.</p>
         </div>
         <div className={s.buttons}>
           <button className={s.button} type="submit">
