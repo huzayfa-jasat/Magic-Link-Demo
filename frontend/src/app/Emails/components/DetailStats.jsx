@@ -24,21 +24,21 @@ export default function DetailStats({
 			<div className={styles.metaValue}>{details.emails}</div>
 			</div> */}
 			<div className={styles.metaCard}>
-				<div className={styles.metaLabel}>Valid</div>
+				<div className={styles.metaLabel}>{(checkTyp === 'catchall') ? 'Good' : 'Valid'}</div>
 				<div className={`${styles.metaValue} ${styles.resultValid}`}>
 					{VERIFY_VALID_ICON}
 					{valid_count.toLocaleString()}
 				</div>
 			</div>
 			<div className={styles.metaCard}>
-				<div className={styles.metaLabel}>Catch-All</div>
+				<div className={styles.metaLabel}>{(checkTyp === 'catchall') ? 'Risky' : 'Catch-All'}</div>
 				<div className={`${styles.metaValue} ${styles.resultCatchAll}`}>
 					{VERIFY_CATCHALL_ICON}
 					{catchall_count.toLocaleString()}
 				</div>
 			</div>
 			<div className={styles.metaCard}>
-				<div className={styles.metaLabel}>Invalid</div>
+				<div className={styles.metaLabel}>{(checkTyp === 'catchall') ? 'Bad' : 'Invalid'}</div>
 				<div className={`${styles.metaValue} ${styles.resultInvalid}`}>
 					{VERIFY_INVALID_ICON}
 					{invalid_count.toLocaleString()}

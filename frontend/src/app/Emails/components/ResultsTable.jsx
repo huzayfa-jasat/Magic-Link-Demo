@@ -51,18 +51,33 @@ const getResultDisplay = (result) => {
 const getScoreDisplay = (score) => {
 	if (score === undefined || score === null) return <></>;
 
-	// Get score "category" (just match up with colors from resutls map)
+	// Get score text and category (match category with colors from results map)
 	let score_category;
-	if (score === 'good') score_category = 1;
-	else if (score === 'risky') score_category = 2;
-	else if (score === 'bad') score_category = 0;
-	else score_category = 4;
-	
+	let score_text;
+	switch (score) {
+		case 'good':
+			score_category = 1;
+			score_text = "Good";
+			break;
+		case 'risky':
+			score_category = 2;
+			score_text = "Risky";
+			break;
+		case 'bad':
+			score_category = 0;
+			score_text = "Bad";
+			break;
+		default:
+			score_category = 4;
+			score_text = "Unknown";
+			break;
+	}
+
 	// Return
 	return (
 		<div className={`${styles.tableCellResult} ${RESULT_DISPLAY_MAP[score_category].className}`}>
 			{RESULT_DISPLAY_MAP[score_category].icon}
-			{score}
+			{score_text}
 		</div>
 	)
 }
