@@ -17,9 +17,12 @@ function getEventIcon(event_typ) {
 		return GIFT_ICON;
 	}
 }
-function getEventTitle(event_typ, list_name = null) {
+function getEventTitle(event_typ, list_name = null, type = 'regular') {
 	switch (event_typ) {
 	case 'usage':
+		if (type === 'catchall') {
+			return list_name || 'Verified Catchalls';
+		}
 		return list_name || 'Verified Emails';
 	case 'refer_reward':
 		return 'Referral Reward';
@@ -49,7 +52,7 @@ export default function TransactionCard({
 					{getEventIcon(transaction.event_typ)}
 				</div>
 				<div className={styles.history_card_title}>
-					<h5>{getEventTitle(transaction.event_typ, transaction.list_name)}</h5>
+					<h5>{getEventTitle(transaction.event_typ, transaction.list_name, transaction.type)}</h5>
 					<p>{formatTransactionDate(transaction.usage_ts)}</p>
 				</div>
 			</div>
