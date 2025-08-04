@@ -174,6 +174,69 @@ export default function HomeController() {
     }
   }, [hasMore, loadingMore, loading, loadMore]);
   
+  // Function to update processing batch progress
+  const updateProcessingBatches = useCallback(async (requestsRef, setRequests) => {
+    // Get all processing batches from the ref
+    const currentRequests = requestsRef.current;
+    const processingBatches = currentRequests.filter(batch => batch.status === 'processing');
+    
+    if (processingBatches.length === 0) return;
+    
+    // Update progress for each processing batch
+    const updates = processingBatches.map(async (batch) => {
+      try {
+        // For deliverable batches, use the progress endpoint
+        if (batch.category === 'deliverable') {
+          const response = await getBatchProgress('deliverable', batch.id);
+          if (response.status === 200) {
+            return { 
+              id: batch.id, 
+              category: batch.category,
+              progress: response.data.progress,
+              status: response.data.progress === 100 ? 'completed' : 'processing'
+            };
+          }
+        } else if (batch.category === 'catchall') {
+          // For catchall batches, we'll use getBatchDetails instead
+          // This avoids fetching entire pages and is more efficient
+          try {
+            const response = await getBatchProgress('catchall', batch.id);
+            // Even if the endpoint doesn't fully support catchall,
+            // it might return basic status info
+            if (response.status === 200) {
+              return {
+                id: batch.id,
+                category: batch.category,
+                progress: response.data.progress || batch.progress || 0,
+                status: batch.status // Keep current status for catchall
+              };
+            }
+          } catch (err) {
+            // If progress endpoint fails for catchall, keep current values
+            console.log('Progress endpoint not available for catchall batch:', batch.id);
+          }
+        }
+      } catch (error) {
+        console.error(`Error updating progress for batch ${batch.id}:`, error);
+      }
+      return null;
+    });
+    
+    // Wait for all updates and apply them
+    const results = await Promise.all(updates);
+    const validUpdates = results.filter(update => update !== null);
+    
+    if (validUpdates.length > 0) {
+      setRequests(prev => prev.map(batch => {
+        const update = validUpdates.find(u => u.id === batch.id && u.category === batch.category);
+        if (update) {
+          return { ...batch, progress: update.progress, status: update.status };
+        }
+        return batch;
+      }));
+    }
+  }, []);
+
   // Add scroll event listener
   useEffect(() => {
     window.addEventListener('scroll', handleScroll);
@@ -182,74 +245,14 @@ export default function HomeController() {
 
   // Poll for progress updates for processing batches
   useEffect(() => {
-    const updateProcessingBatches = async () => {
-      // Get all processing batches from the ref
-      const currentRequests = requestsRef.current;
-      const processingBatches = currentRequests.filter(batch => batch.status === 'processing');
-      
-      if (processingBatches.length === 0) return;
-      
-      // Update progress for each processing batch
-      const updates = processingBatches.map(async (batch) => {
-        try {
-          // For deliverable batches, use the progress endpoint
-          if (batch.category === 'deliverable') {
-            const response = await getBatchProgress('deliverable', batch.id);
-            if (response.status === 200) {
-              return { 
-                id: batch.id, 
-                category: batch.category,
-                progress: response.data.progress,
-                status: response.data.progress === 100 ? 'completed' : 'processing'
-              };
-            }
-          } else if (batch.category === 'catchall') {
-            // For catchall batches, we'll use getBatchDetails instead
-            // This avoids fetching entire pages and is more efficient
-            try {
-              const response = await getBatchProgress('catchall', batch.id);
-              // Even if the endpoint doesn't fully support catchall,
-              // it might return basic status info
-              if (response.status === 200) {
-                return {
-                  id: batch.id,
-                  category: batch.category,
-                  progress: response.data.progress || batch.progress || 0,
-                  status: batch.status // Keep current status for catchall
-                };
-              }
-            } catch (err) {
-              // If progress endpoint fails for catchall, keep current values
-              console.log('Progress endpoint not available for catchall batch:', batch.id);
-            }
-          }
-        } catch (error) {
-          console.error(`Error updating progress for batch ${batch.id}:`, error);
-        }
-        return null;
-      });
-      
-      // Wait for all updates and apply them
-      const results = await Promise.all(updates);
-      const validUpdates = results.filter(update => update !== null);
-      
-      if (validUpdates.length > 0) {
-        setRequests(prev => prev.map(batch => {
-          const update = validUpdates.find(u => u.id === batch.id && u.category === batch.category);
-          if (update) {
-            return { ...batch, progress: update.progress, status: update.status };
-          }
-          return batch;
-        }));
-      }
-    };
-
     // Set up interval for periodic updates
-    const intervalId = setInterval(updateProcessingBatches, 10000); // Update every 10 seconds
+    const intervalId = setInterval(() => {
+      updateProcessingBatches(requestsRef, setRequests);
+    }, 10000); // Update every 10 seconds
     
     // Cleanup
     return () => clearInterval(intervalId);
-  }, [currFilter]); // Only recreate when filter changes
+  }, [currFilter, updateProcessingBatches]); // Only recreate when filter changes
 
   // Render
   if (loading) {
