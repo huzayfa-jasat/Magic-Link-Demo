@@ -239,11 +239,11 @@ export default function HomeController() {
             )}
             
             {/* End of results indicator */}
-            {!hasMore && requests.length > 0 && (
+            {/* {!hasMore && requests.length > 0 && (
               <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem', color: '#666' }}>
                 <p>No more results to load</p>
               </div>
-            )}
+            )} */}
           </>
           :
           <EmptyBatchList />
