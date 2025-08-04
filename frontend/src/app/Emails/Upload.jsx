@@ -41,7 +41,7 @@ export default function EmailsUploadController() {
   const [page, setPage] = useState('upload');
   const [file, setFile] = useState(null);
   const [fileData, setFileData] = useState({ headers: [], rows: [] });
-  const [, setSelectedColumnIndex] = useState(null);
+  const [selectedColumnIndex, setSelectedColumnIndex] = useState(null);
   const [emails, setEmails] = useState([]);
   const [error, setError] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
