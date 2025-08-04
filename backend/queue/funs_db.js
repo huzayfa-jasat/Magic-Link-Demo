@@ -440,6 +440,25 @@ async function checkAndCompleteUserBatch(trx, user_batch_id, check_type) {
         } catch (email_error) {
             console.log(`⚠️ Error sending batch completion email for batch ${user_batch_id}:`, email_error);
         }
+        
+        // Trigger S3 enrichment (non-blocking)
+        try {
+            const { triggerS3Enrichment } = require('../routes/batches/funs_s3');
+            const db_funcs = require('../routes/batches/funs_db_s3');
+            
+            // Don't await - let it run in background
+            triggerS3Enrichment(user_batch_id, check_type, db_funcs)
+                .then(() => {
+                    console.log(`✅ S3 enrichment completed for batch ${user_batch_id}`);
+                })
+                .catch((error) => {
+                    console.error(`❌ S3 enrichment failed for batch ${user_batch_id}:`, error);
+                });
+            
+            console.log(`🚀 S3 enrichment triggered for batch ${user_batch_id}`);
+        } catch (enrichment_error) {
+            console.error(`⚠️ Error triggering S3 enrichment for batch ${user_batch_id}:`, enrichment_error);
+        }
     }
 }
 

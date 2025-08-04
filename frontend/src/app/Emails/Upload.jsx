@@ -11,7 +11,9 @@ import {
   addToCatchallBatch,
   startVerifyBatchProcessing,
   startCatchallBatchProcessing,
-  checkDuplicateFilename
+  checkDuplicateFilename,
+  getS3UploadUrl,
+  completeS3Upload
 } from '../../api/batches';
 
 // Context Imports
@@ -215,7 +217,54 @@ export default function EmailsUploadController() {
       if (createResponse.status !== 200) throw createResponse;
       const batchId = createResponse.data.id;
 
-      // Step 2: Add all emails in chunks using /add endpoint
+      // Step 2: Upload original file to S3
+      try {
+        // Get pre-signed upload URL
+        const checkTypeParam = checkTyp === 'verify' ? 'deliverable' : 'catchall';
+        const uploadUrlResponse = await getS3UploadUrl(
+          checkTypeParam,
+          batchId,
+          file.name,
+          file.size,
+          file.type
+        );
+        
+        if (uploadUrlResponse.status !== 200) throw uploadUrlResponse;
+        
+        // Upload directly to S3
+        const uploadResponse = await fetch(uploadUrlResponse.data.uploadUrl, {
+          method: 'PUT',
+          body: file,
+          headers: {
+            'Content-Type': file.type
+          }
+        });
+        
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to upload file to S3');
+        }
+        
+        // Store S3 key reference with column mapping
+        const s3CompleteResponse = await completeS3Upload(
+          checkTypeParam,
+          batchId,
+          uploadUrlResponse.data.s3Key,
+          { email: selectedColumnIndex },
+          {
+            fileName: file.name,
+            fileSize: file.size,
+            mimeType: file.type
+          }
+        );
+        
+        if (s3CompleteResponse.status !== 200) throw s3CompleteResponse;
+        
+      } catch (s3Error) {
+        console.error("S3 Upload Error:", s3Error);
+        // S3 upload failure is not critical - continue with batch processing
+      }
+
+      // Step 3: Add all emails in chunks using /add endpoint
       for (let i = 0; i < emails.length; i += CHUNK_SIZE) {
         const chunk = emails.slice(i, i + CHUNK_SIZE);
         
@@ -237,7 +286,7 @@ export default function EmailsUploadController() {
         }
       }
 
-      // Step 3: Start batch processing (/start endpoint)
+      // Step 4: Start batch processing (/start endpoint)
       let startResponse;
       if (checkTyp === 'verify') startResponse = await startVerifyBatchProcessing(batchId);
       else startResponse = await startCatchallBatchProcessing(batchId);

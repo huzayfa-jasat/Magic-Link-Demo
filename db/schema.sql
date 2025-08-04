@@ -217,6 +217,7 @@ CREATE TABLE Batches_Deliverable (
     `created_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `completed_ts` TIMESTAMP NULL DEFAULT NULL,
     `is_archived` tinyint(1) NOT NULL DEFAULT 0,
+    `s3_metadata` JSON DEFAULT NULL,
     PRIMARY KEY (`id`),
     FOREIGN KEY (`user_id`) REFERENCES Users(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
@@ -234,6 +235,7 @@ CREATE TABLE Batches_Catchall (
     `created_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `completed_ts` TIMESTAMP NULL DEFAULT NULL,
     `is_archived` tinyint(1) NOT NULL DEFAULT 0,
+    `s3_metadata` JSON DEFAULT NULL,
     PRIMARY KEY (`id`),
     FOREIGN KEY (`user_id`) REFERENCES Users(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
@@ -384,4 +386,23 @@ CREATE TABLE Queue_Metrics (
     `created_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     INDEX idx_metrics_query (`metric_type`, `verification_type`, `period_start`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+
+-- S3 Enrichment Progress tracking table
+DROP TABLE IF EXISTS `S3_Enrichment_Progress`;
+CREATE TABLE S3_Enrichment_Progress (
+    `id` int AUTO_INCREMENT NOT NULL,
+    `batch_id` int NOT NULL,
+    `check_type` varchar(20) NOT NULL,
+    `status` varchar(20) NOT NULL DEFAULT 'pending',
+    `rows_processed` int DEFAULT 0,
+    `total_rows` int DEFAULT NULL,
+    `started_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `completed_at` TIMESTAMP NULL DEFAULT NULL,
+    `error_message` TEXT DEFAULT NULL,
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY unique_batch_progress (`batch_id`, `check_type`),
+    INDEX idx_s3_enrichment_batch (`batch_id`, `check_type`),
+    INDEX idx_s3_enrichment_status (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;

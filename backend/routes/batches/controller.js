@@ -20,6 +20,21 @@ const {
 	db_checkDuplicateFilename,
 } = require('./funs_db.js');
 
+// S3 Function Imports
+const {
+	generateUploadUrl,
+	generateExportUrls,
+	triggerS3Enrichment
+} = require('./funs_s3.js');
+
+// S3 DB Function Imports
+const {
+	getBatchWithS3Metadata,
+	updateBatchS3Metadata,
+	getEnrichmentProgress: db_getEnrichmentProgress,
+	checkUserBatchAccess: db_checkUserBatchAccess
+} = require('./funs_db_s3.js');
+
 // External API Function Imports
 const {
 	resend_sendLowCreditsEmail
@@ -360,6 +375,144 @@ async function checkDuplicateFilename(req, res) {
 	}
 }
 
+async function generateS3UploadUrl(req, res) {
+	try {
+		const { checkType, batchId } = req.params;
+		const { fileName, fileSize, mimeType } = req.body;
+		
+		// Validate input
+		if (!fileName || !fileSize || !mimeType) {
+			return returnBadRequest(res, 'Missing required fields: fileName, fileSize, or mimeType');
+		}
+		
+		// Check file size (50MB limit)
+		const maxFileSize = 50 * 1024 * 1024; // 50MB
+		if (fileSize > maxFileSize) {
+			return returnBadRequest(res, 'File size must be less than 50MB');
+		}
+		
+		// Generate pre-signed URL
+		const { uploadUrl, s3Key } = await generateUploadUrl(fileName, fileSize, mimeType, batchId, checkType);
+		
+		// Return response
+		return res.status(HttpStatus.SUCCESS_STATUS).json({
+			uploadUrl,
+			s3Key
+		});
+		
+	} catch (err) {
+		console.error("GENERATE S3 UPLOAD URL ERR = ", err);
+		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+	}
+}
+
+async function completeS3Upload(req, res) {
+	try {
+		const { checkType, batchId } = req.params;
+		const { s3Key, columnMapping } = req.body;
+		
+		// Validate input
+		if (!s3Key) {
+			return returnBadRequest(res, 'Missing required field: s3Key');
+		}
+		
+		// Get file info from request or use defaults
+		const fileInfo = {
+			fileName: req.body.fileName || s3Key.split('/').pop(),
+			fileSize: req.body.fileSize || 0,
+			mimeType: req.body.mimeType || 'text/csv',
+			columnMapping: columnMapping || { email: 0 }
+		};
+		
+		// Update batch metadata with S3 info
+		await updateBatchS3Metadata(batchId, checkType, s3Key, fileInfo);
+		
+		// Return success
+		return res.status(HttpStatus.SUCCESS_STATUS).json({
+			message: 'S3 upload recorded successfully'
+		});
+		
+	} catch (err) {
+		console.error("COMPLETE S3 UPLOAD ERR = ", err);
+		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+	}
+}
+
+async function getExportUrls(req, res) {
+	try {
+		const { checkType, batchId } = req.params;
+		
+		// Get batch with S3 metadata
+		const batch = await getBatchWithS3Metadata(batchId, checkType);
+		if (!batch) {
+			return returnBadRequest(res, 'Batch not found', HttpStatus.NOT_FOUND_STATUS);
+		}
+		
+		// Check if exports exist
+		if (!batch.s3_metadata?.exports) {
+			// Check if enrichment is in progress
+			const progress = await db_getEnrichmentProgress(batchId, checkType);
+			if (progress && progress.status === 'processing') {
+				return res.status(HttpStatus.SUCCESS_STATUS).json({
+					status: 'processing',
+					progress: {
+						rowsProcessed: progress.rows_processed,
+						startedAt: progress.started_at
+					}
+				});
+			}
+			
+			return res.status(HttpStatus.SUCCESS_STATUS).json({
+				status: 'not_available',
+				message: 'Exports not yet generated'
+			});
+		}
+		
+		// Generate pre-signed URLs
+		const urls = await generateExportUrls(batch);
+		
+		// Return response
+		return res.status(HttpStatus.SUCCESS_STATUS).json({
+			status: 'completed',
+			exports: urls
+		});
+		
+	} catch (err) {
+		console.error("GET EXPORT URLS ERR = ", err);
+		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+	}
+}
+
+async function getEnrichmentProgress(req, res) {
+	try {
+		const { checkType, batchId } = req.params;
+		
+		// Get enrichment progress
+		const progress = await db_getEnrichmentProgress(batchId, checkType);
+		
+		if (!progress) {
+			return res.status(HttpStatus.SUCCESS_STATUS).json({
+				status: 'not_started',
+				message: 'Enrichment has not been started for this batch'
+			});
+		}
+		
+		// Return progress info
+		return res.status(HttpStatus.SUCCESS_STATUS).json({
+			status: progress.status,
+			rowsProcessed: progress.rows_processed,
+			totalRows: progress.total_rows,
+			startedAt: progress.started_at,
+			completedAt: progress.completed_at,
+			errorMessage: progress.error_message
+		});
+		
+	} catch (err) {
+		console.error("GET ENRICHMENT PROGRESS ERR = ", err);
+		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+	}
+}
+
 // Exports
 module.exports = {
 	getBatchesList,
@@ -372,5 +525,9 @@ module.exports = {
 	pauseBatchProcessing,
 	resumeBatchProcessing,
 	createNewBatch,
-	checkDuplicateFilename
+	checkDuplicateFilename,
+	generateS3UploadUrl,
+	completeS3Upload,
+	getExportUrls,
+	getEnrichmentProgress
 }
