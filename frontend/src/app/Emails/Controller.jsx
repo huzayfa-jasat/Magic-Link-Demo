@@ -1,5 +1,5 @@
 // Dependencies
-import { useEffect, useState, useContext, useCallback, useRef } from "react";
+import { useEffect, useState, useContext, useCallback } from "react";
 
 // API Imports
 import { getBatchesList, removeVerifyBatch, removeCatchallBatch, getBatchProgress } from "../../api/batches";
@@ -51,12 +51,6 @@ export default function HomeController() {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const ITEMS_PER_PAGE = 25;
-  
-  // Ref to track current requests for polling
-  const requestsRef = useRef(requests);
-  useEffect(() => {
-    requestsRef.current = requests;
-  }, [requests]);
 
   // Load batches with pagination
   const fetchBatches = async (page = 1, append = false) => {
@@ -175,9 +169,8 @@ export default function HomeController() {
   }, [hasMore, loadingMore, loading, loadMore]);
   
   // Function to update processing batch progress
-  const updateProcessingBatches = useCallback(async (requestsRef, setRequests) => {
-    // Get all processing batches from the ref
-    const currentRequests = requestsRef.current;
+  const updateProcessingBatches = useCallback(async (currentRequests) => {
+    // Get all processing batches
     const processingBatches = currentRequests.filter(batch => batch.status === 'processing');
     
     if (processingBatches.length === 0) return;
@@ -196,8 +189,8 @@ export default function HomeController() {
               if (data.status === 'processing' && data.progress !== undefined) {
                 return { ...b, status: 'processing', progress: data.progress };
               } else if (data.status) {
-                // For completed, failed, or paused statuses
-                return { ...b, status: data.status, progress: data.status === 'completed' ? 100 : b.progress };
+                // For completed, failed, or paused statuses - only update status
+                return { ...b, status: data.status };
               }
             }
             return b;
@@ -219,12 +212,12 @@ export default function HomeController() {
   useEffect(() => {
     // Set up interval for periodic updates
     const intervalId = setInterval(() => {
-      updateProcessingBatches(requestsRef, setRequests);
+      updateProcessingBatches(requests);
     }, 10000); // Update every 10 seconds
     
     // Cleanup
     return () => clearInterval(intervalId);
-  }, [currFilter, updateProcessingBatches]); // Only recreate when filter changes
+  }, [requests, currFilter, updateProcessingBatches]); // Recreate when requests or filter changes
 
   // Render
   if (loading) {
