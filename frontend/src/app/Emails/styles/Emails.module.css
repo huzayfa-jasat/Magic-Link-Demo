@@ -1296,6 +1296,9 @@
   }
 }
 @media screen and (max-width: 500px) {
+  .detailsTitle {
+    font-size: 20px;
+  }
   .detailsMeta {
     margin-top: -10px;
     gap: 10px;

@@ -82,8 +82,11 @@ export default function useBatchData(id, checkType) {
         const resultData = response.data.results || [];
 
         // Set results
-        if (append) setResults(prev => [...prev, ...resultData]);
-        else setResults(resultData);
+        if (append) {
+          setResults(prev => [...prev, ...resultData]);
+        } else {
+          setResults(resultData);
+        }
         
         // Use metadata from new API for pagination
         if (response.data.metadata) {
@@ -91,8 +94,9 @@ export default function useBatchData(id, checkType) {
           setHasMore(response.data.metadata.has_more);
         } else {
           // Fallback calculation
-          setTotalPages(Math.ceil(details.emails / ITEMS_PER_PAGE));
-          setHasMore(page < Math.ceil(details.emails / ITEMS_PER_PAGE));
+          const totalPages = Math.ceil(details.emails / ITEMS_PER_PAGE);
+          setTotalPages(totalPages);
+          setHasMore(page < totalPages);
         }
 
         // Return success
@@ -129,12 +133,12 @@ export default function useBatchData(id, checkType) {
     setHasMore(true);
   }, [debouncedSearchQuery]);
 
-  // Load results when details are loaded and page or search changes
+  // Load initial results when details are loaded or search changes
   useEffect(() => {
     if (details && !error) {
-      fetchResults(currentPage, debouncedSearchQuery);
+      fetchResults(1, debouncedSearchQuery, false);
     }
-  }, [details, currentPage, debouncedSearchQuery, fetchResults, error]);
+  }, [details, debouncedSearchQuery, fetchResults, error]);
 
   // Return hooks
   return {

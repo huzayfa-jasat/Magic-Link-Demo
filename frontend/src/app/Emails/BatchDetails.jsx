@@ -58,16 +58,19 @@ export default function EmailsBatchDetailsController({
   }, [details, navigate]);
 
   // Infinite scroll detection
-  const handleScroll = () => {
-    if (
-      window.innerHeight + document.documentElement.scrollTop >= document.documentElement.offsetHeight - 500 && // 500px before bottom
-      hasMore && !loadingMore && !resultsLoading
-    ) loadMore();
-  };
+  const handleScroll = useCallback(() => {
+    const scrollPosition = window.innerHeight + document.documentElement.scrollTop;
+    const threshold = document.documentElement.offsetHeight - 500;
+    
+    if (scrollPosition >= threshold && hasMore && !loadingMore && !resultsLoading) {
+      loadMore();
+    }
+  }, [hasMore, loadingMore, resultsLoading, loadMore]);
+  
   useEffect(() => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [hasMore, loadingMore, resultsLoading, loadMore]);
+  }, [handleScroll]);
 
   // Export filtered results to CSV (uses shared utility)
   const handleExportFiltered = useCallback(

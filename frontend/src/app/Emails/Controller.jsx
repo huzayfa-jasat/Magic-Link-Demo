@@ -1,5 +1,5 @@
 // Dependencies
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState, useContext, useCallback } from "react";
 
 // API Imports
 import { getBatchesList, removeVerifyBatch, removeCatchallBatch } from "../../api/batches";
@@ -45,26 +45,54 @@ export default function HomeController() {
   const [error, setError] = useState(null);
   const [processingModal, setProcessingModal] = useState({ isOpen: false, progress: 0 });
   const [removeModal, setRemoveModal] = useState({ isOpen: false, requestId: null, category: null });
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const ITEMS_PER_PAGE = 25;
 
-  // Load batches on mount
-  const fetchBatches = async () => {
+  // Load batches with pagination
+  const fetchBatches = async (page = 1, append = false) => {
+    if (append) setLoadingMore(true);
+    else if (page === 1) setLoading(true);
+    
     try {
-      const response = await getBatchesList(1, 100, 'timehl', currFilter, 'all');
-      const batches = response.data.batches;
-      // Set batches - filtered doesn't return category, so add for visual display
-      if (currFilter === "all") setRequests(batches);
-      else setRequests(batches.map((batch) => ({...batch, category: currFilter})));
-
+      const response = await getBatchesList(page, ITEMS_PER_PAGE, 'timehl', currFilter, 'all');
+      const batches = response.data.batches || [];
+      
+      // Add category for visual display if not filtering all
+      const processedBatches = currFilter === "all" 
+        ? batches 
+        : batches.map((batch) => ({...batch, category: currFilter}));
+      
+      if (append) {
+        // Gracefully merge results to handle updates
+        setRequests(prev => {
+          const existingIds = new Set(prev.map(b => `${b.id}-${b.category}`));
+          const newBatches = processedBatches.filter(b => !existingIds.has(`${b.id}-${b.category}`));
+          return [...prev, ...newBatches];
+        });
+      } else {
+        setRequests(processedBatches);
+      }
+      
+      // Check if there are more pages
+      setHasMore(batches.length === ITEMS_PER_PAGE);
+      
     } catch (err) {
       setError("Failed to load verify requests");
       console.error("Error fetching requests:", err);
-
+      
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
   useEffect(() => {
-    fetchBatches();
+    setCurrentPage(1);
+    setHasMore(true);
+    fetchBatches(1, false);
   }, [currFilter]);
 
   // Load stats on mount
@@ -110,7 +138,7 @@ export default function HomeController() {
 
 			// Handle response
 			if (resp.status === 200) {
-        setRequests((prev) => prev.filter((batch) => (batch.id !== requestId && batch.category !== category)));
+        setRequests((prev) => prev.filter((batch) => !(batch.id === requestId && batch.category === category)));
         setRemoveModal((prev) => ({ ...prev, isOpen: false }));
       } else errorContext.showError(1);
 
@@ -119,7 +147,32 @@ export default function HomeController() {
 		}
 	};
 
-  // TODO: Pagination
+  // Load more function for pagination
+  const loadMore = useCallback(() => {
+    if (!loadingMore && hasMore) {
+      const nextPage = currentPage + 1;
+      setCurrentPage(nextPage);
+      fetchBatches(nextPage, true);
+    }
+  }, [currentPage, hasMore, loadingMore, currFilter]);
+  
+  // Infinite scroll handler
+  const handleScroll = useCallback(() => {
+    const scrollTop = (document.documentElement && document.documentElement.scrollTop) || document.body.scrollTop;
+    const scrollHeight = (document.documentElement && document.documentElement.scrollHeight) || document.body.scrollHeight;
+    const clientHeight = document.documentElement.clientHeight || window.innerHeight;
+    const scrolledToBottom = Math.ceil(scrollTop + clientHeight) >= scrollHeight - 500;
+    
+    if (scrolledToBottom && hasMore && !loadingMore && !loading) {
+      loadMore();
+    }
+  }, [hasMore, loadingMore, loading, loadMore]);
+  
+  // Add scroll event listener
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
 
   // Render
   if (loading) {
@@ -164,17 +217,34 @@ export default function HomeController() {
         </div>
         <br/>
         {(requests.length > 0) ?
-          <div className={styles.grid}>
-            {requests.map((request) => (
-              <BatchCard
-                key={request.id} request={request}
-                onProcessingClick={handleProcessingClick}
-                onRemoveClick={handleRemoveClick}
-                onBatchPause={handleConfirmPause}
-                onBatchResume={handleConfirmResume}
-              />
-            ))}
-          </div>
+          <>
+            <div className={styles.grid}>
+              {requests.map((request) => (
+                <BatchCard
+                  key={`${request.id}-${request.category}`} 
+                  request={request}
+                  onProcessingClick={handleProcessingClick}
+                  onRemoveClick={handleRemoveClick}
+                  onBatchPause={handleConfirmPause}
+                  onBatchResume={handleConfirmResume}
+                />
+              ))}
+            </div>
+            
+            {/* Loading more indicator */}
+            {loadingMore && (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+                <LoadingCircle relative={true} />
+              </div>
+            )}
+            
+            {/* End of results indicator */}
+            {/* {!hasMore && requests.length > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem', color: '#666' }}>
+                <p>No more results to load</p>
+              </div>
+            )} */}
+          </>
           :
           <EmptyBatchList />
         }
