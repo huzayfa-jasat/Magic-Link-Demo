@@ -678,6 +678,40 @@ async function db_getDeliverableBatchStats(batch_id) {
 	}];
 }
 
+async function db_getCatchallBatchStats(batch_id) {
+	let err_code;
+
+	// Get table names
+	const results_table = getResultsTableName('catchall');
+	const email_batch_association_table = getEmailBatchAssociationTableName('catchall');
+	if (!results_table || !email_batch_association_table) return [false, null];
+
+	// Get stats
+	const [stats] = await knex(results_table).join(
+		email_batch_association_table,
+		`${email_batch_association_table}.email_global_id`,
+		`${results_table}.email_global_id`
+	).where({
+		[`${email_batch_association_table}.batch_id`]: batch_id,
+		[`${email_batch_association_table}.did_complete`]: 1,
+	}).select(
+		knex.raw(`SUM(CASE WHEN ${results_table}.toxicity = 0 THEN 1 ELSE 0 END) as good`),
+		knex.raw(`SUM(CASE WHEN ${results_table}.toxicity IN (1, 2, 3) THEN 1 ELSE 0 END) as risky`),
+		knex.raw(`SUM(CASE WHEN ${results_table}.toxicity IN (4, 5) THEN 1 ELSE 0 END) as bad`)
+	).catch((err)=>{if (err) err_code = err});
+	if (err_code || !stats) {
+		console.log("CATCHALL BATCH STATS ERR = ", err_code);
+		return [false, null];
+	}
+
+	// Return
+	return [true, {
+		good: stats.good ?? 0,
+		risky: stats.risky ?? 0,
+		bad: stats.bad ?? 0,
+	}];
+}
+
 async function db_getBatchDetails(user_id, check_type, batch_id) {
 	// Get batch table name
 	const batch_table = getBatchTableName(check_type);
@@ -705,10 +739,19 @@ async function db_getBatchDetails(user_id, check_type, batch_id) {
 		status: (batch[0].status === 'queued') ? 'processing' : batch[0].status
 	}
 
-	// If completed "deliverable" batch, get stats
-	if (check_type === 'deliverable' && batch[0].status === 'completed') {
+	// If batch is not completed, return
+	if (batch[0].status !== 'completed') return [true, batch_details];
+
+	// If batch is completed, get stats
+	if (check_type === 'deliverable') {
 		// Get stats
 		const [stats_ok, stats_dict] = await db_getDeliverableBatchStats(batch_id);
+		if (!stats_ok) return [false, null];
+		batch_details.stats = stats_dict;
+
+	} else if (check_type === 'catchall') {
+		// Get stats
+		const [stats_ok, stats_dict] = await db_getCatchallBatchStats(batch_id);
 		if (!stats_ok) return [false, null];
 		batch_details.stats = stats_dict;
 	}
