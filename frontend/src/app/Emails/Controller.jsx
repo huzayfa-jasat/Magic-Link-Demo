@@ -2,7 +2,7 @@
 import { useEffect, useState, useContext, useCallback } from "react";
 
 // API Imports
-import { getBatchesList, removeVerifyBatch, removeCatchallBatch } from "../../api/batches";
+import { getBatchesList, removeVerifyBatch, removeCatchallBatch, getBatchProgress } from "../../api/batches";
 import { getOverviewStats } from "../../api/credits";
 
 // Component Imports
@@ -168,11 +168,56 @@ export default function HomeController() {
     }
   }, [hasMore, loadingMore, loading, loadMore]);
   
+  // Function to update processing batch progress
+  const updateProcessingBatches = useCallback(async (currentRequests) => {
+    // Get all processing batches
+    const processingBatches = currentRequests.filter(batch => batch.status === 'processing');
+    
+    if (processingBatches.length === 0) return;
+    
+    // Update progress for each processing batch individually (piecewise)
+    processingBatches.forEach(async (batch) => {
+      try {
+        const response = await getBatchProgress(batch.category, batch.id);
+        if (response.status === 200) {
+          const data = response.data;
+          
+          // Update this specific batch immediately
+          setRequests(prev => prev.map(b => {
+            if (b.id === batch.id && b.category === batch.category) {
+              // Handle the new response structure
+              if (data.status === 'processing' && data.progress !== undefined) {
+                return { ...b, status: 'processing', progress: data.progress };
+              } else if (data.status) {
+                // For completed, failed, or paused statuses - only update status
+                return { ...b, status: data.status };
+              }
+            }
+            return b;
+          }));
+        }
+      } catch (error) {
+        console.error(`Error updating progress for batch ${batch.id}:`, error);
+      }
+    });
+  }, []);
+
   // Add scroll event listener
   useEffect(() => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
+
+  // Poll for progress updates for processing batches
+  useEffect(() => {
+    // Set up interval for periodic updates
+    const intervalId = setInterval(() => {
+      updateProcessingBatches(requests);
+    }, 10000); // Update every 10 seconds
+    
+    // Cleanup
+    return () => clearInterval(intervalId);
+  }, [requests, currFilter, updateProcessingBatches]); // Recreate when requests or filter changes
 
   // Render
   if (loading) {

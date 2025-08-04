@@ -151,18 +151,13 @@ async function getBatchProgress(req, res) {
 	try {
 		const { checkType, batchId } = req.params;
 
-		// Only supported for deliverable batches
-		if (checkType !== 'deliverable') {
-			return res.status(HttpStatus.SUCCESS_STATUS).json({
-				progress: 100,
-				processed: 0,
-				total: 0,
-				message: 'Progress tracking is only available for deliverable batches'
-			});
+		// Support both deliverable and catchall
+		if (checkType !== 'deliverable' && checkType !== 'catchall') {
+			return returnBadRequest(res, 'Invalid check type');
 		}
 
 		// Get batch progress
-		const [ok, progressData] = await db_getBatchProgress(req.user.id, batchId);
+		const [ok, progressData] = await db_getBatchProgress(req.user.id, batchId, checkType);
 		if (!ok) return returnBadRequest(res, 'Failed to get batch progress');
 
 		// Return response
