@@ -30,7 +30,7 @@ export const listAllTransactions = async () => {
 };
 
 export const listCatchallTransactions = async () => {
-  return await http.get(`${CATCHALL_MODULE_PREFIX}/history`, {
+  return await http.get(`${CATCHALL_MODULE_PREFIX}/balance/history`, {
     withCredentials: true,
   });
 };
