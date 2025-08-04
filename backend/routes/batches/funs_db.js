@@ -955,10 +955,10 @@ async function db_getBatchResults(user_id, check_type, batch_id, page, limit, or
 	return [true, formatted_results, metadata];
 }
 
-async function db_getBatchProgress(user_id, batch_id) {
+async function db_getBatchProgress(user_id, batch_id, checkType) {
 	try {
 		// Get batch details first to ensure it exists and user has access
-		const batch_table = getBatchTableName('deliverable');
+		const batch_table = getBatchTableName(checkType);
 		const batch = await knex(batch_table)
 			.where({
 				'id': batch_id,
@@ -969,45 +969,38 @@ async function db_getBatchProgress(user_id, batch_id) {
 		
 		if (!batch) return [false, null];
 		
-		// If batch is completed, return 100% progress
-		if (batch.status === 'completed') {
+		// Return status for non-processing batches
+		if (batch.status === 'completed' || batch.status === 'failed' || batch.status === 'paused') {
 			return [true, {
-				progress: 100,
-				processed: batch.total_emails,
-				total: batch.total_emails,
-				cached_results: batch.cached_results
+				status: batch.status
 			}];
 		}
 		
-		// If batch is not processing, return 0% progress
-		if (batch.status !== 'processing') {
+		// Calculate progress for processing batches
+		if (batch.status === 'processing') {
+			const bouncer_table = checkType === 'deliverable' ? 'Bouncer_Batches_Deliverable' : 'Bouncer_Batches_Catchall';
+			const processed_result = await knex(bouncer_table)
+				.where('user_batch_id', batch_id)
+				.sum('processed as total_processed')
+				.first();
+			
+			const total_processed = parseInt(processed_result.total_processed) || 0;
+			const total_with_cached = total_processed + batch.cached_results;
+			
+			// Calculate percentage
+			const progress = batch.total_emails > 0 
+				? Math.round((total_with_cached / batch.total_emails) * 100)
+				: 0;
+			
 			return [true, {
-				progress: 0,
-				processed: 0,
-				total: batch.total_emails,
-				cached_results: batch.cached_results
+				status: 'processing',
+				progress: Math.min(progress, 99) // Cap at 99% until batch is marked completed
 			}];
 		}
 		
-		// Calculate progress from bouncer batches
-		const processed_result = await knex('Bouncer_Batches_Deliverable')
-			.where('user_batch_id', batch_id)
-			.sum('processed as total_processed')
-			.first();
-		
-		const total_processed = parseInt(processed_result.total_processed) || 0;
-		const total_with_cached = total_processed + batch.cached_results;
-		
-		// Calculate percentage
-		const progress = batch.total_emails > 0 
-			? Math.round((total_with_cached / batch.total_emails) * 100)
-			: 0;
-		
+		// Default fallback
 		return [true, {
-			progress: Math.min(progress, 99), // Cap at 99% until batch is marked completed
-			processed: total_with_cached,
-			total: batch.total_emails,
-			cached_results: batch.cached_results
+			status: batch.status || 'unknown'
 		}];
 		
 	} catch (error) {

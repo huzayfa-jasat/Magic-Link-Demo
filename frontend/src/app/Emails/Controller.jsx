@@ -182,59 +182,31 @@ export default function HomeController() {
     
     if (processingBatches.length === 0) return;
     
-    // Update progress for each processing batch
-    const updates = processingBatches.map(async (batch) => {
+    // Update progress for each processing batch individually (piecewise)
+    processingBatches.forEach(async (batch) => {
       try {
-        // For deliverable batches, use the progress endpoint
-        if (batch.category === 'deliverable') {
-          const response = await getBatchProgress('deliverable', batch.id);
-          if (response.status === 200) {
-            return { 
-              id: batch.id, 
-              category: batch.category,
-              progress: response.data.progress,
-              status: response.data.progress === 100 ? 'completed' : 'processing'
-            };
-          }
-        } else if (batch.category === 'catchall') {
-          // For catchall batches, we'll use getBatchDetails instead
-          // This avoids fetching entire pages and is more efficient
-          try {
-            const response = await getBatchProgress('catchall', batch.id);
-            // Even if the endpoint doesn't fully support catchall,
-            // it might return basic status info
-            if (response.status === 200) {
-              return {
-                id: batch.id,
-                category: batch.category,
-                progress: response.data.progress || batch.progress || 0,
-                status: batch.status // Keep current status for catchall
-              };
+        const response = await getBatchProgress(batch.category, batch.id);
+        if (response.status === 200) {
+          const data = response.data;
+          
+          // Update this specific batch immediately
+          setRequests(prev => prev.map(b => {
+            if (b.id === batch.id && b.category === batch.category) {
+              // Handle the new response structure
+              if (data.status === 'processing' && data.progress !== undefined) {
+                return { ...b, status: 'processing', progress: data.progress };
+              } else if (data.status) {
+                // For completed, failed, or paused statuses
+                return { ...b, status: data.status, progress: data.status === 'completed' ? 100 : b.progress };
+              }
             }
-          } catch (err) {
-            // If progress endpoint fails for catchall, keep current values
-            console.log('Progress endpoint not available for catchall batch:', batch.id);
-          }
+            return b;
+          }));
         }
       } catch (error) {
         console.error(`Error updating progress for batch ${batch.id}:`, error);
       }
-      return null;
     });
-    
-    // Wait for all updates and apply them
-    const results = await Promise.all(updates);
-    const validUpdates = results.filter(update => update !== null);
-    
-    if (validUpdates.length > 0) {
-      setRequests(prev => prev.map(batch => {
-        const update = validUpdates.find(u => u.id === batch.id && u.category === batch.category);
-        if (update) {
-          return { ...batch, progress: update.progress, status: update.status };
-        }
-        return batch;
-      }));
-    }
   }, []);
 
   // Add scroll event listener
