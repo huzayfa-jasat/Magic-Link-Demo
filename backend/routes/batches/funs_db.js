@@ -785,11 +785,13 @@ async function db_getBatchResults(user_id, check_type, batch_id, page, limit, or
 			});
 			break;
 		case 'catchall':
-			base_query = base_query.where({
-				[`${results_table}.status`]: 'risky',
-				[`${results_table}.reason`]: 'low_deliverability',
-			}).orWhere({
-				[`${results_table}.is_catchall`]: 1,
+			base_query = base_query.where(function() {
+				this.where({
+					[`${results_table}.status`]: 'risky',
+					[`${results_table}.reason`]: 'low_deliverability',
+				}).orWhere({
+					[`${results_table}.is_catchall`]: 1,
+				});
 			});
 			break;
 		case 'undeliverable':
@@ -855,11 +857,13 @@ async function db_getBatchResults(user_id, check_type, batch_id, page, limit, or
 			});
 			break;
 		case 'catchall':
-			count_query = count_query.where({
-				[`${results_table}.status`]: 'risky',
-				[`${results_table}.reason`]: 'low_deliverability',
-			}).orWhere({
-				[`${results_table}.is_catchall`]: 1,
+			count_query = count_query.where(function() {
+				this.where({
+					[`${results_table}.status`]: 'risky',
+					[`${results_table}.reason`]: 'low_deliverability',
+				}).orWhere({
+					[`${results_table}.is_catchall`]: 1,
+				});
 			});
 			break;
 		case 'undeliverable':
