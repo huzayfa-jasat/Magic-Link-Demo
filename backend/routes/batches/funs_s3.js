@@ -2,13 +2,14 @@
 const { S3Client, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
 const { Upload } = require("@aws-sdk/lib-storage");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
-const { PassThrough, Transform } = require("stream");
+const { PassThrough } = require("stream");
 const { parse } = require('csv-parse');
 const { stringify } = require('csv-stringify');
 const XLSX = require('xlsx');
 
 // Util Imports
 const { stripEmailModifiers } = require('../../utils/processEmails');
+const { getExportTitle } = require('./funs_s3_utils');
 
 // Initialize S3 client
 const s3Client = new S3Client({ 
@@ -18,8 +19,21 @@ const s3Client = new S3Client({
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
     }
 });
-
 const S3_BUCKET = process.env.S3_BUCKET;
+
+// Constants
+const DELIVERABLE_EXPORT_TYPES = {
+    all_emails: true,
+    valid_only: true,
+    invalid_only: true,
+    catchall_only: true
+};
+const CATCHALL_EXPORT_TYPES = {
+    all_emails: true,
+    good_only: true,
+    bad_only: true,
+    risky_only: true
+};
 
 // In-progress enrichment tracking
 const enrichmentInProgress = new Map();
@@ -29,7 +43,7 @@ const enrichmentInProgress = new Map();
  */
 async function s3_generateUploadUrl(fileName, fileSize, mimeType, batchId, checkType) {
     const timestamp = Date.now();
-    const s3Key = `uploads/${checkType}/${batchId}/original-${timestamp}-${fileName}`;
+    const s3Key = `uploads/${checkType}/${batchId}/og-${timestamp}-${fileName}`;
     
     const command = new PutObjectCommand({
         Bucket: S3_BUCKET,
@@ -46,7 +60,7 @@ async function s3_generateUploadUrl(fileName, fileSize, mimeType, batchId, check
 /**
  * Generate pre-signed URLs for export downloads
  */
-async function s3_generateExportUrls(batch) {
+async function s3_generateExportUrls(batch, ttl_seconds=86400) {
     if (!batch.s3_metadata?.exports) {
         return null;
     }
@@ -61,7 +75,7 @@ async function s3_generateExportUrls(batch) {
             });
             
             urls[exportType] = {
-                url: await getSignedUrl(s3Client, command, { expiresIn: 86400 }), // 24 hours
+                url: await getSignedUrl(s3Client, command, { expiresIn: ttl_seconds }),
                 size: metadata.size,
                 generatedAt: metadata.generated_at,
                 fileName: metadata.s3_key.split('/').pop()
@@ -75,46 +89,33 @@ async function s3_generateExportUrls(batch) {
 /**
  * Map verification status for exports based on check type
  */
-// TODO: This mapping logic is bad
-// ... status won't be "good"/"risky"/"bad" for catchall
-// ... "risky" & "low_deliverability" REASON should be marked as "Catch-All" for deliverable batches
-// ... "unknown" doesn't really exist for deliverable batches
-function mapStatus(status, isCatchall, checkType) {
+function mapStatus(status, isCatchall, reason, checkType) {
     if (checkType === 'deliverable') {
-        if (status === 'deliverable' && !isCatchall) return 'Deliverable';
-        if (status === 'deliverable' && isCatchall) return 'Catch-All';
-        if (status === 'risky') return 'Catch-All';
-        if (status === 'undeliverable') return 'Undeliverable';
-        if (status === 'unknown') return 'Unknown';
-        return 'Not Processed';
+        if (status === 'deliverable' && !isCatchall) return 'Valid';
+        else if (isCatchall || (status === 'risky' && reason === 'low_deliverability')) return 'Catch-All';
+        else return 'Invalid';
+
     } else if (checkType === 'catchall') {
-        // For catchall type batches
-        if (status === 'good') return 'Good';
-        if (status === 'bad') return 'Bad';
-        if (status === 'risky') return 'Risky';
-        return 'Not Processed';
+        switch (status) {
+            case 'deliverable':
+                return 'Good';
+            case 'risky':
+                return 'Risky';
+            default:
+                return 'Bad';
+        }
     }
+    
+    return 'Unknown';
 }
 
 /**
  * Determine which exports to create based on check type
  */
 function getExportTypes(checkType) {
-    if (checkType === 'deliverable') {
-        return {
-            all_emails: true,
-            valid_only: true,
-            invalid_only: true,
-            catchall_risky: true
-        };
-    } else if (checkType === 'catchall') {
-        return {
-            all_emails: true,
-            good_only: true,
-            bad_only: true,
-            risky_only: true
-        };
-    }
+    if (checkType === 'deliverable') return DELIVERABLE_EXPORT_TYPES;
+    else if (checkType === 'catchall') return CATCHALL_EXPORT_TYPES;
+    else return {};
 }
 
 /**
@@ -199,43 +200,41 @@ async function s3_enrichBatchExports(batchId, checkType, db_funcs) {
         
         if (exportTypes.all_emails) {
             outputStreams.all_emails = new PassThrough();
-            uploads.all_emails = createUpload(batchId, 'all-emails', outputStreams.all_emails);
+            uploads.all_emails = createUpload(checkType, batchId, getExportTitle(checkType, 'all_emails', batch.title), outputStreams.all_emails);
         }
         
         if (exportTypes.valid_only) {
             outputStreams.valid_only = new PassThrough();
-            uploads.valid_only = createUpload(batchId, 'valid-only', outputStreams.valid_only);
+            uploads.valid_only = createUpload(checkType, batchId, getExportTitle(checkType, 'valid_only', batch.title), outputStreams.valid_only);
         }
         
         if (exportTypes.invalid_only) {
             outputStreams.invalid_only = new PassThrough();
-            uploads.invalid_only = createUpload(batchId, 'invalid-only', outputStreams.invalid_only);
+            uploads.invalid_only = createUpload(checkType, batchId, getExportTitle(checkType, 'invalid_only', batch.title), outputStreams.invalid_only);
         }
         
-        if (exportTypes.catchall_risky) {
-            outputStreams.catchall_risky = new PassThrough();
-            uploads.catchall_risky = createUpload(batchId, 'catchall-risky', outputStreams.catchall_risky);
+        if (exportTypes.catchall_only) {
+            outputStreams.catchall_only = new PassThrough();
+            uploads.catchall_only = createUpload(checkType, batchId, getExportTitle(checkType, 'catchall_only', batch.title), outputStreams.catchall_only);
         }
         
         if (exportTypes.good_only) {
             outputStreams.good_only = new PassThrough();
-            uploads.good_only = createUpload(batchId, 'good-only', outputStreams.good_only);
+            uploads.good_only = createUpload(checkType, batchId, getExportTitle(checkType, 'good_only', batch.title), outputStreams.good_only);
         }
         
         if (exportTypes.bad_only) {
             outputStreams.bad_only = new PassThrough();
-            uploads.bad_only = createUpload(batchId, 'bad-only', outputStreams.bad_only);
+            uploads.bad_only = createUpload(checkType, batchId, getExportTitle(checkType, 'bad_only', batch.title), outputStreams.bad_only);
         }
         
         if (exportTypes.risky_only) {
             outputStreams.risky_only = new PassThrough();
-            uploads.risky_only = createUpload(batchId, 'risky-only', outputStreams.risky_only);
+            uploads.risky_only = createUpload(checkType, batchId, getExportTitle(checkType, 'risky_only', batch.title), outputStreams.risky_only);
         }
         
         // 6. Set up CSV stringifiers for each output
         const stringifiers = {};
-        let headers = null;
-        
         Object.keys(outputStreams).forEach(key => {
             stringifiers[key] = stringify({ header: true });
             stringifiers[key].pipe(outputStreams[key]);
@@ -348,42 +347,30 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
                 // Create enriched row
                 const enrichedRow = {
                     ...row,
-                    'Verification Status': mapStatus(result.status, result.is_catchall, checkType),
-                    'Reason': result.reason || '',
-                    'Score': result.score || ''
+                    'OmniVerifier Status': mapStatus(result.status, result.is_catchall, result.reason, checkType),
                 };
                 
                 // Add additional fields based on check type
                 if (checkType === 'deliverable') {
-                    enrichedRow['Mail Server'] = result.provider || '';
-                } else if (checkType === 'catchall') {
-                    enrichedRow['Toxicity'] = result.toxicity || '';
+                    const provider_result = result.provider || '';
+                    enrichedRow['OmniVerifier Mail Server'] = (provider_result === 'other') ? '' : provider_result;
                 }
                 
                 // Write to all emails export
-                if (stringifiers.all_emails) {
-                    stringifiers.all_emails.write(enrichedRow);
-                }
+                if (stringifiers.all_emails) stringifiers.all_emails.write(enrichedRow);
                 
                 // Write to filtered exports based on status
-                const status = enrichedRow['Verification Status'];
+                const status = enrichedRow['OmniVerifier Status'];
                 
                 if (checkType === 'deliverable') {
-                    if (status === 'Deliverable' && stringifiers.valid_only) {
-                        stringifiers.valid_only.write(enrichedRow);
-                    } else if (status === 'Undeliverable' && stringifiers.invalid_only) {
-                        stringifiers.invalid_only.write(enrichedRow);
-                    } else if (status === 'Catch-All' && stringifiers.catchall_risky) {
-                        stringifiers.catchall_risky.write(enrichedRow);
-                    }
+                    if (status === 'Valid' && stringifiers.valid_only) stringifiers.valid_only.write(enrichedRow);
+                    else if (status === 'Invalid' && stringifiers.invalid_only) stringifiers.invalid_only.write(enrichedRow);
+                    else if (status === 'Catch-All' && stringifiers.catchall_only) stringifiers.catchall_only.write(enrichedRow);
+
                 } else if (checkType === 'catchall') {
-                    if (status === 'Good' && stringifiers.good_only) {
-                        stringifiers.good_only.write(enrichedRow);
-                    } else if (status === 'Bad' && stringifiers.bad_only) {
-                        stringifiers.bad_only.write(enrichedRow);
-                    } else if (status === 'Risky' && stringifiers.risky_only) {
-                        stringifiers.risky_only.write(enrichedRow);
-                    }
+                    if (status === 'Good' && stringifiers.good_only) stringifiers.good_only.write(enrichedRow);
+                    else if (status === 'Bad' && stringifiers.bad_only) stringifiers.bad_only.write(enrichedRow);
+                    else if (status === 'Risky' && stringifiers.risky_only) stringifiers.risky_only.write(enrichedRow);
                 }
             })
             .on('end', () => {
@@ -400,15 +387,18 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
 /**
  * Create an S3 multipart upload
  */
-function createUpload(batchId, exportType, stream) {
-    const timestamp = Date.now();
-    const key = `exports/${batchId}/${exportType}-${timestamp}.csv`;
+function createUpload(checkType, batchId, title, stream) {
+    // Create upload key
+    let file_key = `exports/${checkType}/${batchId}/${title}`;
+    if (file_key.includes('.csv')) file_key = file_key.replaceAll('.csv', '');
+    file_key = `${file_key}.csv`;
     
+    // Create upload
     return new Upload({
         client: s3Client,
         params: {
             Bucket: S3_BUCKET,
-            Key: key,
+            Key: file_key,
             Body: stream,
             ContentType: 'text/csv'
         },

@@ -248,7 +248,7 @@ export default function EmailsUploadController() {
         const s3CompleteResponse = await completeS3Upload(
           checkTypeParam,
           batchId,
-          uploadUrlResponse.data.s3Key,
+          uploadUrlResponse.data.filePath,
           { email: selectedColumnIndex },
           {
             fileName: file.name,

@@ -151,9 +151,9 @@ export async function getS3UploadUrl(checkType, batchId, fileName, fileSize, mim
   );
 };
 
-export async function completeS3Upload(checkType, batchId, s3Key, columnMapping, fileInfo) {
+export async function completeS3Upload(checkType, batchId, filePath, columnMapping, fileInfo) {
   return await http.post(`${MODULE_PREFIX}/${checkType}/batch/${batchId}/file-key`, 
-    { s3Key, columnMapping, ...fileInfo }, 
+    { filePath, columnMapping, ...fileInfo }, 
     { withCredentials: true }
   );
 };

@@ -8,6 +8,8 @@ const {
 	formatResultsByCheckType,
 	createBatchBaseQuery, applyBatchStatusFilter, applyBatchResultFilter,
 } = require('./funs_db_utils.js');
+const { s3_triggerS3Enrichment } = require('./funs_s3.js');
+const db_s3_funcs = require('./funs_db_s3.js');
 
 
 // -------------------
@@ -965,8 +967,17 @@ async function db_startBatchProcessing(user_id, check_type, batch_id) {
 	if (err_code) return false;
 
 	// Send batch completion email notification if batch was completed
+	// + trigger S3 enrichment
 	if (is_completed) {
 		await db_sendBatchCompletionEmail(user_id, check_type, batch_id);
+		// Don't await - let it run in background
+		s3_triggerS3Enrichment(batch_id, check_type, db_s3_funcs)
+			.then(() => {
+				console.log(`✅ S3 enrichment completed for batch ${batch_id}`);
+			})
+			.catch((error) => {
+				console.error(`❌ S3 enrichment failed for batch ${batch_id}:`, error);
+			});
 	}
 
 	// Return

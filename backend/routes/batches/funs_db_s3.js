@@ -63,8 +63,13 @@ async function db_s3_getAllBatchResults(batchId, checkType) {
  * Update batch metadata with S3 info
  */
 async function db_s3_updateBatchS3Metadata(batchId, checkType, s3Key, fileInfo) {
-    const tableName = getBatchTableName(checkType);
+    let err_code;
+
+    // Get table name
+    const batch_table = getBatchTableName(checkType);
+    if (!batch_table) return false;
     
+    // Update batch metadata
     const metadata = {
         original: {
             s3_key: s3Key,
@@ -76,12 +81,13 @@ async function db_s3_updateBatchS3Metadata(batchId, checkType, s3Key, fileInfo) 
         },
         exports: {}
     };
+    await knex(batch_table).where('id', batchId).update({ 
+        s3_metadata: JSON.stringify(metadata)
+    }).catch((err)=>{if (err) err_code = err.code});
+    if (err_code) return false;
     
-    return await knex(tableName)
-        .where('id', batchId)
-        .update({ 
-            s3_metadata: JSON.stringify(metadata)
-        });
+    // Return
+    return true;
 }
 
 /**

@@ -47,6 +47,7 @@ const {
 } = require('../../utils/processEmails.js');
 
 // Constants
+const S3_EXPORT_TTL_SECONDS = 172800; // 48 hours
 const VALID_BATCHLIST_ORDER_PARAMS = new Set([
 	'timehl', // Time High-Low (newest first)
 	'timelh', // Time Low-High (oldest first)
@@ -265,8 +266,7 @@ async function startBatchProcessing(req, res) {
 		if (!ok) return returnBadRequest(res, 'Failed to start batch processing');
 
 		// Return response
-		return res.status(HttpStatus.SUCCESS_STATUS).json({ 
-			message: 'Batch processing started',
+		return res.status(HttpStatus.SUCCESS_STATUS).json({
 			credits_deducted: actual_email_count,
 			remaining_balance: remaining_balance
 		});
@@ -397,7 +397,7 @@ async function generateS3UploadUrl(req, res) {
 		// Return response
 		return res.status(HttpStatus.SUCCESS_STATUS).json({
 			uploadUrl,
-			s3Key
+			filePath: s3Key
 		});
 		
 	} catch (err) {
@@ -409,28 +409,25 @@ async function generateS3UploadUrl(req, res) {
 async function completeS3Upload(req, res) {
 	try {
 		const { checkType, batchId } = req.params;
-		const { s3Key, columnMapping } = req.body;
+		const { filePath, columnMapping } = req.body;
 		
 		// Validate input
-		if (!s3Key) {
-			return returnBadRequest(res, 'Missing required field: s3Key');
-		}
+		if (!filePath) return returnBadRequest(res, 'Missing required field: filePath');
 		
 		// Get file info from request or use defaults
 		const fileInfo = {
-			fileName: req.body.fileName || s3Key.split('/').pop(),
+			fileName: req.body.fileName || filePath.split('/').pop(),
 			fileSize: req.body.fileSize || 0,
 			mimeType: req.body.mimeType || 'text/csv',
 			columnMapping: columnMapping || { email: 0 }
 		};
 		
 		// Update batch metadata with S3 info
-		await db_s3_updateBatchS3Metadata(batchId, checkType, s3Key, fileInfo);
+		const ok = await db_s3_updateBatchS3Metadata(batchId, checkType, filePath, fileInfo);
+		if (!ok) return returnBadRequest(res, 'Failed to update list metadata');
 		
 		// Return success
-		return res.status(HttpStatus.SUCCESS_STATUS).json({
-			message: 'S3 upload recorded successfully'
-		});
+		return res.sendStatus(HttpStatus.SUCCESS_STATUS);
 		
 	} catch (err) {
 		console.error("COMPLETE S3 UPLOAD ERR = ", err);
@@ -469,7 +466,7 @@ async function getExportUrls(req, res) {
 		}
 		
 		// Generate pre-signed URLs
-		const urls = await s3_generateExportUrls(batch);
+		const urls = await s3_generateExportUrls(batch, S3_EXPORT_TTL_SECONDS);
 		
 		// Return response
 		return res.status(HttpStatus.SUCCESS_STATUS).json({
