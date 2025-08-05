@@ -147,7 +147,7 @@ class BouncerAPI {
         if (!this.deliverableApiKey) throw new Error('BOUNCER_API_KEY_NORMAL environment variable is required');
 
 		// Make request
-        const response = await this.makeHttpRequest(`/v1.1/email/verify/batch/${batchId}`, {
+        const response = await this.makeHttpRequest(`/v1.1/email/verify/batch/${batchId}?with-stats=true`, {
             method: 'GET',
             apiKey: this.deliverableApiKey
         });
@@ -206,7 +206,7 @@ class BouncerAPI {
         // return response.status === 'completed';
 
 		// Make request
-        const response = await this.makeHttpRequest(`/v1.1/email/verify/batch/${batchId}`, {
+        const response = await this.makeHttpRequest(`/v1.1/email/verify/batch/${batchId}?with-stats=true`, {
             method: 'GET',
             apiKey: this.catchallApiKey
         });
