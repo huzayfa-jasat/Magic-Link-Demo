@@ -456,7 +456,7 @@ async function db_getDeliverableBatchStats(batch_id) {
 	if (!results_table || !email_batch_association_table) return [false, null];
 
 	// Get stats
-	const [stats] = await knex(results_table).join(
+	const stats = await knex(results_table).join(
 		email_batch_association_table,
 		`${email_batch_association_table}.email_global_id`,
 		`${results_table}.email_global_id`
@@ -474,7 +474,7 @@ async function db_getDeliverableBatchStats(batch_id) {
 			AND (${results_table}.status = 'undeliverable' OR (${results_table}.status = 'risky' AND ${results_table}.reason != 'low_deliverability')) THEN 1 
 			ELSE 0 
 		END) as invalid`)
-	).catch((err)=>{if (err) err_code = err});
+	).first().catch((err)=>{if (err) err_code = err});
 	if (err_code || !stats) {
 		console.log("DELIVERABLE BATCH STATS ERR = ", err_code);
 		return [false, null];
@@ -497,7 +497,7 @@ async function db_getCatchallBatchStats(batch_id) {
 	if (!results_table || !email_batch_association_table) return [false, null];
 
 	// Get stats
-	const [stats] = await knex(results_table).join(
+	const stats = await knex(results_table).join(
 		email_batch_association_table,
 		`${email_batch_association_table}.email_global_id`,
 		`${results_table}.email_global_id`
@@ -508,7 +508,7 @@ async function db_getCatchallBatchStats(batch_id) {
 		knex.raw(`SUM(CASE WHEN ${results_table}.status = 'deliverable' THEN 1 ELSE 0 END) as valid`),
 		knex.raw(`SUM(CASE WHEN ${results_table}.status = 'risky' THEN 1 ELSE 0 END) as risky`),
 		knex.raw(`SUM(CASE WHEN ${results_table}.status = 'undeliverable' THEN 1 ELSE 0 END) as invalid`)
-	).catch((err)=>{if (err) err_code = err});
+	).first().catch((err)=>{if (err) err_code = err});
 	if (err_code || !stats) {
 		console.log("CATCHALL BATCH STATS ERR = ", err_code);
 		return [false, null];
@@ -553,15 +553,16 @@ async function db_getBatchDetails(user_id, check_type, batch_id) {
 	if (batch[0].status !== 'completed') return [true, batch_details];
 
 	// If batch is completed, get stats
+	let stats_ok, stats_dict;
 	if (check_type === 'deliverable') {
 		// Get stats
-		const [stats_ok, stats_dict] = await db_getDeliverableBatchStats(batch_id);
+		[stats_ok, stats_dict] = await db_getDeliverableBatchStats(batch_id);
 		if (!stats_ok) return [false, null];
 		batch_details.stats = stats_dict;
 
 	} else if (check_type === 'catchall') {
 		// Get stats
-		const [stats_ok, stats_dict] = await db_getCatchallBatchStats(batch_id);
+		[stats_ok, stats_dict] = await db_getCatchallBatchStats(batch_id);
 		if (!stats_ok) return [false, null];
 		batch_details.stats = stats_dict;
 	}

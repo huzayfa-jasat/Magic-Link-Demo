@@ -121,16 +121,19 @@ class BouncerAPI {
         if (!Array.isArray(emails) || emails.length === 0) throw new Error('emails must be a non-empty array');
         if (!this.catchallApiKey) throw new Error('BOUNCER_API_KEY_DEEPCATCHALL environment variable is required');
 
+		// Construct request body
+		const requestBody = emails.map(email => ({ email }));
+
 		// Make request
         const response = await this.makeHttpRequest('/v1.1/email/verify/batch', {
             method: 'POST',
-            body: emails,
+            body: requestBody,
             apiKey: this.catchallApiKey
         });
-        if (!response.id) throw new Error('Invalid response from Bouncer API: missing id');
+        if (!response.batchId) throw new Error('Invalid response from Bouncer API: missing batchId');
 
 		// Return new batch ID
-        return response.id;
+        return response.batchId;
     }
 
     /**
@@ -209,6 +212,7 @@ class BouncerAPI {
         });
 
 		// Return status and processed count
+        console.log("PROCESSED COUNT = ", response);
         return {
             isCompleted: response.status === 'completed',
             processed: response.processed || 0

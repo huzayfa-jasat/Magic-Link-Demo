@@ -84,11 +84,12 @@ class StatusCheckerWorker {
                 // processedCount = statusResult.processed;
             } else if (check_type === 'catchall') {
                 // isCompleted = await this.bouncerAPI.checkCatchallBatch(bouncerBatchId);
-                statusResult = await this.bouncerAPI.checkDeliverabilityBatch(bouncerBatchId);
+                statusResult = await this.bouncerAPI.checkCatchallBatch(bouncerBatchId);
             } else throw new Error(`Invalid check_type: ${check_type}`);
             
             // Parse status result`
             isCompleted = statusResult.isCompleted;
+            console.log("IS COMPLETED = ", isCompleted);
             processedCount = statusResult.processed;
 
             // Record rate limit usage

@@ -35,13 +35,19 @@ class IndividualStatusCheckerWorker {
 
             // Check batch status
             let isCompleted = false;
+            let processedCount = 0;
             try {
-                if (check_type === 'deliverable') isCompleted = await this.bouncerAPI.checkDeliverabilityBatch(bouncer_batch_id);
-                else if (check_type === 'catchall') isCompleted = await this.bouncerAPI.checkCatchallBatch(bouncer_batch_id);
+                let statusResult;
+                if (check_type === 'deliverable') statusResult = await this.bouncerAPI.checkDeliverabilityBatch(bouncer_batch_id);
+                else if (check_type === 'catchall') statusResult = await this.bouncerAPI.checkCatchallBatch(bouncer_batch_id);
                 else throw new Error(`Invalid check_type: ${check_type}`);
 
                 // Record rate limit usage
                 await db_recordRateLimit(check_type, 'check_status');
+
+                // Parse status result
+                isCompleted = statusResult.isCompleted;
+                processedCount = statusResult.processed;
 
                 if (!isCompleted) {
                     // Batch still processing - schedule next check with fixed interval (let rate limiter handle throttling)
@@ -55,6 +61,9 @@ class IndividualStatusCheckerWorker {
                     }
                     return;
                 }
+
+                // Update processed count in DB for batches
+                await db_updateBouncerBatchProcessed(check_type, bouncer_batch_id, processedCount);
 
                 // Batch completed - download results immediately
                 console.log(`✅ Batch ${bouncer_batch_id} completed, downloading results`);

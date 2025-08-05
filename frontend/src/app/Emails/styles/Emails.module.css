@@ -991,6 +991,7 @@
   margin: 0 auto 8px auto;
   color: var(--main-hl);
   font-weight: 500;
+  overflow-wrap: anywhere;
 }
 
 .columnSelectRow {

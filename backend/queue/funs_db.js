@@ -64,14 +64,14 @@ async function db_getEmailsForGreedyBatch(check_type, max_emails = 10000) {
     const batch_table = getBatchTableName(check_type);
     const batch_email_table = getEmailBatchAssociationTableName(check_type);
     const bouncer_email_table = getBouncerEmailTableName(check_type);
-    if (!batch_table || !batch_email_table || !bouncer_email_table) return [false, []];
+    const bouncer_batch_table = getBouncerBatchTableName(check_type);
+    if (!batch_table || !batch_email_table || !bouncer_email_table || !bouncer_batch_table) return [false, []];
 
-    // Get emails that are not yet assigned to any bouncer batch
+    // Get emails that are not assigned to any active bouncer batch
     let err_code;
     const emails = await knex(batch_email_table + ' as bed')
         .join('Emails_Global as eg', 'bed.email_global_id', 'eg.global_id')
         .join(batch_table + ' as bd', 'bed.batch_id', 'bd.id')
-        .leftJoin(bouncer_email_table + ' as bet', 'bed.email_global_id', 'bet.email_global_id')
         .select(
             'eg.global_id as email_global_id',
             'eg.email_stripped',
@@ -83,7 +83,14 @@ async function db_getEmailsForGreedyBatch(check_type, max_emails = 10000) {
             'bd.is_archived': 0,
             'bed.used_cached': 0,
             'bed.did_complete': 0,
-            'bet.email_global_id': null,
+        })
+        .whereNotExists(function() {
+            // Exclude emails assigned to any bouncer batch with active status
+            this.select(1)
+                .from(bouncer_email_table + ' as bet')
+                .join(bouncer_batch_table + ' as bbt', 'bet.bouncer_batch_id', 'bbt.bouncer_batch_id')
+                .whereRaw('bet.email_global_id = bed.email_global_id')
+                .whereIn('bbt.status', ['pending', 'processing', 'completed']);
         })
         .orderBy('bd.created_ts', 'asc')
         .orderBy('bed.email_global_id', 'asc')
@@ -137,7 +144,7 @@ async function db_assignBouncerBatchId(bouncer_batch_id, batch_assignments, chec
             }));
 
             // Insert email tracking entries
-            await trx(bouncer_email_table).insert(tracking_entries);
+            await trx(bouncer_email_table).insert(tracking_entries).onConflict().merge();
 
             // Track metrics
             affected_batches++;
@@ -348,8 +355,13 @@ async function db_processBouncerResults(bouncer_batch_id, results_array, check_t
                     update_object.provider = result.provider || null;
                     break;
                 case 'catchall':
-                    console.log("CATCHALL RESULT TOXICITY FOR ", result.email, " = ", result.toxicity);
-                    update_object.toxicity = result.toxicity || 0;
+                    // console.log("CATCHALL RESULT TOXICITY FOR ", result.email, " = ", result.toxicity);
+                    // update_object.toxicity = result.toxicity || 0;
+                    update_object.status = result.status || 'unknown';
+                    update_object.reason = result.reason || 'unknown';
+                    update_object.is_catchall = (result.is_catchall === 'no') ? 0 : 1;
+                    update_object.score = result.score || 0;
+                    update_object.provider = result.provider || null;
                     break;
                 default:
                     break;
