@@ -19,7 +19,7 @@ import {
 import { ErrorContext } from "../../../ui/Context/ErrorContext";
 
 // Utility Imports
-import { exportBatchToCSV } from "../../../utils/exportBatch";
+import { exportBatch } from "../../../utils/exportBatchFuncs";
 
 // Icon Imports
 import {
@@ -186,13 +186,13 @@ export default function BatchCard({
 	// Handle export
 	const handleExport = async (type, title) => {
 		setIsExporting(true);
-		setExportProgress({ current: 0, total: 0 });
+		setExportProgress({ status: 'starting', message: 'Preparing export...' });
 		
 		try {
 			// Determine checkTyp based on category
 			const checkTyp = request.category === 'deliverable' ? 'verify' : 'catchall';
 			
-			await exportBatchToCSV({
+			await exportBatch({
 				batchId: request.id,
 				checkTyp,
 				filter: type,
@@ -201,6 +201,7 @@ export default function BatchCard({
 			});
 		} catch (error) {
 			console.error('Export failed:', error);
+			setExportProgress({ status: 'error' });
 		} finally {
 			setIsExporting(false);
 		}
