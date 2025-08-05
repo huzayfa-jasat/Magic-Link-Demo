@@ -54,7 +54,7 @@ const getCatchallDisplay = (result) => {
 	// Get score text and category (match category with colors from results map)
 	let result_category;
 	let result_text;
-	switch (result.status) {
+	switch (result) {
 		case 1:
 			result_category = 1;
 			result_text = "Good";
