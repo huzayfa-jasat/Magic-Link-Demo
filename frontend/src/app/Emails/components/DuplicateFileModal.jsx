@@ -11,15 +11,15 @@ export default function DuplicateFileModal({ isOpen, onClose, onConfirm }) {
   return (
     <div className={settingsStyles.modalOverlay} onClick={onClose}>
       <div className={settingsStyles.modal} onClick={(e) => e.stopPropagation()}>
-        <h2 className={settingsStyles.modalTitle}>Duplicate file detected</h2>
+        <h2 className={settingsStyles.modalTitle}>Duplicate Found</h2>
         <p className={settingsStyles.modalDescription}>
-          Are you sure you want to proceed? You've already uploaded a list with the same name.
+          You've already uploaded a list with the same name. Are you sure you want to continue?
         </p>
         
         {/* Buttons */}
         <div className={settingsStyles.modalActions}>
           <button className={settingsStyles.closeButton} onClick={onClose}>Cancel</button>
-          <button className={settingsStyles.removeButton} onClick={onConfirm}>Yes, proceed</button>
+          <button className={settingsStyles.copyButton} onClick={onConfirm}>Yes, continue</button>
         </div>
       </div>
     </div>
