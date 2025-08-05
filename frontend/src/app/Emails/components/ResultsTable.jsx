@@ -55,15 +55,15 @@ const getCatchallDisplay = (result) => {
 	let result_category;
 	let result_text;
 	switch (result.status) {
-		case 'good':
+		case 1:
 			result_category = 1;
 			result_text = "Good";
 			break;
-		case 'risky':
+		case 2:
 			result_category = 2;
 			result_text = "Risky";
 			break;
-		case 'bad':
+		case 0:
 			result_category = 0;
 			result_text = "Bad";
 			break;
