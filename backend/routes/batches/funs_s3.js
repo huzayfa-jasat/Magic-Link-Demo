@@ -348,9 +348,10 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
                 };
                 
                 // Create enriched row
+                const status_col_header = `OmniVerifier ${(checkType === 'deliverable') ? 'Status' : 'Catch-All Status'}`;
                 const enrichedRow = {
                     ...row,
-                    'OmniVerifier Status': mapStatus(result.status, result.is_catchall, result.reason, checkType),
+                    [status_col_header]: mapStatus(result.status, result.is_catchall, result.reason, checkType),
                 };
                 
                 // Add additional fields based on check type
@@ -363,7 +364,7 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
                 if (stringifiers.all_emails) stringifiers.all_emails.write(enrichedRow);
                 
                 // Write to filtered exports based on status
-                const status = enrichedRow['OmniVerifier Status'];
+                const status = enrichedRow[status_col_header];
                 
                 if (checkType === 'deliverable') {
                     if (status === 'Valid' && stringifiers.valid_only) stringifiers.valid_only.write(enrichedRow);
