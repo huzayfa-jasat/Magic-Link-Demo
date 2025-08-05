@@ -236,6 +236,9 @@ async function s3_enrichBatchExports(batchId, checkType, db_funcs) {
         // 6. Set up CSV stringifiers for each output
         const stringifiers = {};
         Object.keys(outputStreams).forEach(key => {
+            // Write UTF-8 BOM to help Excel recognize the encoding
+            outputStreams[key].write(Buffer.from('\ufeff'));
+            
             stringifiers[key] = stringify({ header: true });
             stringifiers[key].pipe(outputStreams[key]);
         });
@@ -400,7 +403,7 @@ function createUpload(checkType, batchId, title, stream) {
             Bucket: S3_BUCKET,
             Key: file_key,
             Body: stream,
-            ContentType: 'text/csv'
+            ContentType: 'text/csv; charset=utf-8'
         },
         partSize: 5 * 1024 * 1024, // 5MB parts
         queueSize: 4 // Max 4 concurrent parts
