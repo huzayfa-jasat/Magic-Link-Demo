@@ -55,7 +55,7 @@ function CreditSidebarPill({ icon, label, balance, link }) {
 export default function AppLayout({ title, children }) {
   const navigate = useNavigate();
   const { user } = useUsersContext();
-  const { emailBalance, catchallBalance, isLoading } = useCreditsContext();
+  const { emailBalance, catchallBalance, totalEmailCredits, totalCatchallCredits, subscriptionCredits, isLoading } = useCreditsContext();
 
   // States
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -133,8 +133,8 @@ export default function AppLayout({ title, children }) {
               </div>
               {!isLoading && (
                 <div className={s.mobileMenuCredits}>
-                  <CreditSidebarPill icon={EMAIL_ICON} label="Email Credits" balance={emailBalance} link="/packages?p=validate" />
-                  <CreditSidebarPill icon={EMAIL_SHREDDER_ICON} label="Catchall Credits" balance={catchallBalance} link="/packages?p=catchall" />
+                  <CreditSidebarPill icon={EMAIL_ICON} label="Email Credits" balance={totalEmailCredits} link="/packages?p=validate" />
+                  <CreditSidebarPill icon={EMAIL_SHREDDER_ICON} label="Catchall Credits" balance={totalCatchallCredits} link="/packages?p=catchall" />
                 </div>
               )}
             </div>
@@ -156,8 +156,8 @@ export default function AppLayout({ title, children }) {
               ))}
               {(!isLoading) && (
                 <>
-                  <CreditSidebarPill icon={EMAIL_ICON} label="Email Credits" balance={emailBalance} link="/packages?p=validate" />
-                  <CreditSidebarPill icon={EMAIL_SHREDDER_ICON} label="Catchall Credits" balance={catchallBalance} link="/packages?p=catchall" />
+                  <CreditSidebarPill icon={EMAIL_ICON} label="Email Credits" balance={totalEmailCredits} link="/packages?p=validate" />
+                  <CreditSidebarPill icon={EMAIL_SHREDDER_ICON} label="Catchall Credits" balance={totalCatchallCredits} link="/packages?p=catchall" />
                   <br/>
                 </>
               )}

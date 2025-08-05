@@ -86,6 +86,7 @@ const paymentRoute = require('./routes/payment/routes.js');
 const batchesRoute = require('./routes/batches/routes.js');
 const publicRoute = require('./routes/public/routes.js');
 const webhooksRoute = require('./routes/webhooks/routes.js');
+const subscriptionsRoute = require('./routes/subscriptions/routes.js');
 
 // Routes
 app.use(route_prefix+'/auth/', authRoute);
@@ -93,6 +94,7 @@ app.use(route_prefix+'/settings/', settingsRoute);
 app.use(route_prefix+'/credits/', creditsRoute);
 app.use(route_prefix+'/catchall-credits/', catchallCreditsRoute);
 app.use(route_prefix+'/pay/', paymentRoute);
+app.use(route_prefix+'/subscriptions/', subscriptionsRoute);
 app.use(route_prefix+'/batches/', batchesRoute);
 app.use(route_prefix+'/validate/', publicRoute);
 app.use(route_prefix+'/wh/', webhooksRoute);
