@@ -14,6 +14,10 @@ const {
     getEmailBatchAssociationTableName
 } = require('../routes/batches/funs_db_utils.js');
 
+// S3 Function Imports
+const { s3_triggerS3Enrichment } = require('../routes/batches/funs_s3');
+const db_s3_funcs = require('../routes/batches/funs_db_s3');
+
 // Helper Functions
 
 // ==========================================
@@ -229,13 +233,14 @@ async function db_markBouncerBatchFailed(bouncer_batch_id, check_type) {
 
 /**
  * Update processed count for a bouncer batch
+ * @param {string} check_type - 'deliverable' or 'catchall'
  * @param {string} bouncer_batch_id - ID from bouncer API
  * @param {number} processed_count - Number of emails processed so far
  * @returns {[boolean, number]} - [success, affected_count]
  */
-async function db_updateBouncerBatchProcessed(bouncer_batch_id, processed_count) {
-    // Get table names - only for deliverable batches
-    const bouncer_batch_table = getBouncerBatchTableName('deliverable');
+async function db_updateBouncerBatchProcessed(check_type, bouncer_batch_id, processed_count) {
+    // Get table names
+    const bouncer_batch_table = getBouncerBatchTableName(check_type);
     if (!bouncer_batch_table) return [false, 0];
 
     // Update processed count
@@ -439,6 +444,22 @@ async function checkAndCompleteUserBatch(trx, user_batch_id, check_type) {
             }
         } catch (email_error) {
             console.log(`⚠️ Error sending batch completion email for batch ${user_batch_id}:`, email_error);
+        }
+        
+        // Trigger S3 enrichment (non-blocking)
+        try {
+            // Don't await - let it run in background
+            s3_triggerS3Enrichment(user_batch_id, check_type, db_s3_funcs)
+                .then(() => {
+                    console.log(`✅ S3 enrichment completed for batch ${user_batch_id}`);
+                })
+                .catch((error) => {
+                    console.error(`❌ S3 enrichment failed for batch ${user_batch_id}:`, error);
+                });
+            
+            console.log(`🚀 S3 enrichment triggered for batch ${user_batch_id}`);
+        } catch (enrichment_error) {
+            console.error(`⚠️ Error triggering S3 enrichment for batch ${user_batch_id}:`, enrichment_error);
         }
     }
 }

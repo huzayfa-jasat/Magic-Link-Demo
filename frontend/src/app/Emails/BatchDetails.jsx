@@ -1,10 +1,9 @@
 // Dependencies
 import { useCallback, useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import Popup from "reactjs-popup";
 
 // Utility Imports
-import { exportBatchToCSV } from "../../utils/exportBatch";
+import { exportBatch } from "../../utils/exportBatchFuncs";
 
 // Component Imports
 import { LoadingCircle } from "../../ui/components/LoadingCircle";
@@ -72,15 +71,15 @@ export default function EmailsBatchDetailsController({
     return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
-  // Export filtered results to CSV (uses shared utility)
+  // Export filtered results using presigned URLs
   const handleExportFiltered = useCallback(
     async (filter, title) => {
       // Show loading modal
       setIsExporting(true);
-      setExportProgress({ current: 0, total: 0 });
+      setExportProgress({ status: 'starting', message: 'Preparing export...' });
 
       try {
-        await exportBatchToCSV({
+        await exportBatch({
           batchId: id,
           checkTyp,
           filter,
@@ -89,6 +88,7 @@ export default function EmailsBatchDetailsController({
         });
       } catch (error) {
         console.error('Export failed:', error);
+        setExportProgress({ status: 'error' });
       } finally {
         setIsExporting(false);
       }

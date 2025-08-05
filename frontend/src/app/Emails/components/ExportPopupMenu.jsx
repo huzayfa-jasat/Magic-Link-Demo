@@ -38,25 +38,25 @@ export default function ExportPopupMenu({
 			}
 		>
 			<div className={styles.exportMenu}>
-				<button onClick={() => handleExport("all", title)}>
+				<button onClick={() => handleExport("all_emails", title)}>
 					{EMAIL_ICON}
 					{(showExportPrefix) ? "Export All" : "All Emails"}
 				</button>
 				{(checkTyp === 'deliverable' || checkTyp === 'verify') && (<>
 					{(showValid > 0) && (
-						<button className={styles.valid} onClick={() => handleExport("valid", title)}>
+						<button className={styles.valid} onClick={() => handleExport("valid_only", title)}>
 							{VERIFY_VALID_ICON}
 							{(showExportPrefix) ? "Export Valid" : "Only Valid"}
 						</button>
 					)}
 					{(showInvalid > 0) && (
-						<button className={styles.invalid} onClick={() => handleExport("invalid", title)}>
+						<button className={styles.invalid} onClick={() => handleExport("invalid_only", title)}>
 							{VERIFY_INVALID_ICON}
 							{(showExportPrefix) ? "Export Invalid" : "Only Invalid"}
 						</button>
 					)}
 					{(showCatchall > 0) && (
-						<button className={styles.catchall} onClick={() => handleExport("catch-all", title)}>
+						<button className={styles.catchall} onClick={() => handleExport("catchall_only", title)}>
 							{VERIFY_CATCHALL_ICON}
 							{(showExportPrefix) ? "Export Catch-All" : "Only Catch-All"}
 						</button>
@@ -64,19 +64,19 @@ export default function ExportPopupMenu({
 				</>)}
 				{(checkTyp === 'catchall') && (<>
 					{(showGood > 0) && (
-						<button className={styles.valid} onClick={() => handleExport("good", title)}>
+						<button className={styles.valid} onClick={() => handleExport("good_only", title)}>
 							{VERIFY_VALID_ICON}
 							{(showExportPrefix) ? "Export Good" : "Only Good"}
 						</button>
 					)}
 					{(showRisky > 0) && (
-						<button className={styles.catchall} onClick={() => handleExport("risky", title)}>
+						<button className={styles.catchall} onClick={() => handleExport("risky_only", title)}>
 							{VERIFY_CATCHALL_ICON}
 							{(showExportPrefix) ? "Export Risky" : "Only Risky"}
 						</button>
 					)}
 					{(showBad > 0) && (
-						<button className={styles.invalid} onClick={() => handleExport("bad", title)}>
+						<button className={styles.invalid} onClick={() => handleExport("bad_only", title)}>
 							{VERIFY_INVALID_ICON}
 							{(showExportPrefix) ? "Export Bad" : "Only Bad"}
 						</button>

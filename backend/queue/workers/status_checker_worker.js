@@ -77,21 +77,25 @@ class StatusCheckerWorker {
         let isCompleted = false;
         let processedCount = 0;
         try {
+            let statusResult;
             if (check_type === 'deliverable') {
-                const statusResult = await this.bouncerAPI.checkDeliverabilityBatch(bouncerBatchId);
-                isCompleted = statusResult.isCompleted;
-                processedCount = statusResult.processed;
+                statusResult = await this.bouncerAPI.checkDeliverabilityBatch(bouncerBatchId);
+                // isCompleted = statusResult.isCompleted;
+                // processedCount = statusResult.processed;
             } else if (check_type === 'catchall') {
-                isCompleted = await this.bouncerAPI.checkCatchallBatch(bouncerBatchId);
+                // isCompleted = await this.bouncerAPI.checkCatchallBatch(bouncerBatchId);
+                statusResult = await this.bouncerAPI.checkDeliverabilityBatch(bouncerBatchId);
             } else throw new Error(`Invalid check_type: ${check_type}`);
+            
+            // Parse status result`
+            isCompleted = statusResult.isCompleted;
+            processedCount = statusResult.processed;
 
             // Record rate limit usage
             await db_recordRateLimit(check_type, 'check_status');
 
-            // Update processed count in DB for deliverable batches
-            if (check_type === 'deliverable') {
-                await db_updateBouncerBatchProcessed(bouncerBatchId, processedCount);
-            }
+            // Update processed count in DB for batches
+            await db_updateBouncerBatchProcessed(check_type, bouncerBatchId, processedCount);
 
             // Log status
             if (!isCompleted) {

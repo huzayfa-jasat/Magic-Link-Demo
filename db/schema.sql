@@ -192,16 +192,31 @@ CREATE TABLE Email_Deliverable_Results (
     FOREIGN KEY (`email_global_id`) REFERENCES Emails_Global(`global_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
--- Single global results table for catchall toxicity checks
+-- Single global results table for catchall checks
 DROP TABLE IF EXISTS `Email_Catchall_Results`;
 CREATE TABLE Email_Catchall_Results (
     `email_global_id` int NOT NULL,
-    `toxicity` int NOT NULL,
+    `status` enum('deliverable', 'risky', 'undeliverable', 'unknown') NOT NULL DEFAULT 'unknown',
+    `reason` varchar(50) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT 'unknown',
+    `is_catchall` TINYINT(1) NOT NULL DEFAULT 0,
+    `score` int NOT NULL DEFAULT 0,
+    `provider` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL,
     `verified_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`email_global_id`),
     FOREIGN KEY (`email_global_id`) REFERENCES Emails_Global(`global_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+
+-- Single global results table for catchall toxicity checks
+-- DROP TABLE IF EXISTS `Email_Catchall_Results`;
+-- CREATE TABLE Email_Catchall_Results (
+--     `email_global_id` int NOT NULL,
+--     `toxicity` int NOT NULL,
+--     `verified_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--     `updated_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+--     PRIMARY KEY (`email_global_id`),
+--     FOREIGN KEY (`email_global_id`) REFERENCES Emails_Global(`global_id`) ON DELETE CASCADE
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
 -- Batch tables remain mostly the same but track summary info
 DROP TABLE IF EXISTS `Batches_Deliverable`;
@@ -217,6 +232,7 @@ CREATE TABLE Batches_Deliverable (
     `created_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `completed_ts` TIMESTAMP NULL DEFAULT NULL,
     `is_archived` tinyint(1) NOT NULL DEFAULT 0,
+    `s3_metadata` JSON DEFAULT NULL,
     PRIMARY KEY (`id`),
     FOREIGN KEY (`user_id`) REFERENCES Users(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
@@ -234,6 +250,7 @@ CREATE TABLE Batches_Catchall (
     `created_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `completed_ts` TIMESTAMP NULL DEFAULT NULL,
     `is_archived` tinyint(1) NOT NULL DEFAULT 0,
+    `s3_metadata` JSON DEFAULT NULL,
     PRIMARY KEY (`id`),
     FOREIGN KEY (`user_id`) REFERENCES Users(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
@@ -286,6 +303,7 @@ CREATE TABLE Bouncer_Batches_Catchall (
     `user_batch_id` int NOT NULL, -- Which user batch this bouncer batch belongs to
     `status` enum('pending', 'processing', 'completed', 'failed') NOT NULL DEFAULT 'pending',
     `email_count` int NOT NULL DEFAULT 0, -- Number of emails in this bouncer batch
+    `processed` int NOT NULL DEFAULT 0, -- Number of emails already processed by bouncer API
     `created_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`bouncer_batch_id`),
@@ -384,4 +402,23 @@ CREATE TABLE Queue_Metrics (
     `created_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     INDEX idx_metrics_query (`metric_type`, `verification_type`, `period_start`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+
+-- S3 Enrichment Progress tracking table
+DROP TABLE IF EXISTS `S3_Enrichment_Progress`;
+CREATE TABLE S3_Enrichment_Progress (
+    `id` int AUTO_INCREMENT NOT NULL,
+    `batch_id` int NOT NULL,
+    `check_type` varchar(20) NOT NULL,
+    `status` varchar(20) NOT NULL DEFAULT 'pending',
+    `rows_processed` int DEFAULT 0,
+    `total_rows` int DEFAULT NULL,
+    `started_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `completed_at` TIMESTAMP NULL DEFAULT NULL,
+    `error_message` TEXT DEFAULT NULL,
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY unique_batch_progress (`batch_id`, `check_type`),
+    INDEX idx_s3_enrichment_batch (`batch_id`, `check_type`),
+    INDEX idx_s3_enrichment_status (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
