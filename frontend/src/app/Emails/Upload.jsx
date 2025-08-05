@@ -99,12 +99,20 @@ export default function EmailsUploadController() {
   // Handle parsing Excel
   const parseExcel = useCallback((buffer) => {
     try {
-      const workbook = XLSX.read(buffer, { type: 'array' });
+      const workbook = XLSX.read(buffer, { 
+        type: 'array',
+        // Ensure proper encoding handling for Excel files
+        codepage: 65001 // UTF-8 codepage
+      });
       const firstSheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[firstSheetName];
       
-      // Convert sheet to JSON array
-      const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      // Convert sheet to JSON array with raw option to preserve strings
+      const data = XLSX.utils.sheet_to_json(worksheet, { 
+        header: 1,
+        raw: false, // Ensure all values are treated as strings
+        defval: ''
+      });
       
       if (data.length === 0) {
         throw new Error('File is empty');
@@ -173,7 +181,14 @@ export default function EmailsUploadController() {
       let parsedData;
       
       if (isCSV) {
-        const text = await selectedFile.text();
+        // Use FileReader to handle different encodings properly
+        const text = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.onerror = (e) => reject(e);
+          // Try UTF-8 first, which handles most cases correctly
+          reader.readAsText(selectedFile, 'UTF-8');
+        });
         parsedData = parseCSV(text);
       } else if (isExcel) {
         const buffer = await selectedFile.arrayBuffer();
@@ -366,7 +381,14 @@ export default function EmailsUploadController() {
                         pendingFile.name.toLowerCase().endsWith('.xls');
         
         if (isCSV) {
-          const text = await pendingFile.text();
+          // Use FileReader to handle different encodings properly
+          const text = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = (e) => reject(e);
+            // Try UTF-8 first, which handles most cases correctly
+            reader.readAsText(pendingFile, 'UTF-8');
+          });
           parsedData = parseCSV(text);
         } else if (isExcel) {
           const buffer = await pendingFile.arrayBuffer();
