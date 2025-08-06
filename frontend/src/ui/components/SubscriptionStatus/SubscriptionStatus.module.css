@@ -135,6 +135,25 @@
   opacity: 0.9;
 }
 
+.subscriptionSection {
+  margin-bottom: 30px;
+  padding: 20px;
+  background-color: var(--bg-light);
+  border-radius: 8px;
+}
+
+.subscriptionSection:last-child {
+  margin-bottom: 0;
+}
+
+.sectionTitle {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--black);
+  font-family: "Circular", "Geist", sans-serif;
+}
+
 @media (max-width: 600px) {
   .planInfo {
     flex-direction: column;

@@ -1,9 +1,11 @@
 import axios from 'axios';
 
-// Get available subscription plans
-export const getSubscriptionPlans = async () => {
+// Get available subscription plans by type
+export const getSubscriptionPlans = async (type = 'regular') => {
   try {
-    const response = await axios.get('/api/subscriptions/list');
+    const response = await axios.get('/api/subscriptions/list', {
+      params: { type }
+    });
     return response;
   } catch (error) {
     return error.response || { status: 500, data: { error: 'Network error' } };
@@ -31,9 +33,9 @@ export const getSubscriptionStatus = async () => {
 };
 
 // Create billing portal session
-export const createPortalSession = async () => {
+export const createPortalSession = async (type = 'regular') => {
   try {
-    const response = await axios.post('/api/subscriptions/manage');
+    const response = await axios.post('/api/subscriptions/manage', { type });
     return response;
   } catch (error) {
     return error.response || { status: 500, data: { error: 'Network error' } };

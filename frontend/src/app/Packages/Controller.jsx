@@ -43,8 +43,10 @@ export default function PackagesController() {
   const [validateNonPromotions, setValidateNonPromotions] = useState([]);
   const [catchallPromotions, setCatchallPromotions] = useState([]);
   const [catchallNonPromotions, setCatchallNonPromotions] = useState([]);
-  const [subscriptionPlans, setSubscriptionPlans] = useState([]);
-  const [currentSubscription, setCurrentSubscription] = useState(null);
+  const [regularSubscriptionPlans, setRegularSubscriptionPlans] = useState([]);
+  const [catchallSubscriptionPlans, setCatchallSubscriptionPlans] = useState([]);
+  const [currentRegularSubscription, setCurrentRegularSubscription] = useState(null);
+  const [currentCatchallSubscription, setCurrentCatchallSubscription] = useState(null);
 
   // Switch views on param change
   useEffect(() => {
@@ -72,10 +74,20 @@ export default function PackagesController() {
 
   // Load subscription plans
   async function loadSubscriptions() {
-    const resp = await getSubscriptionPlans();
-    if (resp.status === 200) {
-      setSubscriptionPlans(resp.data.plans || []);
-      setCurrentSubscription(resp.data.current_subscription);
+    // Load both regular and catchall plans
+    const [regularResp, catchallResp] = await Promise.all([
+      getSubscriptionPlans('regular'),
+      getSubscriptionPlans('catchall')
+    ]);
+    
+    if (regularResp.status === 200) {
+      setRegularSubscriptionPlans(regularResp.data.plans || []);
+      setCurrentRegularSubscription(regularResp.data.current_subscription);
+    }
+    
+    if (catchallResp.status === 200) {
+      setCatchallSubscriptionPlans(catchallResp.data.plans || []);
+      setCurrentCatchallSubscription(catchallResp.data.current_subscription);
     }
   }
 
@@ -94,9 +106,9 @@ export default function PackagesController() {
   };
 
   // Handle manage subscription
-  const handleManageSubscription = async () => {
+  const handleManageSubscription = async (type) => {
     try {
-      const resp = await createPortalSession();
+      const resp = await createPortalSession(type);
       if (resp.status === 200) {
         window.open(resp.data.portal_url, "_blank");
       } else {
@@ -139,18 +151,35 @@ export default function PackagesController() {
       </div>
       <br/>
       {currPage === "subscriptions" ? (
-        <div className={styles.creditGrid}>
-          {subscriptionPlans.map((plan) => (
-            <SubscriptionCard
-              key={plan.id}
-              plan={plan}
-              currentPlan={currentSubscription}
-              isSubscribed={!!currentSubscription}
-              handleSubscribe={handleSubscribe}
-              handleManage={handleManageSubscription}
-            />
-          ))}
-        </div>
+        <>
+          <h2 className={styles.subtitle}>Email Verification Subscriptions</h2>
+          <div className={styles.creditGrid}>
+            {regularSubscriptionPlans.map((plan) => (
+              <SubscriptionCard
+                key={plan.id}
+                plan={plan}
+                currentPlan={currentRegularSubscription}
+                isSubscribed={!!currentRegularSubscription}
+                handleSubscribe={handleSubscribe}
+                handleManage={() => handleManageSubscription('regular')}
+              />
+            ))}
+          </div>
+          <br /><br />
+          <h2 className={styles.subtitle}>Catchall Verification Subscriptions</h2>
+          <div className={styles.creditGrid}>
+            {catchallSubscriptionPlans.map((plan) => (
+              <SubscriptionCard
+                key={plan.id}
+                plan={plan}
+                currentPlan={currentCatchallSubscription}
+                isSubscribed={!!currentCatchallSubscription}
+                handleSubscribe={handleSubscribe}
+                handleManage={() => handleManageSubscription('catchall')}
+              />
+            ))}
+          </div>
+        </>
       ) : (
         <div className={styles.creditGrid}>
           {((currPage === "catchall") ? catchallNonPromotions : validateNonPromotions).map(

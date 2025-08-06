@@ -1,22 +1,47 @@
 const knex = require('../../libs/knex');
 
-// Get available subscription plans based on environment
-async function db_getAvailablePlans(isProduction = false) {
+// Get user by ID
+async function db_getUserById(userId) {
+  return await knex('Users')
+    .where({ id: userId })
+    .first();
+}
+
+// Get user's Stripe customer ID
+async function db_getUserStripeId(userId) {
+  const user = await knex('Users')
+    .where({ id: userId })
+    .select('stripe_id')
+    .first();
+  return user?.stripe_id || null;
+}
+
+// Get available subscription plans based on environment and type
+async function db_getAvailablePlans(subscriptionType, isProduction = false) {
   return await knex('Subscription_Plans')
+    .where('subscription_type', subscriptionType)
     .where('is_active', 1)
     .where('is_live', isProduction ? 1 : 0)
     .orderBy('display_order', 'asc');
 }
 
-// Get user's current subscription
-async function db_getUserSubscription(userId) {
+// Get user's subscriptions (both regular and catchall)
+async function db_getUserSubscriptions(userId) {
   return await knex('User_Subscriptions')
     .where({ user_id: userId })
+    .whereIn('status', ['active', 'trialing'])
+    .select('*');
+}
+
+// Get user's subscription by type
+async function db_getUserSubscription(userId, subscriptionType) {
+  return await knex('User_Subscriptions')
+    .where({ user_id: userId, subscription_type: subscriptionType })
     .first();
 }
 
-// Get subscription with plan details
-async function db_getUserSubscriptionWithPlan(userId) {
+// Get user's subscriptions with plan details
+async function db_getUserSubscriptionsWithPlans(userId) {
   return await knex('User_Subscriptions as us')
     .join('Subscription_Plans as sp', 'us.subscription_plan_id', 'sp.id')
     .where('us.user_id', userId)
@@ -24,11 +49,9 @@ async function db_getUserSubscriptionWithPlan(userId) {
       'us.*',
       'sp.name as plan_name',
       'sp.display_price',
-      'sp.regular_credits_per_period',
-      'sp.catchall_credits_per_period',
+      'sp.credits_per_period',
       'sp.billing_period'
-    )
-    .first();
+    );
 }
 
 // Create or update user subscription
@@ -37,7 +60,7 @@ async function db_upsertUserSubscription(subscriptionData, trx) {
   
   return await query('User_Subscriptions')
     .insert(subscriptionData)
-    .onConflict('user_id')
+    .onConflict(['user_id', 'subscription_type'])
     .merge([
       'subscription_plan_id',
       'stripe_subscription_id',
@@ -83,46 +106,36 @@ async function db_allocateSubscriptionCredits(userId, planId, periodEnd, trx) {
     throw new Error('Subscription plan not found');
   }
 
-  const promises = [];
-
-  // Allocate regular credits
-  if (plan.regular_credits_per_period > 0) {
-    promises.push(
-      query('User_Deliverable_Sub_Credits')
-        .insert({
-          user_id: userId,
-          credits_start: plan.regular_credits_per_period,
-          credits_left: plan.regular_credits_per_period,
-          expiry_ts: periodEnd
-        })
-        .onConflict('user_id')
-        .merge(['credits_start', 'credits_left', 'expiry_ts', 'updated_ts'])
-    );
+  // Allocate credits based on subscription type
+  if (plan.subscription_type === 'regular') {
+    await query('User_Deliverable_Sub_Credits')
+      .insert({
+        user_id: userId,
+        credits_start: plan.credits_per_period,
+        credits_left: plan.credits_per_period,
+        expiry_ts: periodEnd
+      })
+      .onConflict('user_id')
+      .merge(['credits_start', 'credits_left', 'expiry_ts', 'updated_ts']);
+  } else if (plan.subscription_type === 'catchall') {
+    await query('User_Catchall_Sub_Credits')
+      .insert({
+        user_id: userId,
+        credits_start: plan.credits_per_period,
+        credits_left: plan.credits_per_period,
+        expiry_ts: periodEnd
+      })
+      .onConflict('user_id')
+      .merge(['credits_start', 'credits_left', 'expiry_ts', 'updated_ts']);
   }
 
-  // Allocate catchall credits
-  if (plan.catchall_credits_per_period > 0) {
-    promises.push(
-      query('User_Catchall_Sub_Credits')
-        .insert({
-          user_id: userId,
-          credits_start: plan.catchall_credits_per_period,
-          credits_left: plan.catchall_credits_per_period,
-          expiry_ts: periodEnd
-        })
-        .onConflict('user_id')
-        .merge(['credits_start', 'credits_left', 'expiry_ts', 'updated_ts'])
-    );
-  }
-
-  await Promise.all(promises);
   return true;
 }
 
-// Check if user has an active subscription
-async function db_hasActiveSubscription(userId) {
+// Check if user has an active subscription of a specific type
+async function db_hasActiveSubscription(userId, subscriptionType) {
   const subscription = await knex('User_Subscriptions')
-    .where({ user_id: userId })
+    .where({ user_id: userId, subscription_type: subscriptionType })
     .whereIn('status', ['active', 'trialing'])
     .first();
   
@@ -144,7 +157,7 @@ async function db_getSubscriptionPlanByPriceId(stripePriceId) {
 }
 
 // Update subscription status
-async function db_updateSubscriptionStatus(userId, status, cancelAtPeriodEnd = null, trx) {
+async function db_updateSubscriptionStatus(userId, subscriptionType, status, cancelAtPeriodEnd = null, trx) {
   const query = trx || knex;
   const updateData = {
     status,
@@ -160,14 +173,17 @@ async function db_updateSubscriptionStatus(userId, status, cancelAtPeriodEnd = n
   }
 
   return await query('User_Subscriptions')
-    .where({ user_id: userId })
+    .where({ user_id: userId, subscription_type: subscriptionType })
     .update(updateData);
 }
 
 module.exports = {
+  db_getUserById,
+  db_getUserStripeId,
   db_getAvailablePlans,
+  db_getUserSubscriptions,
   db_getUserSubscription,
-  db_getUserSubscriptionWithPlan,
+  db_getUserSubscriptionsWithPlans,
   db_upsertUserSubscription,
   db_getUserSubscriptionCredits,
   db_allocateSubscriptionCredits,

@@ -228,6 +228,7 @@ async function handleSubscriptionCreated(subscription) {
             // Insert subscription record
             await subscriptionDB.db_upsertUserSubscription({
                 user_id: user.id,
+                subscription_type: subscription.metadata?.subscription_type || plan.subscription_type,
                 subscription_plan_id: plan.id,
                 stripe_subscription_id: subscription.id,
                 stripe_customer_id: subscription.customer,
@@ -274,8 +275,11 @@ async function handleInvoicePaymentSucceeded(invoice) {
             return [false, 'User not found for customer'];
         }
         
-        // Get subscription details
-        const subscription = await subscriptionDB.db_getUserSubscription(user.id);
+        // Get subscription by Stripe subscription ID
+        const subscription = await knex('User_Subscriptions')
+            .where('stripe_subscription_id', invoice.subscription)
+            .first();
+        
         if (!subscription) {
             return [false, 'Subscription not found'];
         }
@@ -286,7 +290,7 @@ async function handleInvoicePaymentSucceeded(invoice) {
         await knex.transaction(async (trx) => {
             // Update subscription period
             await trx('User_Subscriptions')
-                .where('user_id', user.id)
+                .where('id', subscription.id)
                 .update({
                     current_period_end: new Date(periodEnd * 1000),
                     updated_ts: knex.fn.now()
@@ -324,10 +328,20 @@ async function handleSubscriptionUpdated(subscription) {
             return [false, 'User not found for customer'];
         }
         
+        // Get the existing subscription to preserve subscription_type
+        const existingSubscription = await knex('User_Subscriptions')
+            .where('stripe_subscription_id', subscription.id)
+            .first();
+            
+        if (!existingSubscription) {
+            return [false, 'Subscription not found in database'];
+        }
+        
         // Update subscription record
         await subscriptionDB.db_upsertUserSubscription({
             user_id: user.id,
-            subscription_plan_id: subscription.metadata.plan_id || subscription.subscription_plan_id,
+            subscription_type: existingSubscription.subscription_type,
+            subscription_plan_id: existingSubscription.subscription_plan_id,
             stripe_subscription_id: subscription.id,
             stripe_customer_id: subscription.customer,
             status: subscription.status,
@@ -360,8 +374,17 @@ async function handleSubscriptionDeleted(subscription) {
             return [false, 'User not found for customer'];
         }
         
+        // Get the subscription to find its type
+        const existingSubscription = await knex('User_Subscriptions')
+            .where('stripe_subscription_id', subscription.id)
+            .first();
+            
+        if (!existingSubscription) {
+            return [false, 'Subscription not found in database'];
+        }
+        
         // Update subscription status to canceled
-        await subscriptionDB.db_updateSubscriptionStatus(user.id, 'canceled');
+        await subscriptionDB.db_updateSubscriptionStatus(user.id, existingSubscription.subscription_type, 'canceled');
         
         // Credits will naturally expire based on expiry_ts
         

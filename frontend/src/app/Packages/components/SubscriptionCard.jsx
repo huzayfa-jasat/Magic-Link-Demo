@@ -22,15 +22,8 @@ export default function SubscriptionCard({
       
       <h1 className={styles.packageName}>{plan.name}</h1>
       
-      <h2 className={styles.numCredits}>{plan.regular_credits_per_period.toLocaleString()}</h2>
-      <p className={styles.verificationText}>Email Verification Credits/month</p>
-      
-      {plan.catchall_credits_per_period > 0 && (
-        <>
-          <h2 className={styles.numCredits} style={{ marginTop: '10px' }}>{plan.catchall_credits_per_period.toLocaleString()}</h2>
-          <p className={styles.verificationText}>Catchall Credits/month</p>
-        </>
-      )}
+      <h2 className={styles.numCredits}>{plan.credits_per_period.toLocaleString()}</h2>
+      <p className={styles.verificationText}>Credits per month</p>
       
       {currentPlan?.cancel_at_period_end && isCurrentPlan && (
         <p className={styles.cancelNotice} style={{ color: '#ff6b6b', fontSize: '14px', marginTop: '10px' }}>

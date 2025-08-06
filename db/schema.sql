@@ -133,24 +133,27 @@ CREATE TABLE Stripe_Catchall_Purchases (
 DROP TABLE IF EXISTS `Subscription_Plans`;
 CREATE TABLE Subscription_Plans (
     id INT PRIMARY KEY AUTO_INCREMENT,
+    subscription_type ENUM('regular', 'catchall') NOT NULL,
     stripe_product_id VARCHAR(255) UNIQUE NOT NULL,
     stripe_price_id VARCHAR(255) UNIQUE NOT NULL,
     name VARCHAR(255) NOT NULL,
     display_price VARCHAR(50) NOT NULL,
-    regular_credits_per_period INT NOT NULL DEFAULT 0,
-    catchall_credits_per_period INT NOT NULL DEFAULT 0,
+    credits_per_period INT NOT NULL DEFAULT 0,
     billing_period ENUM('monthly', 'yearly') NOT NULL DEFAULT 'monthly',
     is_active BOOLEAN DEFAULT 1,
     is_live BOOLEAN DEFAULT 0,
     display_order INT DEFAULT 0,
     features JSON,
     created_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_active_live (is_active, is_live)
+    INDEX idx_active_live (is_active, is_live),
+    INDEX idx_type_active (subscription_type, is_active, is_live)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
 DROP TABLE IF EXISTS `User_Subscriptions`;
 CREATE TABLE User_Subscriptions (
-    user_id INT PRIMARY KEY,
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    subscription_type ENUM('regular', 'catchall') NOT NULL,
     subscription_plan_id INT NOT NULL,
     stripe_subscription_id VARCHAR(255) UNIQUE NOT NULL,
     stripe_customer_id VARCHAR(255) NOT NULL,
@@ -163,8 +166,10 @@ CREATE TABLE User_Subscriptions (
     updated_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES Users(id),
     FOREIGN KEY (subscription_plan_id) REFERENCES Subscription_Plans(id),
+    UNIQUE KEY unique_user_type (user_id, subscription_type),
     INDEX idx_stripe_sub_id (stripe_subscription_id),
-    INDEX idx_status (status)
+    INDEX idx_status (status),
+    INDEX idx_user_type (user_id, subscription_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
 DROP TABLE IF EXISTS `User_Deliverable_Sub_Credits`;

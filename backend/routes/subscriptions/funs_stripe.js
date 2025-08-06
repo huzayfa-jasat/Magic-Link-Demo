@@ -1,7 +1,7 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 // Create a subscription checkout session
-async function stripe_createSubscriptionCheckout(customerId, priceId, userId, successUrl, cancelUrl) {
+async function stripe_createSubscriptionCheckout(customerId, priceId, userId, subscriptionType, successUrl, cancelUrl) {
   try {
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -16,7 +16,8 @@ async function stripe_createSubscriptionCheckout(customerId, priceId, userId, su
       client_reference_id: userId.toString(),
       subscription_data: {
         metadata: {
-          user_id: userId.toString()
+          user_id: userId.toString(),
+          subscription_type: subscriptionType
         }
       }
     });
@@ -24,6 +25,30 @@ async function stripe_createSubscriptionCheckout(customerId, priceId, userId, su
     return session;
   } catch (error) {
     console.error('Error creating subscription checkout session:', error);
+    throw error;
+  }
+}
+
+// Create a subscription update/upgrade checkout session
+async function stripe_createSubscriptionUpdateCheckout(subscriptionId, newPriceId, successUrl, cancelUrl) {
+  try {
+    // Get the subscription to find the current item
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    const currentItem = subscription.items.data[0];
+
+    // Update the subscription immediately
+    const updatedSubscription = await stripe.subscriptions.update(subscriptionId, {
+      items: [{
+        id: currentItem.id,
+        price: newPriceId,
+      }],
+      proration_behavior: 'create_prorations'
+    });
+
+    // Return a success response that redirects to success URL
+    return { url: successUrl };
+  } catch (error) {
+    console.error('Error updating subscription:', error);
     throw error;
   }
 }
@@ -83,17 +108,11 @@ async function stripe_reactivateSubscription(subscriptionId) {
 }
 
 // Create or get Stripe customer
-async function stripe_ensureCustomer(userId, email) {
+async function stripe_ensureCustomer(userId, email, stripeId = null) {
   try {
-    // Check if user already has a Stripe customer ID
-    const knex = require('../../libs/knex');
-    const user = await knex('Users')
-      .where({ id: userId })
-      .select('stripe_id')
-      .first();
-
-    if (user?.stripe_id) {
-      return user.stripe_id;
+    // If stripe ID is provided and exists, return it
+    if (stripeId) {
+      return stripeId;
     }
 
     // Create new customer
@@ -104,16 +123,20 @@ async function stripe_ensureCustomer(userId, email) {
       }
     });
 
-    // Update user record with Stripe customer ID
-    await knex('Users')
-      .where({ id: userId })
-      .update({ stripe_id: customer.id });
-
+    // Update user record with Stripe customer ID (done in controller)
     return customer.id;
   } catch (error) {
     console.error('Error ensuring Stripe customer:', error);
     throw error;
   }
+}
+
+// Update user's Stripe customer ID in database
+async function stripe_updateUserStripeId(userId, stripeCustomerId) {
+  const knex = require('../../libs/knex');
+  await knex('Users')
+    .where({ id: userId })
+    .update({ stripe_id: stripeCustomerId });
 }
 
 // Verify webhook signature
@@ -128,10 +151,12 @@ function stripe_verifyWebhookSignature(payload, signature, secret) {
 
 module.exports = {
   stripe_createSubscriptionCheckout,
+  stripe_createSubscriptionUpdateCheckout,
   stripe_createPortalSession,
   stripe_getSubscription,
   stripe_cancelSubscription,
   stripe_reactivateSubscription,
   stripe_ensureCustomer,
+  stripe_updateUserStripeId,
   stripe_verifyWebhookSignature
 };

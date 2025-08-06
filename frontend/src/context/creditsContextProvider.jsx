@@ -36,8 +36,8 @@ export const CreditsContextProvider = ({ children }) => {
         setCatchallBalance(catchallResponse.data.credit_balance);
       }
       if (subscriptionResponse.status === 200 && subscriptionResponse.data.has_subscription) {
-        setSubscription(subscriptionResponse.data.subscription);
-        setSubscriptionCredits(subscriptionResponse.data.subscription.credits || {
+        setSubscription(subscriptionResponse.data.subscriptions);
+        setSubscriptionCredits(subscriptionResponse.data.credits || {
           regular: null,
           catchall: null
         });
