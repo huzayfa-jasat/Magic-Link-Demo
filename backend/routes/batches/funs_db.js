@@ -5,6 +5,7 @@ const knex = require('knex')(require('../../knexfile.js').development);
 const { resend_sendBatchCompletionEmail } = require('../../external_apis/resend.js');
 const {
 	getCreditTableName, getCreditHistoryTableName, getBatchTableName, getResultsTableName, getEmailBatchAssociationTableName, getBouncerBatchTableName,
+	getBouncerEmailTableName,
 	formatResultsByCheckType,
 	createBatchBaseQuery, applyBatchStatusFilter, applyBatchResultFilter,
 } = require('./funs_db_utils.js');
@@ -1047,7 +1048,92 @@ async function db_removeBatch(user_id, check_type, batch_id) {
 	return true;
 }
 
-
+async function db_deleteBatchCompletely(user_id, check_type, batch_id) {
+    // Get table names
+    const batch_table = getBatchTableName(check_type);
+    const email_batch_association_table = getEmailBatchAssociationTableName(check_type);
+    const bouncer_batch_table = getBouncerBatchTableName(check_type);
+    const bouncer_email_table = getBouncerEmailTableName(check_type);
+    
+    if (!batch_table || !email_batch_association_table || !bouncer_batch_table || !bouncer_email_table) {
+        console.error('Missing table names for batch deletion');
+        return false;
+    }
+    
+    let err_code;
+    
+    // Use transaction for atomic operations
+    const trx = await knex.transaction();
+    try {
+        // 1. Delete bouncer email associations first (foreign key dependencies)
+        await trx(bouncer_email_table)
+            .whereIn('bouncer_batch_id', function() {
+                this.select('bouncer_batch_id')
+                    .from(bouncer_batch_table)
+                    .where('user_batch_id', batch_id);
+            })
+            .del()
+            .catch((err) => { if (err) err_code = err.code });
+        if (err_code) {
+            console.error('Error deleting bouncer emails:', err_code);
+            await trx.rollback();
+            return false;
+        }
+        
+        // 2. Delete bouncer batches
+        await trx(bouncer_batch_table)
+            .where('user_batch_id', batch_id)
+            .del()
+            .catch((err) => { if (err) err_code = err.code });
+        if (err_code) {
+            console.error('Error deleting bouncer batches:', err_code);
+            await trx.rollback();
+            return false;
+        }
+        
+        // 3. Delete email associations
+        await trx(email_batch_association_table)
+            .where('batch_id', batch_id)
+            .del()
+            .catch((err) => { if (err) err_code = err.code });
+        if (err_code) {
+            console.error('Error deleting email associations:', err_code);
+            await trx.rollback();
+            return false;
+        }
+        
+        // 4. Finally delete the main batch record
+        const deleted_count = await trx(batch_table)
+            .where({
+                'id': batch_id,
+                'user_id': user_id,
+            })
+            .del()
+            .catch((err) => { if (err) err_code = err.code });
+        if (err_code) {
+            console.error('Error deleting main batch:', err_code);
+            await trx.rollback();
+            return false;
+        }
+        
+        if (deleted_count === 0) {
+            console.error('Batch not found or access denied');
+            await trx.rollback();
+            return false;
+        }
+        
+        // Commit transaction
+        await trx.commit();
+        
+        console.log(`Successfully deleted batch ${batch_id} (${check_type}) for user ${user_id}`);
+        return true;
+        
+    } catch (error) {
+        await trx.rollback();
+        console.error(`Failed to delete batch ${batch_id}:`, error.message);
+        return false;
+    }
+}
 
 // Exports
 module.exports = {
@@ -1068,5 +1154,6 @@ module.exports = {
 	db_deductCreditsForActualBatch,
 	db_createBatchWithEstimate,
 	db_sendBatchCompletionEmail,
-	db_checkDuplicateFilename
+	db_checkDuplicateFilename,
+	db_deleteBatchCompletely
 }
