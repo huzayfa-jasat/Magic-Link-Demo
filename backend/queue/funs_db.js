@@ -213,7 +213,8 @@ async function db_getOutstandingBouncerBatches(check_type) {
 async function db_markBouncerBatchFailed(bouncer_batch_id, check_type) {
     // Get table names
     const bouncer_batch_table = getBouncerBatchTableName(check_type);
-    if (!bouncer_batch_table) return [false, 0];
+    const bouncer_email_table = getBouncerEmailTableName(check_type);
+    if (!bouncer_batch_table || !bouncer_email_table) return [false, 0];
 
     // Mark bouncer batch as failed
     let err_code;
@@ -230,6 +231,18 @@ async function db_markBouncerBatchFailed(bouncer_batch_id, check_type) {
     }
 
     console.log(`💀 Marked bouncer batch ${bouncer_batch_id} as failed`);
+    
+    // Clean up bouncer email association records
+    const cleanup_result = await knex(bouncer_email_table)
+        .where('bouncer_batch_id', bouncer_batch_id)
+        .del()
+        .catch((err) => { if (err) err_code = err.code });
+    if (err_code) {
+        console.error('Error cleaning up bouncer email records:', err_code);
+        // Don't fail the entire operation if cleanup fails
+    } else {
+        console.log(`🧹 Cleaned up ${cleanup_result || 0} bouncer email association records for failed batch ${bouncer_batch_id}`);
+    }
     
     // TODO: Could also mark associated user batches as failed if all their bouncer batches have failed
     // For now, individual bouncer batch failures don't fail the entire user batch
@@ -389,6 +402,13 @@ async function db_processBouncerResults(bouncer_batch_id, results_array, check_t
         for (const user_batch_id of affected_user_batches) {
             await checkAndCompleteUserBatch(trx, user_batch_id, check_type);
         }
+
+        // 7. Clean up bouncer email association records (AFTER all processing is done)
+        const cleanup_result = await trx(bouncer_email_table)
+            .where('bouncer_batch_id', bouncer_batch_id)
+            .del();
+        
+        console.log(`🧹 Cleaned up ${cleanup_result || 0} bouncer email association records for completed batch ${bouncer_batch_id}`);
 
         // Commit transaction
         await trx.commit();
