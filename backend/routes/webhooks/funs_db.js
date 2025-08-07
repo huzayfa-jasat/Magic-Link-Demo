@@ -123,11 +123,6 @@ async function handleSuccessfulCatchallPayment(userId, credits, sessionId) {
  * @returns {Promise<[boolean, object|string]>} Success status and result/error
  */
 async function db_processCheckoutSession(stripe_session_id, stripe_customer_id, stripe_product_id) {
-    console.log('🛒 Processing checkout session');
-    console.log('Session ID:', stripe_session_id);
-    console.log('Customer ID:', stripe_customer_id);
-    console.log('Product ID:', stripe_product_id);
-    
     let err_code;
 
     // Get the user ID matching the Stripe customer ID
@@ -136,8 +131,6 @@ async function db_processCheckoutSession(stripe_session_id, stripe_customer_id, 
     ).select(
         'id'
     ).first().catch((err) => { if (err) err_code = err.code; });
-    
-    console.log('Found user:', user ? user.id : 'NOT FOUND');
     
     if (err_code || !user) return [false, null];
     const userId = user.id;
@@ -149,8 +142,6 @@ async function db_processCheckoutSession(stripe_session_id, stripe_customer_id, 
     }).select(
         'credits', 'credit_type'
     ).first().catch((err) => { if (err) err_code = err.code; });
-    
-    console.log('Found product:', product ? `${product.credits} ${product.credit_type} credits` : 'NOT FOUND');
     
     if (err_code || !product) return [false, null];
     const isCatchall = product.credit_type === 'catchall';
@@ -170,7 +161,6 @@ async function db_processCheckoutSession(stripe_session_id, stripe_customer_id, 
     if (isCatchall) await handleSuccessfulCatchallPayment(userId, product.credits, stripe_session_id);
     else await handleSuccessfulPayment(userId, product.credits, stripe_session_id);
 
-    console.log('✅ Successfully processed checkout session');
     // Return
     return [true, { 
         userId, 

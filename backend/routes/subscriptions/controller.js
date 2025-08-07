@@ -89,15 +89,10 @@ async function createCheckout(req, res) {
     const user = await db_getUserById(userId);
     let stripeCustomerId = user.stripe_id;
     
-    console.log('User stripe_id:', stripeCustomerId);
-    
     // Create Stripe customer if doesn't exist
     if (!stripeCustomerId) {
-      console.log('Creating new Stripe customer for user:', userId);
       stripeCustomerId = await stripe_ensureCustomer(userId, user.email);
-      console.log('Created Stripe customer ID:', stripeCustomerId);
       await stripe_updateUserStripeId(userId, stripeCustomerId);
-      console.log('Updated user with Stripe customer ID');
     }
 
     // Create checkout session
