@@ -16,10 +16,10 @@ const { initializeQueue, shutdownQueue } = require('./queue');
 // App Config
 const app = express();
 
-// Webhook route needs raw body
-const webhookRoute = require('./routes/webhooks/routes.js');
+// Webhook route needs raw body - MUST come before body parser middleware
+const webhooksRoute = require('./routes/webhooks/routes.js');
 const route_prefix = (process.env.NODE_ENV === "development") ? "/api" : "";
-app.use(route_prefix + '/webhooks/', webhookRoute);
+app.use(route_prefix+'/wh/', webhooksRoute);
 
 // Body parser middleware
 app.use(bodyParser.json({ limit: '50mb' }));
@@ -85,7 +85,6 @@ const catchallCreditsRoute = require('./routes/catchall-credits/routes.js');
 const paymentRoute = require('./routes/payment/routes.js');
 const batchesRoute = require('./routes/batches/routes.js');
 const publicRoute = require('./routes/public/routes.js');
-const webhooksRoute = require('./routes/webhooks/routes.js');
 const subscriptionsRoute = require('./routes/subscriptions/routes.js');
 
 // Routes
@@ -97,7 +96,6 @@ app.use(route_prefix+'/pay/', paymentRoute);
 app.use(route_prefix+'/subscriptions/', subscriptionsRoute);
 app.use(route_prefix+'/batches/', batchesRoute);
 app.use(route_prefix+'/validate/', publicRoute);
-app.use(route_prefix+'/wh/', webhooksRoute);
 
 // Catch unhandled requests
 app.all('/*', (_, res) => { res.sendStatus(404); });

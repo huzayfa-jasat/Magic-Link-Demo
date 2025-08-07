@@ -20,9 +20,14 @@ const {
 // GET /api/subscriptions/list
 async function listPlans(req, res) {
   try {
-    const userId = req.session.user_id;
+    // Get user ID from the correct session path
+    const userId = req.session.user_id || (req.session.passport && req.session.passport.user ? req.session.passport.user.id : null);
     const { type = 'regular' } = req.query; // Accept type as query param
     const isProduction = process.env.NODE_ENV === 'production';
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
 
     // Get available plans for the specified type
     const plans = await db_getAvailablePlans(type, isProduction);
@@ -58,8 +63,12 @@ async function createCheckout(req, res) {
     await checkValidation(req, res, () => {});
     if (res.headersSent) return;
 
-    const userId = req.session.user_id;
+    const userId = req.session.user_id || (req.session.passport && req.session.passport.user ? req.session.passport.user.id : null);
     const { plan_id } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
 
     // Get plan details
     const plan = await db_getSubscriptionPlanById(plan_id);
@@ -80,10 +89,15 @@ async function createCheckout(req, res) {
     const user = await db_getUserById(userId);
     let stripeCustomerId = user.stripe_id;
     
+    console.log('User stripe_id:', stripeCustomerId);
+    
     // Create Stripe customer if doesn't exist
     if (!stripeCustomerId) {
+      console.log('Creating new Stripe customer for user:', userId);
       stripeCustomerId = await stripe_ensureCustomer(userId, user.email);
+      console.log('Created Stripe customer ID:', stripeCustomerId);
       await stripe_updateUserStripeId(userId, stripeCustomerId);
+      console.log('Updated user with Stripe customer ID');
     }
 
     // Create checkout session
@@ -118,7 +132,11 @@ async function createCheckout(req, res) {
 // GET /api/subscriptions/status
 async function getStatus(req, res) {
   try {
-    const userId = req.session.user_id;
+    const userId = req.session.user_id || (req.session.passport && req.session.passport.user ? req.session.passport.user.id : null);
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
 
     // Get all subscriptions with plan details
     const subscriptions = await db_getUserSubscriptionsWithPlans(userId);
@@ -170,8 +188,12 @@ async function getStatus(req, res) {
 // POST /api/subscriptions/manage
 async function createPortalSession(req, res) {
   try {
-    const userId = req.session.user_id;
+    const userId = req.session.user_id || (req.session.passport && req.session.passport.user ? req.session.passport.user.id : null);
     const { type = 'regular' } = req.body; // Accept subscription type
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
 
     // Get user's Stripe customer ID
     const stripeCustomerId = await db_getUserStripeId(userId);
@@ -194,7 +216,7 @@ async function createPortalSession(req, res) {
     const baseUrl = process.env.APP_URL || 'http://localhost:3000';
     const returnUrl = `${baseUrl}/packages`;
 
-    const session = await stripe_createPortalSession(user.stripe_id, returnUrl);
+    const session = await stripe_createPortalSession(stripeCustomerId, returnUrl);
 
     return res.status(200).json({ portal_url: session.url });
   } catch (error) {

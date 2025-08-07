@@ -133,7 +133,7 @@ async function stripe_ensureCustomer(userId, email, stripeId = null) {
 
 // Update user's Stripe customer ID in database
 async function stripe_updateUserStripeId(userId, stripeCustomerId) {
-  const knex = require('../../libs/knex');
+  const knex = require('knex')(require('../../knexfile.js').development);
   await knex('Users')
     .where({ id: userId })
     .update({ stripe_id: stripeCustomerId });

@@ -1,4 +1,4 @@
-const knex = require('../../libs/knex');
+const knex = require('knex')(require('../../knexfile.js').development);
 
 // Get user by ID
 async function db_getUserById(userId) {
@@ -36,7 +36,8 @@ async function db_getUserSubscriptions(userId) {
 // Get user's subscription by type
 async function db_getUserSubscription(userId, subscriptionType) {
   return await knex('User_Subscriptions')
-    .where({ user_id: userId, subscription_type: subscriptionType })
+    .where('user_id', userId)
+    .where('subscription_type', subscriptionType)
     .first();
 }
 
@@ -64,7 +65,6 @@ async function db_upsertUserSubscription(subscriptionData, trx) {
     .merge([
       'subscription_plan_id',
       'stripe_subscription_id',
-      'stripe_customer_id',
       'status',
       'current_period_start',
       'current_period_end',

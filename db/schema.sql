@@ -156,7 +156,6 @@ CREATE TABLE User_Subscriptions (
     subscription_type ENUM('regular', 'catchall') NOT NULL,
     subscription_plan_id INT NOT NULL,
     stripe_subscription_id VARCHAR(255) UNIQUE NOT NULL,
-    stripe_customer_id VARCHAR(255) NOT NULL,
     status ENUM('active', 'canceled', 'past_due', 'incomplete', 'incomplete_expired', 'trialing', 'unpaid') NOT NULL,
     current_period_start TIMESTAMP NOT NULL,
     current_period_end TIMESTAMP NOT NULL,

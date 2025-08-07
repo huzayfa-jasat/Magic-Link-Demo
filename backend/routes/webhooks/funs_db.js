@@ -123,6 +123,11 @@ async function handleSuccessfulCatchallPayment(userId, credits, sessionId) {
  * @returns {Promise<[boolean, object|string]>} Success status and result/error
  */
 async function db_processCheckoutSession(stripe_session_id, stripe_customer_id, stripe_product_id) {
+    console.log('🛒 Processing checkout session');
+    console.log('Session ID:', stripe_session_id);
+    console.log('Customer ID:', stripe_customer_id);
+    console.log('Product ID:', stripe_product_id);
+    
     let err_code;
 
     // Get the user ID matching the Stripe customer ID
@@ -131,6 +136,9 @@ async function db_processCheckoutSession(stripe_session_id, stripe_customer_id, 
     ).select(
         'id'
     ).first().catch((err) => { if (err) err_code = err.code; });
+    
+    console.log('Found user:', user ? user.id : 'NOT FOUND');
+    
     if (err_code || !user) return [false, null];
     const userId = user.id;
 
@@ -141,6 +149,9 @@ async function db_processCheckoutSession(stripe_session_id, stripe_customer_id, 
     }).select(
         'credits', 'credit_type'
     ).first().catch((err) => { if (err) err_code = err.code; });
+    
+    console.log('Found product:', product ? `${product.credits} ${product.credit_type} credits` : 'NOT FOUND');
+    
     if (err_code || !product) return [false, null];
     const isCatchall = product.credit_type === 'catchall';
 
@@ -159,6 +170,7 @@ async function db_processCheckoutSession(stripe_session_id, stripe_customer_id, 
     if (isCatchall) await handleSuccessfulCatchallPayment(userId, product.credits, stripe_session_id);
     else await handleSuccessfulPayment(userId, product.credits, stripe_session_id);
 
+    console.log('✅ Successfully processed checkout session');
     // Return
     return [true, { 
         userId, 
@@ -183,6 +195,7 @@ async function db_processSubscriptionEvents(event) {
                 return await handleSubscriptionCreated(event.data.object);
                 
             case 'invoice.payment_succeeded':
+            case 'invoice_payment.paid':
                 // This is where monthly credit renewal happens
                 return await handleInvoicePaymentSucceeded(event.data.object);
                 
@@ -193,10 +206,11 @@ async function db_processSubscriptionEvents(event) {
                 return await handleSubscriptionDeleted(event.data.object);
                 
             default:
+                console.log('⚠️ Unknown subscription event type:', event.type);
                 return [false, 'Unknown subscription event type'];
         }
     } catch (error) {
-        console.error('Error processing subscription event:', error);
+        console.error('❌ Error processing subscription event:', error);
         return [false, error.message];
     }
 }
@@ -214,12 +228,17 @@ async function handleSubscriptionCreated(subscription) {
             .first();
             
         if (!user) {
+            console.error('User not found for customer:', subscription.customer);
             return [false, 'User not found for customer'];
         }
         
         // Get plan by Stripe price ID
-        const plan = await subscriptionDB.db_getSubscriptionPlanByPriceId(subscription.items.data[0].price.id);
+        const priceId = subscription.items.data[0].price.id;
+        
+        const plan = await subscriptionDB.db_getSubscriptionPlanByPriceId(priceId);
+        
         if (!plan) {
+            console.error('Subscription plan not found for price ID:', priceId);
             return [false, 'Subscription plan not found'];
         }
         
@@ -231,7 +250,6 @@ async function handleSubscriptionCreated(subscription) {
                 subscription_type: subscription.metadata?.subscription_type || plan.subscription_type,
                 subscription_plan_id: plan.id,
                 stripe_subscription_id: subscription.id,
-                stripe_customer_id: subscription.customer,
                 status: subscription.status,
                 current_period_start: new Date(subscription.current_period_start * 1000),
                 current_period_end: new Date(subscription.current_period_end * 1000),
@@ -266,12 +284,25 @@ async function handleInvoicePaymentSucceeded(invoice) {
             return [true, { message: 'Not a subscription invoice' }];
         }
         
+        // Validate invoice structure
+        if (!invoice.lines || !invoice.lines.data || !invoice.lines.data[0]) {
+            console.error('Invalid invoice structure - missing lines data');
+            return [false, 'Invalid invoice structure'];
+        }
+        
+        const lineItem = invoice.lines.data[0];
+        if (!lineItem.period || !lineItem.period.end) {
+            console.error('Invalid line item structure - missing period data');
+            return [false, 'Invalid line item structure'];
+        }
+        
         // Get user by Stripe customer ID
         const user = await knex('Users')
             .where('stripe_id', invoice.customer)
             .first();
             
         if (!user) {
+            console.error('User not found for customer:', invoice.customer);
             return [false, 'User not found for customer'];
         }
         
@@ -281,11 +312,12 @@ async function handleInvoicePaymentSucceeded(invoice) {
             .first();
         
         if (!subscription) {
+            console.error('Subscription not found for subscription ID:', invoice.subscription);
             return [false, 'Subscription not found'];
         }
         
         // Extract period end from invoice lines
-        const periodEnd = invoice.lines.data[0].period.end;
+        const periodEnd = lineItem.period.end;
         
         await knex.transaction(async (trx) => {
             // Update subscription period
@@ -343,7 +375,6 @@ async function handleSubscriptionUpdated(subscription) {
             subscription_type: existingSubscription.subscription_type,
             subscription_plan_id: existingSubscription.subscription_plan_id,
             stripe_subscription_id: subscription.id,
-            stripe_customer_id: subscription.customer,
             status: subscription.status,
             current_period_start: new Date(subscription.current_period_start * 1000),
             current_period_end: new Date(subscription.current_period_end * 1000),

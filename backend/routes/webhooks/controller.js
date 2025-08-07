@@ -16,6 +16,7 @@ async function handleStripeWebhook(req, res) {
 
     try {
         if (!sig) {
+            console.error('Missing Stripe signature');
             return res.status(HttpStatus.FAILED_STATUS).send('Missing Stripe signature');
         }
 
@@ -24,6 +25,7 @@ async function handleStripeWebhook(req, res) {
             sig,
             process.env.STRIPE_WEBHOOK_SECRET
         );
+        
     } catch (err) {
         console.error('Webhook signature verification failed:', err.message);
         return res.status(HttpStatus.FAILED_STATUS).send('Invalid signature');
@@ -36,6 +38,7 @@ async function handleStripeWebhook(req, res) {
 
                 // Verify the session is paid
                 if (session.payment_status !== 'paid') {
+                    console.error('Session not paid:', session.payment_status);
                     return res.status(HttpStatus.FAILED_STATUS).send('Session not paid');
                 }
                 
@@ -59,6 +62,7 @@ async function handleStripeWebhook(req, res) {
             case 'customer.subscription.updated':
             case 'customer.subscription.deleted':
             case 'invoice.payment_succeeded':
+            case 'invoice_payment.paid':
                 const [subSuccess, subResult] = await db_processSubscriptionEvents(event);
                 
                 if (!subSuccess) {
@@ -66,11 +70,11 @@ async function handleStripeWebhook(req, res) {
                     return res.status(HttpStatus.FAILED_STATUS).send(subResult);
                 }
 
-                console.log('Successfully processed subscription event:', event.type);
                 return res.status(HttpStatus.SUCCESS_STATUS).json({ received: true });
 
             default:
-                console.log(`Unhandled event type: ${event.type}`);
+                // For unhandled events, just return success without logging
+                // These are events we don't need to process but aren't errors
                 return res.status(HttpStatus.SUCCESS_STATUS).json({ received: true });
         }
     } catch (err) {
