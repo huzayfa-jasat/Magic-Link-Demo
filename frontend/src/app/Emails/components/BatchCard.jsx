@@ -96,7 +96,7 @@ function getStatusDisplay(status, progress=0) {
 			status_icon = PROCESSING_ICON;
 			break;
 		case 'queued':
-			status_icon = PAUSE_ICON;  // Use same icon as paused
+			status_icon = PROCESSING_ICON;  // Use processing icon with paused colors
 			break;
 		case 'paused':
 			status_icon = PAUSE_ICON;
