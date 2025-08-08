@@ -219,6 +219,19 @@ export default function HomeController() {
     return () => clearInterval(intervalId);
   }, [requests, currFilter, updateProcessingBatches]); // Recreate when requests or filter changes
 
+  // Poll for batch list updates (to catch status changes, especially for queued batches)
+  useEffect(() => {
+    const refreshInterval = setInterval(() => {
+      // Only refresh if we're on the first page to avoid disrupting pagination
+      if (currentPage === 1) {
+        fetchBatches(1, false);
+      }
+    }, 10000); // Refresh every 10 seconds
+    
+    // Cleanup
+    return () => clearInterval(refreshInterval);
+  }, [currentPage, currFilter]); // Recreate when page or filter changes
+
   // Render
   if (loading) {
     return (

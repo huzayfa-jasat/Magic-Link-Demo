@@ -73,6 +73,9 @@ function getStatusDisplay(status, progress=0) {
 		case 'processing':
 			status_name = `In Progress (${progress}%)`;
 			break;
+		case 'queued':
+			status_name = 'Queued';
+			break;
 		case 'paused':
 			status_name = 'Paused';
 			break;
@@ -92,6 +95,9 @@ function getStatusDisplay(status, progress=0) {
 		case 'processing':
 			status_icon = PROCESSING_ICON;
 			break;
+		case 'queued':
+			status_icon = PAUSE_ICON;  // Use same icon as paused
+			break;
 		case 'paused':
 			status_icon = PAUSE_ICON;
 			break;
@@ -102,9 +108,10 @@ function getStatusDisplay(status, progress=0) {
 			return <></>;
 	}
 
-	// Return
+	// Return - use 'paused' styling for 'queued' status
+	const statusClass = status === 'queued' ? 'paused' : status;
 	return (
-		<div className={`${styles.metaValue} ${styles[status]}`}>
+		<div className={`${styles.metaValue} ${styles[statusClass]}`}>
 			{status_icon}
 			<p className={styles.statusText}>{status_name}</p>
 		</div>
@@ -139,11 +146,13 @@ export default function BatchCard({
 	const isCompleted = request.status === 'completed' || request.status === 'complete';
 	const isProcessing = request.status === 'processing';
 	const isPaused = request.status === 'paused';
+	const isQueued = request.status === 'queued';
 	
-	// Handle click for processing batches
+	// Handle click for processing batches (queued batches do nothing)
 	const handleClick = () => {
 		if (isCompleted) navigate(details_link);
 		else if ((isProcessing || isPaused) && onProcessingClick) onProcessingClick(request);
+		// Queued batches: do nothing when clicked
 	};
 
 	// Handle pause

@@ -98,8 +98,8 @@ class BatchCreatorWorker {
 
                     // console.log(`✅ Assigned ${affectedBatches} user batches to bouncer batch ${bouncerBatchId}`);
 
-                    // Schedule individual status check for this specific batch (30 seconds delay)
-                    await this.scheduleStatusCheck(bouncerBatchId, check_type, 30000);
+                    // Schedule individual status check for this specific batch (5 seconds delay)
+                    await this.scheduleStatusCheck(bouncerBatchId, check_type, 5000);
 
                     // Record rate limit usage
                     await db_recordRateLimit(check_type, 'create_batch');
@@ -137,7 +137,7 @@ class BatchCreatorWorker {
                     bouncer_batch_id: bouncerBatchId,
                     check_type: check_type,
                     attempt: 1,
-                    max_attempts: 720 // Will check up to 720 times (6 hours) with 30s intervals
+                    max_attempts: 4320 // Will check up to 4320 times (6 hours) with 5s intervals
                 }, 
                 {
                     delay: delayMs,

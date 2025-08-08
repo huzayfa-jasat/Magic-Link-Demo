@@ -20,7 +20,7 @@ class IndividualStatusCheckerWorker {
      * Process individual batch status check with fixed intervals
      */
     async processJob(job) {
-        const { bouncer_batch_id, check_type, attempt = 1, max_attempts = 720 } = job.data;
+        const { bouncer_batch_id, check_type, attempt = 1, max_attempts = 4320 } = job.data;
         
         try {
             console.log(`🔍 Status check attempt ${attempt}/${max_attempts} for ${check_type} batch: ${bouncer_batch_id}`);
@@ -29,7 +29,7 @@ class IndividualStatusCheckerWorker {
             const [rateLimitSuccess, canMakeRequest] = await db_checkRateLimit(check_type, 'check_status');
             if (!rateLimitSuccess || !canMakeRequest) {
                 console.log(`⏳ Rate limit reached for ${check_type}, rescheduling batch ${bouncer_batch_id}`);
-                await this.rescheduleStatusCheck(bouncer_batch_id, check_type, attempt, max_attempts, 30000); // Retry in 30s
+                await this.rescheduleStatusCheck(bouncer_batch_id, check_type, attempt, max_attempts, 5000); // Retry in 5s
                 return;
             }
 
@@ -52,7 +52,7 @@ class IndividualStatusCheckerWorker {
                 if (!isCompleted) {
                     // Batch still processing - schedule next check with fixed interval (let rate limiter handle throttling)
                     if (attempt < max_attempts) {
-                        const nextDelay = 30000; // Fixed 30 second interval - rate limiter will handle throttling
+                        const nextDelay = 5000; // Fixed 5 second interval - rate limiter will handle throttling
                         console.log(`⏳ Batch ${bouncer_batch_id} still processing, checking again in ${nextDelay/1000}s`);
                         await this.rescheduleStatusCheck(bouncer_batch_id, check_type, attempt + 1, max_attempts, nextDelay);
                     } else {
