@@ -53,8 +53,10 @@ async function db_s3_getAllBatchResults(batchId, checkType) {
             'Emails_Global.email_stripped',
             `${resultsTable}.status`,
             `${resultsTable}.reason`,
+            `${resultsTable}.is_catchall`,
             `${resultsTable}.score`,
-            `${resultsTable}.toxicity`
+            `${resultsTable}.provider`
+            // `${resultsTable}.toxicity`
         );
     }
 }

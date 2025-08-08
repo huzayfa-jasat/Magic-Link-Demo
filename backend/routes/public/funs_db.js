@@ -74,7 +74,8 @@ async function db_downloadBatchResults(batch_id, check_type) {
             results_columns = ['email_nominal', 'status', 'reason', 'is_catchall', 'score', 'provider'];
             break;
         case 'catchall':
-            results_columns = ['email_nominal', 'toxicity'];
+            // results_columns = ['email_nominal', 'toxicity'];
+            results_columns = ['email_nominal', 'status', 'reason', 'is_catchall', 'score', 'provider'];
             break;
         default:
             return [false, null];
