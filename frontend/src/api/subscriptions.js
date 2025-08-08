@@ -8,9 +8,8 @@ const MODULE_PREFIX = "/subscriptions";
 export const getSubscriptionPlans = async (type = 'regular') => {
   try {
     const response = await http.get(`${MODULE_PREFIX}/list`, {
-      params: { type }
-    }, {
-      withCredentials: true,
+      params: { type },
+      withCredentials: true
     });
     return response;
   } catch (error) {
