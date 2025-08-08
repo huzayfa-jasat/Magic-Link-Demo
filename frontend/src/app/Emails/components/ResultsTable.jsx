@@ -48,36 +48,36 @@ const getResultDisplay = (result) => {
 		</div>
 	);
 }
-const getScoreDisplay = (score) => {
-	if (score === undefined || score === null) return <></>;
+const getCatchallDisplay = (result) => {
+	if (result === undefined || result === null) return <></>;
 
 	// Get score text and category (match category with colors from results map)
-	let score_category;
-	let score_text;
-	switch (score) {
-		case 'good':
-			score_category = 1;
-			score_text = "Good";
+	let result_category;
+	let result_text;
+	switch (result) {
+		case 1:
+			result_category = 1;
+			result_text = "Good";
 			break;
-		case 'risky':
-			score_category = 2;
-			score_text = "Risky";
+		case 2:
+			result_category = 2;
+			result_text = "Risky";
 			break;
-		case 'bad':
-			score_category = 0;
-			score_text = "Bad";
+		case 0:
+			result_category = 0;
+			result_text = "Bad";
 			break;
 		default:
-			score_category = 4;
-			score_text = "Unknown";
+			result_category = 4;
+			result_text = "Unknown";
 			break;
 	}
 
 	// Return
 	return (
-		<div className={`${styles.tableCellResult} ${RESULT_DISPLAY_MAP[score_category].className}`}>
-			{RESULT_DISPLAY_MAP[score_category].icon}
-			{score_text}
+		<div className={`${styles.tableCellResult} ${RESULT_DISPLAY_MAP[result_category].className}`}>
+			{RESULT_DISPLAY_MAP[result_category].icon}
+			{result_text}
 		</div>
 	)
 }
@@ -119,7 +119,7 @@ export default function ResultsTable({
 							</>)}
 							{(typ === 'catchall') && (
 								<td className={`${styles.tableCell} ${styles.tableCellResult}`}>
-									{getScoreDisplay(item.score)}
+									{getCatchallDisplay(item.result)}
 								</td>
 							)}
 						</tr>

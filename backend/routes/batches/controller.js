@@ -18,6 +18,7 @@ const {
 	db_deductCreditsForActualBatch,
 	db_createBatchWithEstimate,
 	db_checkDuplicateFilename,
+	db_deleteBatchCompletely
 } = require('./funs_db.js');
 
 // S3 Function Imports
@@ -250,6 +251,7 @@ async function startBatchProcessing(req, res) {
 		// Deduct credits based on actual batch size
 		const [credits_ok, remaining_balance, actual_email_count] = await db_deductCreditsForActualBatch(req.user.id, checkType, batchId);
 		if (!credits_ok) {
+			await db_deleteBatchCompletely(req.user.id, checkType, batchId);
 			return returnBadRequest(res, 'Insufficient credits for actual batch size', HttpStatus.PAYMENT_REQUIRED_STATUS);
 		}
 
@@ -526,5 +528,5 @@ module.exports = {
 	generateS3UploadUrl,
 	completeS3Upload,
 	getExportUrls,
-	getEnrichmentProgress
+	getEnrichmentProgress,
 }
