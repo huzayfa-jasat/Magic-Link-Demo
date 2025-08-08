@@ -291,7 +291,10 @@ async function db_getBatchesList(user_id, page, limit, order, category, status) 
 	let status_filter;
 	switch (status) {
 		case 'processing':
-			status_filter = ['processing', 'queued', 'draft', 'pending'];
+			status_filter = ['processing', 'draft', 'pending'];
+			break;
+		case 'queued':
+			status_filter = ['queued'];
 			break;
 		case 'paused':
 			status_filter = ['paused'];
@@ -361,12 +364,12 @@ async function db_getBatchesList(user_id, page, limit, order, category, status) 
 	if (err_code) return [false, null];
 
 	// Format batches list
-	// - Mask "queued" as "processing"
+	// - Return status as-is (no masking)
 	// - Add progress for deliverable batches that are processing
 	const formatted_batches = await Promise.all(batches.map(async (batch) => {
 		const formatted = {
 			...batch,
-			status: (batch.status === 'completed' || batch.status === 'failed' || batch.status === 'paused') ? batch.status : 'processing'
+			status: batch.status
 		};
 		
 		// Add progress for any processing batch
@@ -544,10 +547,10 @@ async function db_getBatchDetails(user_id, check_type, batch_id) {
 	if (err_code || batch.length <= 0) return [false, null];
 
 	// Format batch details
-	// - Mask "queued" as "processing"
+	// - Return status as-is (no masking)
 	let batch_details = {
 		...batch[0],
-		status: (batch[0].status === 'queued') ? 'processing' : batch[0].status
+		status: batch[0].status
 	}
 
 	// If batch is not completed, return
