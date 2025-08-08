@@ -35,10 +35,6 @@ async function listPlans(req, res) {
     const { type = 'regular' } = req.query; // Accept type as query param
     const isProduction = process.env.NODE_ENV === 'production';
 
-    if (!userId) {
-      return res.status(HttpStatus.UNAUTHORIZED_STATUS).json({ error: 'User not authenticated' });
-    }
-
     // Get available plans for the specified type
     const plans = await db_getAvailablePlans(type, isProduction);
 
@@ -80,10 +76,6 @@ async function createCheckout(req, res) {
 
     const userId = req.user.id;
     const { plan_id } = req.body;
-
-    if (!userId) {
-      return res.status(HttpStatus.UNAUTHORIZED_STATUS).json({ error: 'User not authenticated' });
-    }
 
     // Get plan details
     const plan = await db_getSubscriptionPlanById(plan_id);
@@ -148,10 +140,6 @@ async function getStatus(req, res) {
   try {
     const userId = req.user.id;
 
-    if (!userId) {
-      return res.status(HttpStatus.UNAUTHORIZED_STATUS).json({ error: 'User not authenticated' });
-    }
-
     // Get all subscriptions with plan details
     const subscriptions = await db_getUserSubscriptionsWithPlans(userId);
     
@@ -207,10 +195,6 @@ async function createPortalSession(req, res) {
   try {
     const userId = req.user.id;
     const { type = 'regular' } = req.body; // Accept subscription type
-
-    if (!userId) {
-      return res.status(HttpStatus.UNAUTHORIZED_STATUS).json({ error: 'User not authenticated' });
-    }
 
     // Get user's Stripe customer ID
     const stripeCustomerId = await db_getUserStripeId(userId);
