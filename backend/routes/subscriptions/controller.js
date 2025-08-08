@@ -42,6 +42,8 @@ async function listPlans(req, res) {
         name: plan.name,
         display_price: plan.display_price,
         credits_per_period: plan.credits_per_period,
+        trial_days: plan.trial_days,
+        trial_credits: plan.trial_credits,
         billing_period: plan.billing_period,
         features: plan.features
       })),
@@ -114,7 +116,8 @@ async function createCheckout(req, res) {
         userId,
         plan.subscription_type,
         successUrl,
-        cancelUrl
+        cancelUrl,
+        plan.trial_days || 0
       );
 
     return res.status(200).json({ checkout_url: session.url });

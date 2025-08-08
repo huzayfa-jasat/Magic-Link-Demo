@@ -139,6 +139,8 @@ CREATE TABLE Subscription_Plans (
     name VARCHAR(255) NOT NULL,
     display_price VARCHAR(50) NOT NULL,
     credits_per_period INT NOT NULL DEFAULT 0,
+    trial_days INT NOT NULL DEFAULT 0,
+    trial_credits INT NOT NULL DEFAULT 0,
     billing_period ENUM('monthly', 'yearly') NOT NULL DEFAULT 'monthly',
     is_active BOOLEAN DEFAULT 1,
     is_live BOOLEAN DEFAULT 0,

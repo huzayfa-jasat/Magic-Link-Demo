@@ -184,6 +184,9 @@ async function db_processSubscriptionEvents(event) {
             case 'customer.subscription.created':
                 return await handleSubscriptionCreated(event.data.object);
                 
+            case 'customer.subscription.trial_will_end':
+                return await handleTrialWillEnd(event.data.object);
+                
             case 'invoice.payment_succeeded':
             case 'invoice_payment.paid':
                 // This is where monthly credit renewal happens
@@ -235,9 +238,10 @@ async function handleSubscriptionCreated(subscription) {
         // Create subscription record
         await knex.transaction(async (trx) => {
             // Insert subscription record
+            const subscriptionType = subscription.metadata?.subscription_type || plan.subscription_type;
             await subscriptionDB.db_upsertUserSubscription({
                 user_id: user.id,
-                subscription_type: subscription.metadata?.subscription_type || plan.subscription_type,
+                subscription_type: subscriptionType,
                 subscription_plan_id: plan.id,
                 stripe_subscription_id: subscription.id,
                 status: subscription.status,
@@ -246,18 +250,55 @@ async function handleSubscriptionCreated(subscription) {
                 cancel_at_period_end: subscription.cancel_at_period_end || false
             }, trx);
             
-            // Allocate initial credits
-            await subscriptionDB.db_allocateSubscriptionCredits(
-                user.id,
-                plan.id,
-                new Date(subscription.current_period_end * 1000),
-                trx
-            );
+            // If in trialing status and plan defines a trial, allocate trial credits with trial expiry
+            if (subscription.status === 'trialing' && plan.trial_days > 0 && plan.trial_credits > 0) {
+                const trialExpiry = subscription.trial_end ? new Date(subscription.trial_end * 1000) : new Date(Date.now() + plan.trial_days * 24 * 60 * 60 * 1000);
+                await subscriptionDB.db_allocateCustomSubscriptionCredits(
+                    user.id,
+                    subscriptionType,
+                    plan.trial_credits,
+                    trialExpiry,
+                    trx
+                );
+            } else {
+                // Allocate initial full-period credits (no trial)
+                await subscriptionDB.db_allocateSubscriptionCredits(
+                    user.id,
+                    plan.id,
+                    new Date(subscription.current_period_end * 1000),
+                    trx
+                );
+            }
         });
         
         return [true, { message: 'Subscription created successfully', userId: user.id }];
     } catch (error) {
         console.error('Error handling subscription creation:', error);
+        return [false, error.message];
+    }
+}
+
+/**
+ * Handle trial will end notification
+ */
+async function handleTrialWillEnd(subscription) {
+    try {
+        // Get user by Stripe customer ID
+        const user = await knex('Users')
+            .where('stripe_id', subscription.customer)
+            .first();
+            
+        if (!user) {
+            console.error('User not found for customer:', subscription.customer);
+            return [false, 'User not found for customer'];
+        }
+        
+        // This is primarily a notification event - no database changes needed
+        // You could add email notifications here if desired
+        
+        return [true, { message: 'Trial will end notification processed', userId: user.id }];
+    } catch (error) {
+        console.error('Error handling trial will end:', error);
         return [false, error.message];
     }
 }
@@ -272,6 +313,11 @@ async function handleInvoicePaymentSucceeded(invoice) {
         // Only process subscription invoices
         if (!invoice.subscription) {
             return [true, { message: 'Not a subscription invoice' }];
+        }
+
+        // If invoice is for subscription creation and amount is zero (trial), skip allocation
+        if (invoice.billing_reason === 'subscription_create' && (invoice.amount_paid === 0 || invoice.total === 0)) {
+            return [true, { message: 'Skipping allocation for trial creation invoice' }];
         }
         
         // Validate invoice structure
@@ -310,21 +356,21 @@ async function handleInvoicePaymentSucceeded(invoice) {
         const periodEnd = lineItem.period.end;
         
         await knex.transaction(async (trx) => {
-            // Update subscription period
-            await trx('User_Subscriptions')
-                .where('id', subscription.id)
-                .update({
-                    current_period_end: new Date(periodEnd * 1000),
-                    updated_ts: knex.fn.now()
-                });
+                    // Update subscription period
+        await trx('User_Subscriptions')
+            .where('id', subscription.id)
+            .update({
+                current_period_end: new Date(periodEnd * 1000),
+                updated_ts: knex.fn.now()
+            });
             
-            // Allocate new credits for the period
-            await subscriptionDB.db_allocateSubscriptionCredits(
-                user.id,
-                subscription.subscription_plan_id,
-                new Date(periodEnd * 1000),
-                trx
-            );
+        // Allocate new credits for the period (this triggers when billing actually starts and on renewals)
+        await subscriptionDB.db_allocateSubscriptionCredits(
+            user.id,
+            subscription.subscription_plan_id,
+            new Date(periodEnd * 1000),
+            trx
+        );
         });
         
         return [true, { message: 'Subscription renewed successfully', userId: user.id }];

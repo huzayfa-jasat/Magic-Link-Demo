@@ -132,6 +132,35 @@ async function db_allocateSubscriptionCredits(userId, planId, periodEnd, trx) {
   return true;
 }
 
+// Allocate a custom amount of subscription credits (e.g., trial)
+async function db_allocateCustomSubscriptionCredits(userId, subscriptionType, credits, expiryTs, trx) {
+  const query = trx || knex;
+
+  if (subscriptionType === 'regular') {
+    await query('User_Deliverable_Sub_Credits')
+      .insert({
+        user_id: userId,
+        credits_start: credits,
+        credits_left: credits,
+        expiry_ts: expiryTs
+      })
+      .onConflict('user_id')
+      .merge(['credits_start', 'credits_left', 'expiry_ts', 'updated_ts']);
+  } else if (subscriptionType === 'catchall') {
+    await query('User_Catchall_Sub_Credits')
+      .insert({
+        user_id: userId,
+        credits_start: credits,
+        credits_left: credits,
+        expiry_ts: expiryTs
+      })
+      .onConflict('user_id')
+      .merge(['credits_start', 'credits_left', 'expiry_ts', 'updated_ts']);
+  }
+
+  return true;
+}
+
 // Check if user has an active subscription of a specific type
 async function db_hasActiveSubscription(userId, subscriptionType) {
   const subscription = await knex('User_Subscriptions')
@@ -190,5 +219,6 @@ module.exports = {
   db_hasActiveSubscription,
   db_getSubscriptionPlanById,
   db_getSubscriptionPlanByPriceId,
-  db_updateSubscriptionStatus
+  db_updateSubscriptionStatus,
+  db_allocateCustomSubscriptionCredits
 };

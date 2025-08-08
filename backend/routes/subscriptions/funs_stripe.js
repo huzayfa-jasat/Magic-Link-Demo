@@ -1,8 +1,21 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 // Create a subscription checkout session
-async function stripe_createSubscriptionCheckout(customerId, priceId, userId, subscriptionType, successUrl, cancelUrl) {
+async function stripe_createSubscriptionCheckout(customerId, priceId, userId, subscriptionType, successUrl, cancelUrl, trialDays = 0) {
   try {
+    const subscriptionData = {
+      metadata: {
+        user_id: userId.toString(),
+        subscription_type: subscriptionType,
+        has_trial: trialDays > 0 ? 'true' : 'false',
+        trial_days: trialDays.toString()
+      }
+    };
+
+    if (trialDays > 0) {
+      subscriptionData.trial_period_days = trialDays;
+    }
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
@@ -14,12 +27,7 @@ async function stripe_createSubscriptionCheckout(customerId, priceId, userId, su
       success_url: successUrl,
       cancel_url: cancelUrl,
       client_reference_id: userId.toString(),
-      subscription_data: {
-        metadata: {
-          user_id: userId.toString(),
-          subscription_type: subscriptionType
-        }
-      }
+      subscription_data: subscriptionData
     });
 
     return session;

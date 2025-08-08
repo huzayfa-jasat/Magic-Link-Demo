@@ -54,13 +54,14 @@ async function handleStripeWebhook(req, res) {
                     return res.status(HttpStatus.FAILED_STATUS).send(result);
                 }
 
-                console.log('Successfully processed checkout session:', result.message);
+
                 return res.status(HttpStatus.SUCCESS_STATUS).json({ received: true });
 
             // Subscription events
             case 'customer.subscription.created':
             case 'customer.subscription.updated':
             case 'customer.subscription.deleted':
+            case 'customer.subscription.trial_will_end':
             case 'invoice.payment_succeeded':
             case 'invoice_payment.paid':
                 const [subSuccess, subResult] = await db_processSubscriptionEvents(event);
