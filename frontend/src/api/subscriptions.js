@@ -1,10 +1,16 @@
-import axios from 'axios';
+// Dependencies
+import { http } from "./http";
+
+// Constants
+const MODULE_PREFIX = "/subscriptions";
 
 // Get available subscription plans by type
 export const getSubscriptionPlans = async (type = 'regular') => {
   try {
-    const response = await axios.get('/api/subscriptions/list', {
+    const response = await http.get(`${MODULE_PREFIX}/list`, {
       params: { type }
+    }, {
+      withCredentials: true,
     });
     return response;
   } catch (error) {
@@ -15,7 +21,9 @@ export const getSubscriptionPlans = async (type = 'regular') => {
 // Create subscription checkout session
 export const createSubscriptionCheckout = async (planId) => {
   try {
-    const response = await axios.post('/api/subscriptions/checkout', { plan_id: planId });
+    const response = await http.post(`${MODULE_PREFIX}/checkout`, { plan_id: planId }, {
+      withCredentials: true,
+    });
     return response;
   } catch (error) {
     return error.response || { status: 500, data: { error: 'Network error' } };
@@ -25,7 +33,9 @@ export const createSubscriptionCheckout = async (planId) => {
 // Get subscription status
 export const getSubscriptionStatus = async () => {
   try {
-    const response = await axios.get('/api/subscriptions/status');
+    const response = await http.get(`${MODULE_PREFIX}/status`, {
+      withCredentials: true,
+    });
     return response;
   } catch (error) {
     return error.response || { status: 500, data: { error: 'Network error' } };
@@ -35,7 +45,9 @@ export const getSubscriptionStatus = async () => {
 // Create billing portal session
 export const createPortalSession = async (type = 'regular') => {
   try {
-    const response = await axios.post('/api/subscriptions/manage', { type });
+    const response = await http.post(`${MODULE_PREFIX}/manage`, { type }, {
+      withCredentials: true,
+    });
     return response;
   } catch (error) {
     return error.response || { status: 500, data: { error: 'Network error' } };
