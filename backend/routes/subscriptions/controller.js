@@ -1,4 +1,10 @@
+// Type Imports
+const HttpStatus = require('../../types/HttpStatus');
+
+// Validator Imports
 const { validateCheckout, checkValidation } = require('./validators');
+
+// DB Function Imports
 const {
   db_getUserById,
   db_getUserStripeId,
@@ -9,6 +15,8 @@ const {
   db_hasActiveSubscription,
   db_getSubscriptionPlanById
 } = require('./funs_db');
+
+// Stripe Function Imports
 const {
   stripe_createSubscriptionCheckout,
   stripe_createSubscriptionUpdateCheckout,
@@ -17,16 +25,18 @@ const {
   stripe_updateUserStripeId
 } = require('./funs_stripe');
 
-// GET /api/subscriptions/list
+/**
+ * Get list of available subscription plans
+ * GET /api/subscriptions/list
+ */
 async function listPlans(req, res) {
   try {
-    // Get user ID from the correct session path
-    const userId = req.session.user_id || (req.session.passport && req.session.passport.user ? req.session.passport.user.id : null);
+    const userId = req.user.id;
     const { type = 'regular' } = req.query; // Accept type as query param
     const isProduction = process.env.NODE_ENV === 'production';
 
     if (!userId) {
-      return res.status(401).json({ error: 'User not authenticated' });
+      return res.status(HttpStatus.UNAUTHORIZED_STATUS).json({ error: 'User not authenticated' });
     }
 
     // Get available plans for the specified type
@@ -35,7 +45,7 @@ async function listPlans(req, res) {
     // Get user's subscription for this type
     const userSubscription = await db_getUserSubscription(userId, type);
 
-    return res.status(200).json({
+    return res.status(HttpStatus.SUCCESS_STATUS).json({
       subscription_type: type,
       plans: plans.map(plan => ({
         id: plan.id,
@@ -55,33 +65,36 @@ async function listPlans(req, res) {
     });
   } catch (error) {
     console.error('Error listing subscription plans:', error);
-    return res.status(500).json({ error: 'Failed to fetch subscription plans' });
+    return res.status(HttpStatus.MISC_ERROR_STATUS).json({ error: 'Failed to fetch subscription plans' });
   }
 }
 
-// POST /api/subscriptions/checkout
+/**
+ * Create checkout session for subscription
+ * POST /api/subscriptions/checkout
+ */
 async function createCheckout(req, res) {
   try {
     await checkValidation(req, res, () => {});
     if (res.headersSent) return;
 
-    const userId = req.session.user_id || (req.session.passport && req.session.passport.user ? req.session.passport.user.id : null);
+    const userId = req.user.id;
     const { plan_id } = req.body;
 
     if (!userId) {
-      return res.status(401).json({ error: 'User not authenticated' });
+      return res.status(HttpStatus.UNAUTHORIZED_STATUS).json({ error: 'User not authenticated' });
     }
 
     // Get plan details
     const plan = await db_getSubscriptionPlanById(plan_id);
     if (!plan || !plan.is_active) {
-      return res.status(400).json({ error: 'Invalid subscription plan' });
+      return res.status(HttpStatus.FAILED_STATUS).json({ error: 'Invalid subscription plan' });
     }
 
     // Check if plan is available in current environment
     const isProduction = process.env.NODE_ENV === 'production';
     if (plan.is_live !== (isProduction ? 1 : 0)) {
-      return res.status(400).json({ error: 'This plan is not available in the current environment' });
+      return res.status(HttpStatus.FAILED_STATUS).json({ error: 'This plan is not available in the current environment' });
     }
 
     // Check if user already has an active subscription of this type
@@ -120,27 +133,30 @@ async function createCheckout(req, res) {
         plan.trial_days || 0
       );
 
-    return res.status(200).json({ checkout_url: session.url });
+    return res.status(HttpStatus.SUCCESS_STATUS).json({ checkout_url: session.url });
   } catch (error) {
     console.error('Error creating subscription checkout:', error);
-    return res.status(500).json({ error: 'Failed to create checkout session' });
+    return res.status(HttpStatus.MISC_ERROR_STATUS).json({ error: 'Failed to create checkout session' });
   }
 }
 
-// GET /api/subscriptions/status
+/**
+ * Get user subscription status and credits
+ * GET /api/subscriptions/status
+ */
 async function getStatus(req, res) {
   try {
-    const userId = req.session.user_id || (req.session.passport && req.session.passport.user ? req.session.passport.user.id : null);
+    const userId = req.user.id;
 
     if (!userId) {
-      return res.status(401).json({ error: 'User not authenticated' });
+      return res.status(HttpStatus.UNAUTHORIZED_STATUS).json({ error: 'User not authenticated' });
     }
 
     // Get all subscriptions with plan details
     const subscriptions = await db_getUserSubscriptionsWithPlans(userId);
     
     if (!subscriptions || subscriptions.length === 0) {
-      return res.status(200).json({
+      return res.status(HttpStatus.SUCCESS_STATUS).json({
         has_subscription: false,
         subscriptions: {}
       });
@@ -161,7 +177,7 @@ async function getStatus(req, res) {
       };
     });
 
-    return res.status(200).json({
+    return res.status(HttpStatus.SUCCESS_STATUS).json({
       has_subscription: true,
       subscriptions: subscriptionsByType,
       credits: {
@@ -179,25 +195,28 @@ async function getStatus(req, res) {
     });
   } catch (error) {
     console.error('Error getting subscription status:', error);
-    return res.status(500).json({ error: 'Failed to fetch subscription status' });
+    return res.status(HttpStatus.MISC_ERROR_STATUS).json({ error: 'Failed to fetch subscription status' });
   }
 }
 
-// POST /api/subscriptions/manage
+/**
+ * Create Stripe portal session for subscription management
+ * POST /api/subscriptions/manage
+ */
 async function createPortalSession(req, res) {
   try {
-    const userId = req.session.user_id || (req.session.passport && req.session.passport.user ? req.session.passport.user.id : null);
+    const userId = req.user.id;
     const { type = 'regular' } = req.body; // Accept subscription type
 
     if (!userId) {
-      return res.status(401).json({ error: 'User not authenticated' });
+      return res.status(HttpStatus.UNAUTHORIZED_STATUS).json({ error: 'User not authenticated' });
     }
 
     // Get user's Stripe customer ID
     const stripeCustomerId = await db_getUserStripeId(userId);
     
     if (!stripeCustomerId) {
-      return res.status(400).json({ 
+      return res.status(HttpStatus.FAILED_STATUS).json({ 
         error: 'No subscription found. Please subscribe to a plan first.' 
       });
     }
@@ -205,7 +224,7 @@ async function createPortalSession(req, res) {
     // Check if user has a subscription of this type
     const subscription = await db_getUserSubscription(userId, type);
     if (!subscription) {
-      return res.status(400).json({ 
+      return res.status(HttpStatus.FAILED_STATUS).json({ 
         error: `No ${type} subscription found. Please subscribe to a plan first.` 
       });
     }
@@ -216,13 +235,14 @@ async function createPortalSession(req, res) {
 
     const session = await stripe_createPortalSession(stripeCustomerId, returnUrl);
 
-    return res.status(200).json({ portal_url: session.url });
+    return res.status(HttpStatus.SUCCESS_STATUS).json({ portal_url: session.url });
   } catch (error) {
     console.error('Error creating portal session:', error);
-    return res.status(500).json({ error: 'Failed to create billing portal session' });
+    return res.status(HttpStatus.MISC_ERROR_STATUS).json({ error: 'Failed to create billing portal session' });
   }
 }
 
+// Export
 module.exports = {
   listPlans,
   createCheckout: [validateCheckout, createCheckout],
