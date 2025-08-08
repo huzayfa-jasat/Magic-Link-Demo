@@ -152,7 +152,8 @@ export default function PackagesController() {
       <br/>
       {currPage === "subscriptions" ? (
         <>
-          <h2 className={styles.subtitle}>Email Verification Subscriptions</h2>
+          <h1 className={styles.title}>Email Validation Plans</h1>
+          <br/>
           <div className={styles.creditGrid}>
             {regularSubscriptionPlans.map((plan) => (
               <SubscriptionCard
@@ -166,7 +167,8 @@ export default function PackagesController() {
             ))}
           </div>
           <br /><br />
-          <h2 className={styles.subtitle}>Catchall Verification Subscriptions</h2>
+          <h1 className={styles.title}>Catchall Validation Plans</h1>
+          <br/>
           <div className={styles.creditGrid}>
             {catchallSubscriptionPlans.map((plan) => (
               <SubscriptionCard
