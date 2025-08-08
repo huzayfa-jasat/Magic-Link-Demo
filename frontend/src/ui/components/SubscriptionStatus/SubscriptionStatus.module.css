@@ -1,0 +1,166 @@
+.container {
+  padding: 20px;
+  background-color: var(--white);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.title {
+  margin: 0 0 15px 0;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--black);
+  font-family: "Circular", "Geist", sans-serif;
+}
+
+.planInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.planName {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--black);
+  font-family: "Circular", "Geist", sans-serif;
+}
+
+.status {
+  font-size: 14px;
+  color: var(--txt-light);
+  font-family: "Circular", "Geist", sans-serif;
+}
+
+.statusBadge {
+  margin-left: 5px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.statusBadge.active {
+  background-color: #d4f4dd;
+  color: #0d7a2d;
+}
+
+.statusBadge.canceled {
+  background-color: #ffd6d6;
+  color: #cc0000;
+}
+
+.statusBadge.past_due {
+  background-color: #fff4d6;
+  color: #cc7a00;
+}
+
+.cancelNotice {
+  padding: 10px;
+  background-color: #fff4d6;
+  border-radius: 6px;
+  color: #cc7a00;
+  font-size: 14px;
+  margin-bottom: 15px;
+  font-family: "Circular", "Geist", sans-serif;
+}
+
+.periodInfo {
+  margin-bottom: 15px;
+}
+
+.periodItem {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  font-family: "Circular", "Geist", sans-serif;
+}
+
+.label {
+  color: var(--txt-light);
+}
+
+.value {
+  color: var(--black);
+  font-weight: 500;
+}
+
+.creditsInfo {
+  padding: 15px;
+  background-color: var(--bg-light);
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+.creditItem {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-family: "Circular", "Geist", sans-serif;
+}
+
+.creditItem:last-child {
+  margin-bottom: 0;
+}
+
+.creditLabel {
+  color: var(--txt-light);
+}
+
+.creditValue {
+  color: var(--black);
+  font-weight: 500;
+  font-family: "PP Supply Mono", sans-serif;
+}
+
+.manageButton {
+  width: 100%;
+  padding: 10px;
+  background-color: var(--main-hl);
+  color: var(--white);
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 500;
+  font-family: "Circular", "Geist", sans-serif;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.manageButton:hover {
+  opacity: 0.9;
+}
+
+.subscriptionSection {
+  margin-bottom: 30px;
+  padding: 20px;
+  background-color: var(--bg-light);
+  border-radius: 8px;
+}
+
+.subscriptionSection:last-child {
+  margin-bottom: 0;
+}
+
+.sectionTitle {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--black);
+  font-family: "Circular", "Geist", sans-serif;
+}
+
+@media (max-width: 600px) {
+  .planInfo {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .status {
+    margin-top: 8px;
+  }
+}

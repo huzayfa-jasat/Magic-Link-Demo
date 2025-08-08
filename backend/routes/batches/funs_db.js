@@ -850,19 +850,36 @@ async function db_checkCreditsOnly(user_id, check_type, num_emails) {
 	if (!credit_table) return [false, null];
 	
 	try {
-		// Check credit balance only - no deduction
-		const curr_balance = await knex(credit_table)
+		// 1. Check subscription credits (if not expired)
+		const subTable = check_type === 'catchall' ? 
+			'User_Catchall_Sub_Credits' : 'User_Deliverable_Sub_Credits';
+		
+		const subCredits = await knex(subTable)
+			.where({ user_id: user_id })
+			.where('expiry_ts', '>', knex.fn.now())
+			.select('credits_left')
+			.first();
+		
+		const subAvailable = subCredits?.credits_left || 0;
+		
+		// 2. Check one-off credits
+		const oneOffCredits = await knex(credit_table)
 			.where({ 'user_id': user_id })
 			.select('current_balance')
 			.first();
 		
+		const oneOffAvailable = oneOffCredits?.current_balance || 0;
+		
+		// 3. Total available
+		const totalAvailable = subAvailable + oneOffAvailable;
+		
 		// Verify sufficient balance
-		if (!curr_balance || curr_balance.current_balance < num_emails) {
+		if (totalAvailable < num_emails) {
 			return [false, null];
 		}
 
-		// Return success with current balance
-		return [true, curr_balance.current_balance];
+		// Return success with total available balance
+		return [true, totalAvailable];
 
 	} catch (error) {
 		console.error('Credit check failed:', error.message);
@@ -888,25 +905,55 @@ async function db_deductCreditsForActualBatch(user_id, check_type, batch_id) {
 			const actual_email_count = email_count.count;
 			console.log("ACTUAL EMAIL COUNT = ", actual_email_count);
 			
-			// Check credit balance
-			const curr_balance = await trx(credit_table)
-				.where({ 'user_id': user_id })
-				.select('current_balance')
-				.forUpdate() // Row lock to prevent race conditions
+			// 1. Lock and check subscription credits
+			const subTable = check_type === 'catchall' ? 
+				'User_Catchall_Sub_Credits' : 'User_Deliverable_Sub_Credits';
+			
+			const subCredits = await trx(subTable)
+				.where({ user_id: user_id })
+				.where('expiry_ts', '>', knex.fn.now())
+				.forUpdate()
 				.first();
 			
-			// Verify sufficient balance
-			if (!curr_balance || curr_balance.current_balance < actual_email_count) {
-				console.log("Err 2");
+			let remainingToDeduct = actual_email_count;
+			let usedFromSub = 0;
+			
+			// 2. Use subscription credits first
+			if (subCredits && subCredits.credits_left > 0) {
+				usedFromSub = Math.min(subCredits.credits_left, remainingToDeduct);
+				await trx(subTable)
+					.where({ user_id: user_id })
+					.update({ 
+						credits_left: subCredits.credits_left - usedFromSub,
+						updated_ts: knex.fn.now()
+					});
+				remainingToDeduct -= usedFromSub;
+			}
+			
+			// 3. Lock and check one-off credits
+			const oneOffCredits = await trx(credit_table)
+				.where({ 'user_id': user_id })
+				.select('current_balance')
+				.forUpdate()
+				.first();
+			
+			// 4. Verify sufficient total balance
+			const oneOffAvailable = oneOffCredits?.current_balance || 0;
+			if (remainingToDeduct > oneOffAvailable) {
+				console.log("Err 2: Insufficient credits");
 				throw new Error('Insufficient credits for actual batch size');
 			}
-
-			// Deduct credits based on actual email count
-			await trx(credit_table)
-				.where({ 'user_id': user_id })
-				.decrement('current_balance', actual_email_count);
-
-			// Log usage in history (only if credits were actually deducted)
+			
+			// 5. Use one-off credits for remainder
+			let usedFromOneOff = 0;
+			if (remainingToDeduct > 0) {
+				await trx(credit_table)
+					.where({ 'user_id': user_id })
+					.decrement('current_balance', remainingToDeduct);
+				usedFromOneOff = remainingToDeduct;
+			}
+			
+			// 6. Log usage in history with breakdown
 			if (actual_email_count > 0) {
 				await trx(credit_history_table).insert({
 					'user_id': user_id,
@@ -915,12 +962,16 @@ async function db_deductCreditsForActualBatch(user_id, check_type, batch_id) {
 					'usage_ts': knex.fn.now()
 				});
 			}
-
-			// Calculate new balance after deduction
-			const new_balance = curr_balance.current_balance - actual_email_count;
+			
+			// 7. Calculate new total balance
+			const newSubBalance = (subCredits?.credits_left || 0) - usedFromSub;
+			const newOneOffBalance = oneOffAvailable - usedFromOneOff;
+			const newTotalBalance = newSubBalance + newOneOffBalance;
+			
+			console.log(`Credit usage breakdown - Subscription: ${usedFromSub}, One-off: ${usedFromOneOff}`);
 
 			// Return success with new balance and actual email count
-			return [true, new_balance, actual_email_count];
+			return [true, newTotalBalance, actual_email_count];
 		});
 
 		return result;

@@ -131,6 +131,7 @@ async function db_processCheckoutSession(stripe_session_id, stripe_customer_id, 
     ).select(
         'id'
     ).first().catch((err) => { if (err) err_code = err.code; });
+    
     if (err_code || !user) return [false, null];
     const userId = user.id;
 
@@ -141,6 +142,7 @@ async function db_processCheckoutSession(stripe_session_id, stripe_customer_id, 
     }).select(
         'credits', 'credit_type'
     ).first().catch((err) => { if (err) err_code = err.code; });
+    
     if (err_code || !product) return [false, null];
     const isCatchall = product.credit_type === 'catchall';
 
@@ -169,6 +171,298 @@ async function db_processCheckoutSession(stripe_session_id, stripe_customer_id, 
 }
 
 
+/**
+ * Process subscription events from Stripe webhook
+ * @param {Object} event - The Stripe event object
+ * @returns {Promise<[boolean, object|string]>} Success status and result/error
+ */
+async function db_processSubscriptionEvents(event) {
+    const subscriptionDB = require('../subscriptions/funs_db');
+    
+    try {
+        switch (event.type) {
+            case 'customer.subscription.created':
+                return await handleSubscriptionCreated(event.data.object);
+                
+            case 'customer.subscription.trial_will_end':
+                return await handleTrialWillEnd(event.data.object);
+                
+            case 'invoice.payment_succeeded':
+            case 'invoice_payment.paid':
+                // This is where monthly credit renewal happens
+                return await handleInvoicePaymentSucceeded(event.data.object);
+                
+            case 'customer.subscription.updated':
+                return await handleSubscriptionUpdated(event.data.object);
+                
+            case 'customer.subscription.deleted':
+                return await handleSubscriptionDeleted(event.data.object);
+                
+            default:
+                console.log('⚠️ Unknown subscription event type:', event.type);
+                return [false, 'Unknown subscription event type'];
+        }
+    } catch (error) {
+        console.error('❌ Error processing subscription event:', error);
+        return [false, error.message];
+    }
+}
+
+/**
+ * Handle new subscription creation
+ */
+async function handleSubscriptionCreated(subscription) {
+    const subscriptionDB = require('../subscriptions/funs_db');
+    
+    try {
+        // Get user by Stripe customer ID
+        const user = await knex('Users')
+            .where('stripe_id', subscription.customer)
+            .first();
+            
+        if (!user) {
+            console.error('User not found for customer:', subscription.customer);
+            return [false, 'User not found for customer'];
+        }
+        
+        // Get plan by Stripe price ID
+        const priceId = subscription.items.data[0].price.id;
+        
+        const plan = await subscriptionDB.db_getSubscriptionPlanByPriceId(priceId);
+        
+        if (!plan) {
+            console.error('Subscription plan not found for price ID:', priceId);
+            return [false, 'Subscription plan not found'];
+        }
+        
+        // Create subscription record
+        await knex.transaction(async (trx) => {
+            // Insert subscription record
+            const subscriptionType = subscription.metadata?.subscription_type || plan.subscription_type;
+            await subscriptionDB.db_upsertUserSubscription({
+                user_id: user.id,
+                subscription_type: subscriptionType,
+                subscription_plan_id: plan.id,
+                stripe_subscription_id: subscription.id,
+                status: subscription.status,
+                current_period_start: new Date(subscription.current_period_start * 1000),
+                current_period_end: new Date(subscription.current_period_end * 1000),
+                cancel_at_period_end: subscription.cancel_at_period_end || false
+            }, trx);
+            
+            // If in trialing status and plan defines a trial, allocate trial credits with trial expiry
+            if (subscription.status === 'trialing' && plan.trial_days > 0 && plan.trial_credits > 0) {
+                const trialExpiry = subscription.trial_end ? new Date(subscription.trial_end * 1000) : new Date(Date.now() + plan.trial_days * 24 * 60 * 60 * 1000);
+                await subscriptionDB.db_allocateCustomSubscriptionCredits(
+                    user.id,
+                    subscriptionType,
+                    plan.trial_credits,
+                    trialExpiry,
+                    trx
+                );
+            } else {
+                // Allocate initial full-period credits (no trial)
+                await subscriptionDB.db_allocateSubscriptionCredits(
+                    user.id,
+                    plan.id,
+                    new Date(subscription.current_period_end * 1000),
+                    trx
+                );
+            }
+        });
+        
+        return [true, { message: 'Subscription created successfully', userId: user.id }];
+    } catch (error) {
+        console.error('Error handling subscription creation:', error);
+        return [false, error.message];
+    }
+}
+
+/**
+ * Handle trial will end notification
+ */
+async function handleTrialWillEnd(subscription) {
+    try {
+        // Get user by Stripe customer ID
+        const user = await knex('Users')
+            .where('stripe_id', subscription.customer)
+            .first();
+            
+        if (!user) {
+            console.error('User not found for customer:', subscription.customer);
+            return [false, 'User not found for customer'];
+        }
+        
+        // This is primarily a notification event - no database changes needed
+        // You could add email notifications here if desired
+        
+        return [true, { message: 'Trial will end notification processed', userId: user.id }];
+    } catch (error) {
+        console.error('Error handling trial will end:', error);
+        return [false, error.message];
+    }
+}
+
+/**
+ * Handle successful invoice payment (monthly renewal)
+ */
+async function handleInvoicePaymentSucceeded(invoice) {
+    const subscriptionDB = require('../subscriptions/funs_db');
+    
+    try {
+        // Only process subscription invoices
+        if (!invoice.subscription) {
+            return [true, { message: 'Not a subscription invoice' }];
+        }
+
+        // If invoice is for subscription creation and amount is zero (trial), skip allocation
+        if (invoice.billing_reason === 'subscription_create' && (invoice.amount_paid === 0 || invoice.total === 0)) {
+            return [true, { message: 'Skipping allocation for trial creation invoice' }];
+        }
+        
+        // Validate invoice structure
+        if (!invoice.lines || !invoice.lines.data || !invoice.lines.data[0]) {
+            console.error('Invalid invoice structure - missing lines data');
+            return [false, 'Invalid invoice structure'];
+        }
+        
+        const lineItem = invoice.lines.data[0];
+        if (!lineItem.period || !lineItem.period.end) {
+            console.error('Invalid line item structure - missing period data');
+            return [false, 'Invalid line item structure'];
+        }
+        
+        // Get user by Stripe customer ID
+        const user = await knex('Users')
+            .where('stripe_id', invoice.customer)
+            .first();
+            
+        if (!user) {
+            console.error('User not found for customer:', invoice.customer);
+            return [false, 'User not found for customer'];
+        }
+        
+        // Get subscription by Stripe subscription ID
+        const subscription = await knex('User_Subscriptions')
+            .where('stripe_subscription_id', invoice.subscription)
+            .first();
+        
+        if (!subscription) {
+            console.error('Subscription not found for subscription ID:', invoice.subscription);
+            return [false, 'Subscription not found'];
+        }
+        
+        // Extract period end from invoice lines
+        const periodEnd = lineItem.period.end;
+        
+        await knex.transaction(async (trx) => {
+                    // Update subscription period
+        await trx('User_Subscriptions')
+            .where('id', subscription.id)
+            .update({
+                current_period_end: new Date(periodEnd * 1000),
+                updated_ts: knex.fn.now()
+            });
+            
+        // Allocate new credits for the period (this triggers when billing actually starts and on renewals)
+        await subscriptionDB.db_allocateSubscriptionCredits(
+            user.id,
+            subscription.subscription_plan_id,
+            new Date(periodEnd * 1000),
+            trx
+        );
+        });
+        
+        return [true, { message: 'Subscription renewed successfully', userId: user.id }];
+    } catch (error) {
+        console.error('Error handling invoice payment:', error);
+        return [false, error.message];
+    }
+}
+
+/**
+ * Handle subscription updates (status changes, plan changes, cancellations)
+ */
+async function handleSubscriptionUpdated(subscription) {
+    const subscriptionDB = require('../subscriptions/funs_db');
+    
+    try {
+        // Get user by Stripe customer ID
+        const user = await knex('Users')
+            .where('stripe_id', subscription.customer)
+            .first();
+            
+        if (!user) {
+            return [false, 'User not found for customer'];
+        }
+        
+        // Get the existing subscription to preserve subscription_type
+        const existingSubscription = await knex('User_Subscriptions')
+            .where('stripe_subscription_id', subscription.id)
+            .first();
+            
+        if (!existingSubscription) {
+            return [false, 'Subscription not found in database'];
+        }
+        
+        // Update subscription record
+        await subscriptionDB.db_upsertUserSubscription({
+            user_id: user.id,
+            subscription_type: existingSubscription.subscription_type,
+            subscription_plan_id: existingSubscription.subscription_plan_id,
+            stripe_subscription_id: subscription.id,
+            status: subscription.status,
+            current_period_start: new Date(subscription.current_period_start * 1000),
+            current_period_end: new Date(subscription.current_period_end * 1000),
+            cancel_at_period_end: subscription.cancel_at_period_end || false,
+            canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null
+        });
+        
+        return [true, { message: 'Subscription updated successfully', userId: user.id }];
+    } catch (error) {
+        console.error('Error handling subscription update:', error);
+        return [false, error.message];
+    }
+}
+
+/**
+ * Handle subscription deletion (after cancellation period)
+ */
+async function handleSubscriptionDeleted(subscription) {
+    const subscriptionDB = require('../subscriptions/funs_db');
+    
+    try {
+        // Get user by Stripe customer ID
+        const user = await knex('Users')
+            .where('stripe_id', subscription.customer)
+            .first();
+            
+        if (!user) {
+            return [false, 'User not found for customer'];
+        }
+        
+        // Get the subscription to find its type
+        const existingSubscription = await knex('User_Subscriptions')
+            .where('stripe_subscription_id', subscription.id)
+            .first();
+            
+        if (!existingSubscription) {
+            return [false, 'Subscription not found in database'];
+        }
+        
+        // Update subscription status to canceled
+        await subscriptionDB.db_updateSubscriptionStatus(user.id, existingSubscription.subscription_type, 'canceled');
+        
+        // Credits will naturally expire based on expiry_ts
+        
+        return [true, { message: 'Subscription deleted successfully', userId: user.id }];
+    } catch (error) {
+        console.error('Error handling subscription deletion:', error);
+        return [false, error.message];
+    }
+}
+
 module.exports = {
     db_processCheckoutSession,
+    db_processSubscriptionEvents,
 }; 

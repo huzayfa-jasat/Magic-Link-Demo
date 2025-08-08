@@ -1,6 +1,9 @@
 // Dependencies
 import { useState, useEffect, useMemo } from "react";
 
+// Context
+import { useCreditsContext } from "../../context/useCreditsContext";
+
 // API Imports
 import {
   getBalance, getCatchallBalance,
@@ -16,6 +19,16 @@ import styles from "./styles/Credits.module.css";
 
 // Functional Component
 export default function CreditsController() {
+  // Context
+  const { 
+    emailBalance, 
+    catchallBalance, 
+    subscriptionCredits, 
+    subscription, 
+    totalEmailCredits, 
+    totalCatchallCredits 
+  } = useCreditsContext();
+
   // Data states
   const [transactions, setTransactions] = useState([]);
   const [currentBalance, setCurrentBalance] = useState(null);
@@ -82,13 +95,19 @@ export default function CreditsController() {
       <div className={styles.balanceRow}>
         <BalanceCard
           title="Email Validation"
-          balance={currentBalance}
+          balance={totalEmailCredits}
+          oneOffBalance={currentBalance}
+          subscriptionBalance={subscriptionCredits.regular?.remaining || 0}
+          subscriptionExpiry={subscriptionCredits.regular?.expires_at}
           buttonText="Buy More Credits"
           buttonLink="/packages?p=validate"
         />
         <BalanceCard
           title="Catchall Validation"
-          balance={catchallCurrentBalance}
+          balance={totalCatchallCredits}
+          oneOffBalance={catchallCurrentBalance}
+          subscriptionBalance={subscriptionCredits.catchall?.remaining || 0}
+          subscriptionExpiry={subscriptionCredits.catchall?.expires_at}
           buttonText="Buy More Credits"
           buttonLink="/packages?p=catchall"
         />
