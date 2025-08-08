@@ -1,18 +1,26 @@
+// Dependencies
 const express = require('express');
-const router = express.Router();
-const controller = require('./controller');
+const subscriptionsRouter = express.Router();
+
+// Middleware Imports
 const { checkUserAuth } = require('../auth/funs_perms.js');
 
-// Get available subscription plans
-router.get('/list', checkUserAuth, controller.listPlans);
+// Controller Imports
+const {
+    listPlans,
+    createCheckout,
+    getStatus,
+    createPortalSession,
+} = require('./controller');
 
-// Create subscription checkout session
-router.post('/checkout', checkUserAuth, controller.createCheckout);
+// Middleware
+subscriptionsRouter.use(checkUserAuth);
 
-// Get subscription status for current user
-router.get('/status', checkUserAuth, controller.getStatus);
+// Routes
+subscriptionsRouter.get('/list', listPlans);
+subscriptionsRouter.post('/checkout', createCheckout);
+subscriptionsRouter.get('/status', getStatus);
+subscriptionsRouter.post('/manage', createPortalSession);
 
-// Create billing portal session for subscription management
-router.post('/manage', checkUserAuth, controller.createPortalSession);
-
-module.exports = router;
+// Export
+module.exports = subscriptionsRouter;

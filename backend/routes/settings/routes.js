@@ -2,7 +2,7 @@
 const express = require('express');
 const settingsRouter = express.Router();
 
-// Middleware
+// Middleware Imports
 const { checkUserAuth } = require('../auth/funs_perms.js');
 
 // Controller Imports
