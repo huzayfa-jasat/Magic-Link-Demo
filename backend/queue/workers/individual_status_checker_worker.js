@@ -5,6 +5,7 @@ const BouncerAPI = require('../../external_apis/bouncer');
 const {
     db_markBouncerBatchFailed,
     db_processBouncerResults,
+    db_updateBouncerBatchProcessed,
     db_checkRateLimit,
     db_recordRateLimit
 } = require('../funs_db.js');
