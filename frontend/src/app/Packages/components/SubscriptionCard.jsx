@@ -26,7 +26,7 @@ export default function SubscriptionCard({
       <p className={styles.verificationText}>Credits per month</p>
       
       {/* Display trial information if available */}
-      {plan.trial_days > 0 && (
+      {/* {plan.trial_days > 0 && (
         <div style={{ marginTop: '10px', padding: '8px', backgroundColor: '#f0f9ff', borderRadius: '6px', border: '1px solid #0369a1' }}>
           <p style={{ fontSize: '14px', fontWeight: '600', color: '#0369a1', marginBottom: '4px' }}>
             {plan.trial_days} Day{plan.trial_days > 1 ? 's' : ''} Free Trial
@@ -37,7 +37,7 @@ export default function SubscriptionCard({
             </p>
           )}
         </div>
-      )}
+      )} */}
       
       {currentPlan?.cancel_at_period_end && isCurrentPlan && (
         <p className={styles.cancelNotice} style={{ color: '#ff6b6b', fontSize: '14px', marginTop: '10px' }}>
@@ -51,9 +51,15 @@ export default function SubscriptionCard({
         disabled={isSubscribed && !isCurrentPlan}
         style={isSubscribed && !isCurrentPlan ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
       >
-        {isCurrentPlan ? 'Manage Subscription' : 
-         isSubscribed ? 'Change Plan' : 
-         `Only ${plan.display_price} USD / month`}
+        {(plan.trial_days > 0) ? (
+          <span className={styles.trialBadge}>
+            Try free for {plan.trial_days} day{plan.trial_days > 1 ? 's' : ''}
+          </span>
+        ): (
+          isCurrentPlan ? 'Manage Subscription' : 
+          isSubscribed ? 'Change Plan' : 
+          `Only ${plan.display_price} USD / mo.`
+        )}
       </button>
     </div>
   );
