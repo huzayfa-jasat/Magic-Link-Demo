@@ -36,7 +36,6 @@ export default function PackagesController() {
   // States
   const [currPage, setCurrPage] = useState(
     pageParam === "catchall" ? "catchall" : 
-    pageParam === "subscriptions" ? "subscriptions" : 
     "validate"
   );
   const [validatePromotions, setValidatePromotions] = useState([]);
@@ -52,7 +51,6 @@ export default function PackagesController() {
   useEffect(() => {
     setCurrPage(
       pageParam === "catchall" ? "catchall" : 
-      pageParam === "subscriptions" ? "subscriptions" : 
       "validate"
     );
   }, [pageParam]);
@@ -154,48 +152,46 @@ export default function PackagesController() {
         >
           Catchall <span className={styles.hideMobile}>Validation</span>
         </button>
-        <button
-          className={`${styles.pageButton} ${(currPage === "subscriptions") ? styles.active : ""}`}
-          onClick={() => setCurrPage("subscriptions")}
-        >
-          Monthly <span className={styles.hideMobile}>Plans</span>
-        </button>
       </div>
       <br/>
-      {currPage === "subscriptions" ? (
+      
+      {/* Monthly Plans - Show First */}
+      {((currPage === "catchall" && catchallSubscriptionPlans.length > 0) || (currPage === "validate" && regularSubscriptionPlans.length > 0)) && (
         <>
-          {/* <h1 className={styles.title}>Email Validation Plans</h1>
-          <br/> */}
-          <div className={styles.creditGrid}>
-            {regularSubscriptionPlans.map((plan) => (
-              <SubscriptionCard
-                key={plan.id}
-                plan={plan}
-                currentPlan={currentRegularSubscription}
-                isSubscribed={!!currentRegularSubscription}
-                handleSubscribe={handleSubscribe}
-                handleManage={() => handleManageSubscription('regular')}
-              />
-            ))}
-          </div>
-          <br /><br />
-          <h1 className={styles.title}>Catchall Validation Plans</h1>
+          <h1 className={styles.title}>Monthly Plans</h1>
           <br/>
           <div className={styles.creditGrid}>
-            {catchallSubscriptionPlans.map((plan) => (
-              <SubscriptionCard
-                key={plan.id}
-                plan={plan}
-                currentPlan={currentCatchallSubscription}
-                isSubscribed={!!currentCatchallSubscription}
-                handleSubscribe={handleSubscribe}
-                handleManage={() => handleManageSubscription('catchall')}
-              />
-            ))}
+            {currPage === "catchall" ? 
+              catchallSubscriptionPlans.map((plan) => (
+                <SubscriptionCard
+                  key={plan.id}
+                  plan={plan}
+                  currentPlan={currentCatchallSubscription}
+                  isSubscribed={!!currentCatchallSubscription}
+                  handleSubscribe={handleSubscribe}
+                  handleManage={() => handleManageSubscription('catchall')}
+                />
+              )) :
+              regularSubscriptionPlans.map((plan) => (
+                <SubscriptionCard
+                  key={plan.id}
+                  plan={plan}
+                  currentPlan={currentRegularSubscription}
+                  isSubscribed={!!currentRegularSubscription}
+                  handleSubscribe={handleSubscribe}
+                  handleManage={() => handleManageSubscription('regular')}
+                />
+              ))
+            }
           </div>
+          <br/><br/>
         </>
-      ) : (
-        <div className={styles.creditGrid}>
+      )}
+      
+      {/* One-Time Credits */}
+      <h1 className={styles.title}>One-Time Credits</h1>
+      <br/>
+      <div className={styles.creditGrid}>
           {((currPage === "catchall") ? catchallNonPromotions : validateNonPromotions).map(
             ({ name, amount, price, bonus, total, id }) => (
               <PackageCard
@@ -205,9 +201,10 @@ export default function PackagesController() {
               />
             )
           )}
-        </div>
-      )}
-      {currPage !== "subscriptions" && ((currPage === "catchall") ? catchallPromotions.length > 0 : validatePromotions.length > 0) && (
+      </div>
+      
+      {/* Promotions */}
+      {((currPage === "catchall") ? catchallPromotions.length > 0 : validatePromotions.length > 0) && (
         <>
           <br/><br/>
           <h1 className={styles.title}>Promotions</h1>

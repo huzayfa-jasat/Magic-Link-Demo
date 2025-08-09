@@ -43,7 +43,7 @@ export default function HomeController() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [processingModal, setProcessingModal] = useState({ isOpen: false, progress: 0 });
+  const [processingModal, setProcessingModal] = useState({ isOpen: false, batch: null });
   const [removeModal, setRemoveModal] = useState({ isOpen: false, requestId: null, category: null });
   
   // Pagination states
@@ -111,7 +111,7 @@ export default function HomeController() {
 
   // Handle processing batch click
   const handleProcessingClick = (batch) => {
-    setProcessingModal({ isOpen: true, progress: batch.progress || 0 });
+    setProcessingModal({ isOpen: true, batch: batch });
   };
 
   // Handle remove batch click
@@ -241,8 +241,9 @@ export default function HomeController() {
     <>
       <ProcessingModal 
         isOpen={processingModal.isOpen} 
-        progress={processingModal.progress}
-        onClose={() => setProcessingModal({ isOpen: false, progress: 0 })}
+        batch={processingModal.batch}
+        requests={requests}
+        onClose={() => setProcessingModal({ isOpen: false, batch: null })}
       />
       <RemoveModal
         isOpen={removeModal.isOpen}

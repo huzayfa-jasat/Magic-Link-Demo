@@ -25,6 +25,20 @@ export default function SubscriptionCard({
       <h2 className={styles.numCredits}>{plan.credits_per_period.toLocaleString()}</h2>
       <p className={styles.verificationText}>Credits per month</p>
       
+      {/* Display trial information if available */}
+      {plan.trial_days > 0 && (
+        <div style={{ marginTop: '10px', padding: '8px', backgroundColor: '#f0f9ff', borderRadius: '6px', border: '1px solid #0369a1' }}>
+          <p style={{ fontSize: '14px', fontWeight: '600', color: '#0369a1', marginBottom: '4px' }}>
+            {plan.trial_days} Day{plan.trial_days > 1 ? 's' : ''} Free Trial
+          </p>
+          {plan.trial_credits > 0 && (
+            <p style={{ fontSize: '13px', color: '#0369a1' }}>
+              {plan.trial_credits.toLocaleString()} trial credits included
+            </p>
+          )}
+        </div>
+      )}
+      
       {currentPlan?.cancel_at_period_end && isCurrentPlan && (
         <p className={styles.cancelNotice} style={{ color: '#ff6b6b', fontSize: '14px', marginTop: '10px' }}>
           Canceling at period end
@@ -39,7 +53,7 @@ export default function SubscriptionCard({
       >
         {isCurrentPlan ? 'Manage Subscription' : 
          isSubscribed ? 'Change Plan' : 
-         `Only ${plan.display_price} USD`}
+         `Only ${plan.display_price} USD / month`}
       </button>
     </div>
   );
