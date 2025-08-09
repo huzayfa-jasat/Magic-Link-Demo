@@ -168,15 +168,17 @@ export default function HomeController() {
     }
   }, [hasMore, loadingMore, loading, loadMore]);
   
-  // Function to update processing batch progress
-  const updateProcessingBatches = useCallback(async (currentRequests) => {
-    // Get all processing batches
-    const processingBatches = currentRequests.filter(batch => batch.status === 'processing');
+  // Function to update processing and queued batch progress
+  const updateBatchStatuses = useCallback(async (currentRequests) => {
+    // Get all processing and queued batches
+    const batchesToUpdate = currentRequests.filter(batch => 
+      batch.status === 'processing' || batch.status === 'queued'
+    );
     
-    if (processingBatches.length === 0) return;
+    if (batchesToUpdate.length === 0) return;
     
-    // Update progress for each processing batch individually (piecewise)
-    processingBatches.forEach(async (batch) => {
+    // Update progress for each batch individually (piecewise)
+    batchesToUpdate.forEach(async (batch) => {
       try {
         const response = await getBatchProgress(batch.category, batch.id);
         if (response.status === 200) {
@@ -189,7 +191,7 @@ export default function HomeController() {
               if (data.status === 'processing' && data.progress !== undefined) {
                 return { ...b, status: 'processing', progress: data.progress };
               } else if (data.status) {
-                // For completed, failed, or paused statuses - only update status
+                // For completed, failed, paused, or queued->processing transitions
                 return { ...b, status: data.status };
               }
             }
@@ -208,16 +210,16 @@ export default function HomeController() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
-  // Poll for progress updates for processing batches
+  // Poll for progress updates for processing and queued batches
   useEffect(() => {
     // Set up interval for periodic updates
     const intervalId = setInterval(() => {
-      updateProcessingBatches(requests);
+      updateBatchStatuses(requests);
     }, 10000); // Update every 10 seconds
     
     // Cleanup
     return () => clearInterval(intervalId);
-  }, [requests, currFilter, updateProcessingBatches]); // Recreate when requests or filter changes
+  }, [requests, currFilter, updateBatchStatuses]); // Recreate when requests or filter changes
 
   // Render
   if (loading) {
