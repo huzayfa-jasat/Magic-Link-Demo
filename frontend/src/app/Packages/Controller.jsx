@@ -81,12 +81,24 @@ export default function PackagesController() {
     ]);
     
     if (regularResp.status === 200) {
-      setRegularSubscriptionPlans(regularResp.data.plans || []);
+      // Sort plans by price (cheapest first)
+      const sortedRegularPlans = (regularResp.data.plans || []).sort((a, b) => {
+        const priceA = parseFloat(a.display_price.replace(/[^0-9.]/g, ''));
+        const priceB = parseFloat(b.display_price.replace(/[^0-9.]/g, ''));
+        return priceA - priceB;
+      });
+      setRegularSubscriptionPlans(sortedRegularPlans);
       setCurrentRegularSubscription(regularResp.data.current_subscription);
     }
     
     if (catchallResp.status === 200) {
-      setCatchallSubscriptionPlans(catchallResp.data.plans || []);
+      // Sort plans by price (cheapest first)
+      const sortedCatchallPlans = (catchallResp.data.plans || []).sort((a, b) => {
+        const priceA = parseFloat(a.display_price.replace(/[^0-9.]/g, ''));
+        const priceB = parseFloat(b.display_price.replace(/[^0-9.]/g, ''));
+        return priceA - priceB;
+      });
+      setCatchallSubscriptionPlans(sortedCatchallPlans);
       setCurrentCatchallSubscription(catchallResp.data.current_subscription);
     }
   }
@@ -96,7 +108,7 @@ export default function PackagesController() {
     try {
       const resp = await createSubscriptionCheckout(planId);
       if (resp.status === 200) {
-        window.location.href = resp.data.checkout_url;
+        window.open(resp.data.checkout_url, "_blank");
       } else {
         console.error("Could not create subscription checkout:", resp.data.error);
       }
@@ -152,8 +164,8 @@ export default function PackagesController() {
       <br/>
       {currPage === "subscriptions" ? (
         <>
-          <h1 className={styles.title}>Email Validation Plans</h1>
-          <br/>
+          {/* <h1 className={styles.title}>Email Validation Plans</h1>
+          <br/> */}
           <div className={styles.creditGrid}>
             {regularSubscriptionPlans.map((plan) => (
               <SubscriptionCard
