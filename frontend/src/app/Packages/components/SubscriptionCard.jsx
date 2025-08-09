@@ -39,7 +39,7 @@ export default function SubscriptionCard({
       >
         {isCurrentPlan ? 'Manage Subscription' : 
          isSubscribed ? 'Change Plan' : 
-         plan.display_price}
+         `Only ${plan.display_price} USD`}
       </button>
     </div>
   );
