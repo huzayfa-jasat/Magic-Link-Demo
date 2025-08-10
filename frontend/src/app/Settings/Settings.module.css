@@ -202,6 +202,9 @@
   color: var(--txt-light);
   line-height: 1.4;
 }
+.modalDescription span {
+  color: var(--black);
+}
 
 .modalField {
   width: 100%;
@@ -265,6 +268,9 @@
   background-color: var(--main-hl);
   color: var(--white);
   border-color: var(--main-hl);
+}
+.copyButton.wide {
+  width: 100%;
 }
 
 .copyButton:hover {

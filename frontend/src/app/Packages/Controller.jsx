@@ -153,14 +153,13 @@ export default function PackagesController() {
           Catchall <span className={styles.hideMobile}>Validation</span>
         </button>
       </div>
-      <br/>
       
       {/* Monthly Plans - Show First */}
       {((currPage === "catchall" && catchallSubscriptionPlans.length > 0) || (currPage === "validate" && regularSubscriptionPlans.length > 0)) && (
         <>
           {/* <h1 className={styles.title}>Monthly Plans</h1> */}
           <br/>
-          <div className={styles.subsGrid}>
+          <div className={styles.creditGrid}>
             {currPage === "catchall" ? 
               catchallSubscriptionPlans.map((plan) => (
                 <SubscriptionCard

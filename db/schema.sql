@@ -142,11 +142,10 @@ CREATE TABLE Subscription_Plans (
     trial_days INT NOT NULL DEFAULT 0,
     trial_credits INT NOT NULL DEFAULT 0,
     billing_period ENUM('monthly', 'yearly') NOT NULL DEFAULT 'monthly',
-    is_active BOOLEAN DEFAULT 1,
-    is_live BOOLEAN DEFAULT 0,
-    display_order INT DEFAULT 0,
-    features JSON,
-    created_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    is_most_popular TINYINT(1) NOT NULL DEFAULT 0,
+    is_live TINYINT(1) NOT NULL DEFAULT 0,
+    created_ts TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_active_live (is_active, is_live),
     INDEX idx_type_active (subscription_type, is_active, is_live)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;

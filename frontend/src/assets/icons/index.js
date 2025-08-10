@@ -34,3 +34,5 @@ export { ARROW_DOWN_ICON } from "./arrow_down_icon";
 export { DOTS_ICON } from "./dots_icon";
 export { PAUSE_ICON } from "./pause_icon";
 export { PLAY_ICON } from "./play_icon";
+export { UNLOCK_ICON } from "./unlock_icon";
+export { STAR_ICON } from "./star_icon";

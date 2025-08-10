@@ -37,10 +37,69 @@
   border-radius: 6px;
   background-color: var(--brd-light-2);
 }
+.subCard {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 20px;
+  text-align: left;
+  transition: all 0.2s ease-in-out;
+  border: 1px solid var(--brd-light);
+  border-radius: 6px;
+  background-color: var(--brd-light-2);
+}
 
 .creditCard:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.featuresContainer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+.feature {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.featureIcon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--main-hl);
+}
+.featureText {
+  margin: 0;
+  font-family: "Circular", "Geist", sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: -0.3px;
+  color: var(--black);
+  line-height: 0.9;
+}
+.bonusFeature .featureText,
+.bonusFeature .featureIcon {
+  color: var(--result-valid);
+}
+
+.packageTop {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
 }
 
 .packageName {
@@ -52,12 +111,40 @@
   color: var(--black);
 }
 
+.popularBadge {
+  margin: -5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: "Circular", "Geist", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: -0.3px;
+  /* color: var(--main-hl);
+  background-color: var(--main-hl-fade); */
+  color: var(--result-catchall);
+  background-color: var(--result-catchall-fade);
+  border: none;
+  border-radius: 50px;
+  padding: 6px 12px;
+}
+.popularBadge svg {
+  height: 17px;
+  width: auto;
+}
+
 .numCredits {
   font-family: "PP Supply Mono", sans-serif;
   font-size: 28px;
   font-weight: 400;
   letter-spacing: 1px;
   color: var(--main-hl);
+}
+.subCard .numCredits {
+  font-size: 40px;
+  margin-top: 30px;
+  letter-spacing: -1px;
 }
 
 .bonusContainer {
@@ -114,6 +201,10 @@
   letter-spacing: -0.3px;
   color: var(--txt-light);
 }
+.subCard .verificationText {
+  font-size: 15px;
+  margin-bottom: 30px;
+}
 
 .price {
   margin: 0;
@@ -151,6 +242,12 @@
 
 .buyBtn.premium {
   background: linear-gradient(90deg, #c0eaff, #68cdff);
+}
+
+.subCard .buyBtn {
+  margin-top: auto;
+  font-size: 16px;
+  height: 50px;
 }
 
 .pageSelector {

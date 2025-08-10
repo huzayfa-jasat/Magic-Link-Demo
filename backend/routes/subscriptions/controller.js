@@ -50,10 +50,10 @@ async function listPlans(req, res) {
         credits_per_period: plan.credits_per_period,
         trial_days: plan.trial_days,
         trial_credits: plan.trial_credits,
-        billing_period: plan.billing_period,
-        features: plan.features
+        // billing_period: plan.billing_period,
+        is_popular: plan.is_most_popular,
       })),
-      current_subscription: userSubscription ? {
+      current_subscription: (userSubscription) ? {
         plan_id: userSubscription.subscription_plan_id,
         status: userSubscription.status,
         cancel_at_period_end: userSubscription.cancel_at_period_end

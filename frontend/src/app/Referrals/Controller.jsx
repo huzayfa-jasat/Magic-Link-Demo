@@ -15,7 +15,7 @@ import ReferralCard from "./components/ReferralCard";
 import styles from "./Referrals.module.css";
 
 // Icon Imports
-import { COMPLETE_CHECK_ICON } from "../../assets/icons";
+import { COMPLETE_CHECK_ICON, UNLOCK_ICON } from "../../assets/icons";
 
 // Functional Component
 export default function ReferralsController() {
@@ -29,7 +29,8 @@ export default function ReferralsController() {
   const [userEligible, setUserEligible] = useState(null);
   const [userLifetimePurchases, setUserLifetimePurchases] = useState(0);
   const [shareSuccess, setShareSuccess] = useState(false);
-
+  const [eligibilityNoticeOpen, setEligibilityNoticeOpen] = useState(false);
+  
   // Fetch referral code
   const fetchReferralCode = async () => {
     try {
@@ -93,69 +94,74 @@ export default function ReferralsController() {
 
   // Render
   return (
-    <div className={styles.container}>
-      {/* Referral Code */}
-      <div className={styles.metricsContainer}>
-        <div className={styles.referralCodeContainer}>
-          <h2 className={styles.verificationText}>Referral Code</h2>
-          <div className={styles.availableCredits}>
-            {(referralCode !== null) && (referralCode)}
-          </div>
-          <div className={styles.referralActions}>
-            <button onClick={handleShare} className={`${styles.referralActionsButton} ${(shareSuccess) ? styles.copySuccess : ""}`}>
-              {shareSuccess && COMPLETE_CHECK_ICON}
-              {shareSuccess ? "Copied!" : "Copy Link"}
-            </button>
+    <>
+      {(eligibilityNoticeOpen) && (
+        <ReferralEligibilityNotice purchases={userLifetimePurchases} onClose={()=>{setEligibilityNoticeOpen(false)}} />
+      )}
+      <div className={styles.container}>
+        {/* Referral Code */}
+        <div className={styles.metricsContainer}>
+          <div className={styles.referralCodeContainer}>
+            <h2 className={styles.verificationText}>Referral Code</h2>
+            <div className={styles.availableCredits}>
+              {(referralCode !== null) && (referralCode)}
+            </div>
+            {(userEligible === false) && (
+              <button className={`${styles.referralActionsButton} ${styles.eligibilityNoticeButton}`} onClick={()=>{setEligibilityNoticeOpen(true)}}>
+                {UNLOCK_ICON}
+                Unlock Rewards
+              </button>
+            )}
+            <div className={styles.referralActions}>
+              <button onClick={handleShare} className={`${styles.referralActionsButton} ${(shareSuccess) ? styles.copySuccess : ""}`}>
+                {shareSuccess && COMPLETE_CHECK_ICON}
+                {shareSuccess ? "Copied!" : "Copy Link"}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-      <br /><br />
-      {/* Referral Metrics */}
-      <h1 className={styles.title}>Referrals</h1>
-      <br/>
-      <div className={styles.metricsContainer}>
-        <div className={styles.referralCodeContainer}>
-          <h2 className={styles.verificationText}>Total Referrals</h2>
-          <div className={`${styles.availableCredits} ${styles.mini}`}>
-            {(referralInfo !== null) && (
-              referralInfo.num_referrals + referralInfo.num_pending_referrals
+        <br /><br />
+        {/* Referral Metrics */}
+        <h1 className={styles.title}>Referrals</h1>
+        <br/>
+        <div className={styles.metricsContainer}>
+          <div className={styles.referralCodeContainer}>
+            <h2 className={styles.verificationText}>Total Referrals</h2>
+            <div className={`${styles.availableCredits} ${styles.mini}`}>
+              {(referralInfo !== null) && (
+                referralInfo.num_referrals + referralInfo.num_pending_referrals
+              )}
+            </div>
+            {(referralInfo && referralInfo.num_pending_referrals > 0) && (
+              <p className={styles.pendingCount}>{referralInfo.num_pending_referrals} Pending</p>
             )}
           </div>
-          {(referralInfo && referralInfo.num_pending_referrals > 0) && (
-            <p className={styles.pendingCount}>{referralInfo.num_pending_referrals} Pending</p>
-          )}
-        </div>
-        <div className={styles.referralCodeContainer}>
-          <h2 className={styles.verificationText}>Total Rewards</h2>
-          <div className={`${styles.availableCredits} ${styles.mini}`}>
-            {(referralInfo !== null) && (referralInfo.total_referral_credits.toLocaleString())}
+          <div className={styles.referralCodeContainer}>
+            <h2 className={styles.verificationText}>Total Rewards</h2>
+            <div className={`${styles.availableCredits} ${styles.mini}`}>
+              {(referralInfo !== null) && (referralInfo.total_referral_credits.toLocaleString())}
+            </div>
+            {(referralInfo && referralInfo.num_pending_referrals > 0) && (
+              <p className={styles.pendingCount}>
+                +{referralInfo.total_pending_credits.toLocaleString()} Pending
+              </p>
+            )}
           </div>
-          {(referralInfo && referralInfo.num_pending_referrals > 0) && (
-            <p className={styles.pendingCount}>
-              +{referralInfo.total_pending_credits.toLocaleString()} Pending
-            </p>
-          )}
         </div>
+        <br /><br />
+        {/* Referral History */}
+        {(referralHistory !== null && referralHistory.length > 0) && (
+          <>
+            <h1 className={styles.title}>Activity</h1>
+            <br />
+            <div className={styles.history_list}>
+              {sortedReferralHistory.map((r) => (
+                <ReferralCard key={`rf-${r.id}`} referral={r} />
+              ))}
+            </div>
+          </>
+        )}
       </div>
-      <br /><br />
-      {/* Referral History */}
-      {(referralHistory !== null && referralHistory.length > 0) && (
-        <>
-          <h1 className={styles.title}>Activity</h1>
-          <br />
-          <div className={styles.history_list}>
-            {sortedReferralHistory.map((r) => (
-              <ReferralCard key={`rf-${r.id}`} referral={r} />
-            ))}
-          </div>
-        </>
-      )}
-      {/* Eligibility Notice */}
-      {(userEligible === false) && <>
-        <br /><br />
-        <ReferralEligibilityNotice purchases={userLifetimePurchases} />
-        <br /><br />
-      </>}
-    </div>
+    </>
   );
 }

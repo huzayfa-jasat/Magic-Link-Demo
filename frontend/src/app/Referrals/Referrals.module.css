@@ -84,6 +84,20 @@
   color: var(--main-hl);
 }
 
+.referralActionsButton.eligibilityNoticeButton {
+  display: flex;
+  align-items: center;
+  background-color: var(--result-catchall-fade);
+  border: 1px solid var(--result-catchall-fade);
+  color: var(--result-catchall);
+  margin-bottom: -5px;
+}
+.referralActionsButton.eligibilityNoticeButton svg {
+  height: 17px;
+  width: auto;
+  margin: auto 0;
+}
+
 .referralActions svg {
   height: 18px;
   width: auto;
@@ -198,8 +212,8 @@
 
 .noticeIcon {
   flex-shrink: 0;
-  width: 35px;
-  height: 35px;
+  width: 45px;
+  height: 45px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -207,9 +221,8 @@
   border-radius: 6px;
   color: var(--result-catchall);
 }
-
 .noticeIcon svg {
-  height: 20px;
+  height: 25px;
   width: auto;
 }
 
