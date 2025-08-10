@@ -189,6 +189,10 @@ export default function HomeController() {
             if (b.id === batch.id && b.category === batch.category) {
               // Handle the new response structure
               if (data.status === 'processing' && data.progress !== undefined) {
+                // Show as queued if processing with less than 5% progress
+                if (data.progress < 5) {
+                  return { ...b, status: 'queued', progress: data.progress };
+                }
                 return { ...b, status: 'processing', progress: data.progress };
               } else if (data.status) {
                 // For completed, failed, paused, or queued->processing transitions
