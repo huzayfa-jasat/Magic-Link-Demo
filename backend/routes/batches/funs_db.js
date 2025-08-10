@@ -736,8 +736,9 @@ async function db_getBatchProgress(user_id, batch_id, checkType, total_emails=-1
 	// 2. Count in-progress emails from bouncer batches
 	const bouncer_result = await knex(bouncer_batch_table).where({
 		'user_batch_id': batch_id,
-		'status': 'processing'
-	}).sum('processed as total_processed').first().catch((err)=>{if (err) err_code = err.code});
+	}).whereIn('status', [
+		'pending', 'processing'
+	]).sum('processed as total_processed').first().catch((err)=>{if (err) err_code = err.code});
 	if (err_code) return [true, batch_progress_dict];
 	
 	// 3. Calculate progress percentage
@@ -749,6 +750,7 @@ async function db_getBatchProgress(user_id, batch_id, checkType, total_emails=-1
 		: 0;
 	
 	// Return
+	console.log("BOUNCER PROCESSED = ", bouncer_processed);
 	batch_progress_dict.progress = Math.min(percent_progress, 99); // Cap at 99% until batch is marked completed
 	return [true, batch_progress_dict];
 }
