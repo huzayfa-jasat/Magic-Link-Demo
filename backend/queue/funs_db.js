@@ -78,7 +78,7 @@ async function db_getEmailsForGreedyBatch(check_type, max_emails = 10000) {
             'bed.batch_id as user_batch_id',
             'bd.created_ts'
         )
-        .whereIn('bd.status', ['queued', 'processing'])
+        .whereIn('bd.status', ['draft', 'pending', 'queued', 'processing'])
         .where({
             'bd.is_archived': 0,
             'bed.used_cached': 0,

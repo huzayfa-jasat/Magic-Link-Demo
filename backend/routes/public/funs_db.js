@@ -52,7 +52,8 @@ async function db_getBatchStatus(batch_id, check_type) {
     if (err_code || !resp) return [false, null];
 
     // Mask 'queued' as 'processing'
-    const status = (resp.status === 'queued') ? 'processing' : resp.status;
+    // Mask 'draft' / 'pending' as 'queued'
+    const status = (resp.status === 'draft' || resp.status === 'pending') ? 'queued' : resp.status;
 
     // Return status
     return [true, status];
