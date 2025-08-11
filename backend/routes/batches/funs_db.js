@@ -1248,9 +1248,13 @@ async function db_createCatchallBatchFromDeliverable(user_id, deliverable_batch_
 		// 2. Get all catchall emails from the deliverable batch
 		const catchall_emails = await trx('Batch_Emails_Deliverable as bed')
 			.join('Email_Deliverable_Results as edr', 'bed.email_global_id', 'edr.email_global_id')
-			.where({
-				'bed.batch_id': deliverable_batch_id,
-				'edr.is_catchall': 1
+			.where('bed.batch_id', deliverable_batch_id)
+			.where(function() {
+				this.where('edr.is_catchall', 1)
+					.orWhere(function() {
+						this.where('edr.status', 'risky')
+							.andWhere('edr.reason', 'low_deliverability');
+					});
 			})
 			.select('bed.email_global_id', 'bed.email_nominal');
 			
