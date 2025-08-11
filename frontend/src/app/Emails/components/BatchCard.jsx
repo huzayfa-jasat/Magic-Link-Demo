@@ -71,7 +71,7 @@ function getStatusDisplay(status, progress=0) {
 			status_name = 'Complete';
 			break;
 		case 'processing':
-			status_name = `In Progress (${progress}%)`;
+			status_name = progress >= 95 ? 'Re-verifying bounces...' : `In Progress (${progress}%)`;
 			break;
 		case 'queued':
 			status_name = 'Queued';
