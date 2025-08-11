@@ -3,7 +3,8 @@ const express = require('express');
 const publicRouter = express.Router();
 
 // Middleware
-const { checkApiKey } = require('./middleware.js');
+const { checkApiKey, bridgeToUser, validateEmailLimit, mapIdToBatchId } = require('./middleware.js');
+const { checkValidCheckType, checkUserBatchAccess } = require('../batches/middleware.js');
 
 // Controller Imports
 const {
@@ -16,6 +17,15 @@ const {
     downloadCatchallBatchResults
 } = require('./controller.js');
 
+const {
+    createNewBatch,
+    addToBatch,
+    startBatchProcessing,
+    getBatchProgress,
+    getBatchDetails,
+    getBatchResults
+} = require('../batches/controller.js');
+
 // ------------------
 // Public API Routes
 // ------------------
@@ -25,6 +35,16 @@ publicRouter.use(checkApiKey);
 
 // General routes
 publicRouter.get('/credits', getCredits);
+
+//Batch Creation Routes
+publicRouter.post('/:checkType/draft', bridgeToUser, checkValidCheckType, createNewBatch);
+publicRouter.post('/:id/:checkType/add', bridgeToUser, checkValidCheckType, mapIdToBatchId, checkUserBatchAccess, validateEmailLimit, addToBatch);
+publicRouter.post('/:id/:checkType/start', bridgeToUser, checkValidCheckType, mapIdToBatchId, checkUserBatchAccess, startBatchProcessing);
+
+//Batch Status Routes
+publicRouter.get('/:id/:checkType/status', bridgeToUser, checkValidCheckType, mapIdToBatchId, checkUserBatchAccess, getBatchProgress);
+publicRouter.get('/:id/:checkType/stats', bridgeToUser, checkValidCheckType, mapIdToBatchId, checkUserBatchAccess, getBatchDetails);
+publicRouter.get('/:id/:checkType/results', bridgeToUser, checkValidCheckType, mapIdToBatchId, checkUserBatchAccess, getBatchResults);
 
 // Deliverability/Verify routes
 publicRouter.post('/verify/bulk', validateEmails);

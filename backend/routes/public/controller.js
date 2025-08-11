@@ -10,7 +10,7 @@ const {
 
 // Controller Imports
 const {
-    createBatch,
+    createNewBatch,
 } = require('../batches/controller.js');
 
 
@@ -35,7 +35,7 @@ async function getCredits(req, res) {
 async function validateEmails(req, res) {
     try {
         // Use existing controller
-        return createBatch({
+        return createNewBatch({
             ...req,
             user: { id: req.apiUser.user_id, },
             params: { checkType: 'deliverable' }
@@ -53,7 +53,7 @@ async function validateEmails(req, res) {
 async function validateCatchall(req, res) {
     try {
         // Use existing controller
-        return createBatch({
+        return createNewBatch({
             ...req,
             user: { id: req.apiUser.user_id, },
             params: { checkType: 'catchall' }

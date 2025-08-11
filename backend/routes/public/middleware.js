@@ -32,7 +32,47 @@ async function checkApiKey(req, res, next) {
     return next();
 }
 
+/**
+ * Bridge to user middleware
+ * Bridges the API user to the user object
+ */
+async function bridgeToUser(req, res, next) {
+    if (req.apiUser && req.apiUser.user_id) {
+        req.user = { id: req.apiUser.user_id };
+    }
+    return next();
+}
+
+/**
+ * Map 'id' parameter to 'batchId' for middleware compatibility
+ */
+async function mapIdToBatchId(req, res, next) {
+    if (req.params.id) {
+        req.params.batchId = req.params.id;
+    }
+    next();
+}
+
+/**
+ * Validate email limit middleware
+ * Ensures no more than 10,000 emails per request
+ */
+function validateEmailLimit(req, res, next) {
+    const { emails } = req.body;
+    
+    if (emails && Array.isArray(emails) && emails.length > 10000) {
+        return res.status(HttpStatus.BAD_REQUEST_STATUS).json({ 
+            error: 'Maximum 10,000 emails allowed per request' 
+        });
+    }
+    
+    next();
+}
+
 // Exports
 module.exports = {
-    checkApiKey
+    checkApiKey,
+    bridgeToUser,
+    mapIdToBatchId,
+    validateEmailLimit
 };
