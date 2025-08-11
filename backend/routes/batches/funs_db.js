@@ -1272,7 +1272,7 @@ async function db_createCatchallBatchFromDeliverable(user_id, deliverable_batch_
 		
 		// 3. Create new catchall batch
 		const [new_batch_id] = await trx('Batches_Catchall').insert({
-			'title': `${original_batch.title} - Catchall Verification`,
+			'title': original_batch.title || 'Catchall Verification',
 			'user_id': user_id,
 			'status': 'queued',
 			'total_emails': catchall_emails.length,
