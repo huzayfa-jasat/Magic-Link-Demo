@@ -160,6 +160,8 @@ export default function EmailsBatchDetailsController({
           />
         </div>
 
+        <p className={styles.subtitle}>We automatically find & remove duplicates and non-email entries from your list.</p>
+
         {/* Search input for filtering results */}
         <div className={styles.searchContainer}>
           <input

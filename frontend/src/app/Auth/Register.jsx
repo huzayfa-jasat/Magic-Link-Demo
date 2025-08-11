@@ -1,10 +1,13 @@
 // Dependencies
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 
 // API Imports
 import { loginUser, registerUser } from "../../api/auth.js";
+
+// Context Imports
+import { ErrorContext } from "../../ui/Context/ErrorContext";
 
 // Style Imports
 import s from "./styles.module.css";
@@ -19,6 +22,7 @@ const PP_URL = "https://www.omniverifier.com/privacy-policy";
 // Functional Component
 export default function Register() {
   const navigate = useNavigate();
+  const errorContext = useContext(ErrorContext);
 
   // States
   const [didAgree, setDidAgree] = useState(false);
@@ -38,7 +42,7 @@ export default function Register() {
       if (!loginSuccess) navigate("/login", { replace: true });
       else window.location.reload();
     } catch (error) {
-      console.log(error.message);
+      errorContext.showError();
     }
   }
 

@@ -1,9 +1,13 @@
 // Dependencies
+import { useContext } from "react";
 import { NavLink } from "react-router-dom";
 import { useForm } from "react-hook-form";
 
 // API Imports
 import { loginUser } from "../../api/auth.js";
+
+// Context Imports
+import { ErrorContext } from "../../ui/Context/ErrorContext";
 
 // Style Imports
 import s from "./styles.module.css";
@@ -13,6 +17,8 @@ import { OMNI_LOGO } from "../../assets/icons/omni_logo";
 
 // Functional Component
 export default function Login() {
+  const errorContext = useContext(ErrorContext);
+
   // States
   const {
     register,
@@ -23,14 +29,11 @@ export default function Login() {
   async function onSubmit(data) {
     try {
       if (await loginUser(data.email, data.password)) window.location.reload();
-      else {
-        console.error("Login failed");
-      }
+      else errorContext.showError(2, "Incorrect email or password!");
     } catch (error) {
       console.log(error.message);
     }
   }
-
 
   // Return layout
   return (

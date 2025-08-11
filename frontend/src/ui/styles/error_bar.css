@@ -21,9 +21,9 @@ div.app-err-cont > div.app-err-d {
 }
 div.app-err-cont > div.app-err-d > h3 {
 	margin: auto auto auto 0;
-	font-family: 'Nexa', sans-serif;
-	font-size: 14px;
-	font-weight: 500;
+	font-family: 'Circular', 'Geist', sans-serif;
+	font-size: 15px;
+	font-weight: 400;
 	color: var(--fg-neg);
 }
 div.app-err-cont > div.app-err-d > div.err-loader {
@@ -45,4 +45,12 @@ div.app-err-cont > div.app-err-d > div.err-loader > div {
 @keyframes errbarrotate {
 	0% { transform: rotate(0deg); }
 	100% { transform: rotate(360deg); }
+}
+
+/* Responsiveness */
+
+@media (max-width: 600px) {
+	div.app-err-cont {
+		right: 20px;
+	}
 }
