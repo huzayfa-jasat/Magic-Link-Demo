@@ -11,8 +11,8 @@
   gap: 15px;
   padding: 20px;
   margin-bottom: 30px;
-  background: linear-gradient(135deg, var(--main-hl-fade) 0%, var(--main-hl-fade2) 100%);
-  border: 1px solid var(--main-hl-fade2);
+  background: linear-gradient(135deg, var(--brd-light-2) 0%, var(--result-valid-fade) 100%);
+  border: 1px solid var(--result-valid-fade);
   border-radius: 10px;
 }
 
@@ -23,7 +23,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--white);
+  background-color: var(--body);
+  border: 1px solid var(--result-valid-fade);
   border-radius: 8px;
   font-size: 24px;
 }
