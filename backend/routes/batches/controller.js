@@ -18,7 +18,8 @@ const {
 	db_deductCreditsForActualBatch,
 	db_createBatchWithEstimate,
 	db_checkDuplicateFilename,
-	db_deleteBatchCompletely
+	db_deleteBatchCompletely,
+	db_createCatchallBatchFromDeliverable
 } = require('./funs_db.js');
 
 // S3 Function Imports
@@ -512,6 +513,30 @@ async function getEnrichmentProgress(req, res) {
 	}
 }
 
+async function verifyCatchalls(req, res) {
+	try {
+		const { batchId } = req.params;
+		const userId = req.user_id;
+		
+		// Create new catchall batch from deliverable batch catchall results
+		const newBatchId = await db_createCatchallBatchFromDeliverable(userId, batchId);
+		
+		if (!newBatchId) {
+			return res.status(HttpStatus.BAD_REQUEST_STATUS).send('Failed to create catchall verification batch');
+		}
+		
+		// Return the new batch ID
+		return res.status(HttpStatus.SUCCESS_STATUS).json({
+			newBatchId: newBatchId,
+			message: 'Catchall verification batch created successfully'
+		});
+		
+	} catch (err) {
+		console.error("VERIFY CATCHALLS ERR = ", err);
+		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+	}
+}
+
 // Exports
 module.exports = {
 	getBatchesList,
@@ -529,4 +554,5 @@ module.exports = {
 	completeS3Upload,
 	getExportUrls,
 	getEnrichmentProgress,
+	verifyCatchalls,
 }

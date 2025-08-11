@@ -1364,3 +1364,26 @@
     display: block;
   }
 }
+
+.verifyCatchallsBtn {
+  height: 40px;
+  width: fit-content;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--main-hl);
+  border-radius: 50px;
+  background-color: transparent;
+  color: var(--main-hl);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.verifyCatchallsBtn:hover {
+  background-color: var(--main-hl);
+  color: white;
+}

@@ -27,7 +27,8 @@ const {
 	generateS3UploadUrl,
 	completeS3Upload,
 	getExportUrls,
-	getEnrichmentProgress
+	getEnrichmentProgress,
+	verifyCatchalls
 } = require('./controller.js');
 
 // ---------------
@@ -56,6 +57,9 @@ batchesRouter.post('/:checkType/batch/:batchId/upload-url', checkValidCheckType,
 batchesRouter.post('/:checkType/batch/:batchId/file-key', checkValidCheckType, checkUserBatchAccess, completeS3Upload);
 batchesRouter.get('/:checkType/batch/:batchId/exports', checkValidCheckType, checkUserBatchAccess, getExportUrls);
 batchesRouter.get('/:checkType/batch/:batchId/export-progress', checkValidCheckType, checkUserBatchAccess, getEnrichmentProgress);
+
+// Verify Catchalls Route (only for deliverable batches)
+batchesRouter.post('/deliverable/batch/:batchId/verify-catchalls', checkUserBatchAccess, verifyCatchalls);
 
 // Export routes
 module.exports = batchesRouter; 
