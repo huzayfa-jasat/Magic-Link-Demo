@@ -390,6 +390,11 @@
   margin-bottom: 2rem;
 }
 
+.detailsActions {
+  display: flex;
+  gap: 12px;
+}
+
 .detailsTitle {
   margin: 0;
   font-size: 32px;

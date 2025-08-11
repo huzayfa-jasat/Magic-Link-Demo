@@ -56,6 +56,27 @@ export default function EmailsBatchDetailsController({
     }
   }, [details, navigate]);
 
+  // Verify catchalls handler
+  const handleVerifyCatchalls = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/batches/deliverable/batch/${id}/verify-catchalls`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        navigate(`/validate/catchall/${data.newBatchId}`);
+      } else {
+        console.error('Failed to create catchall verification batch');
+      }
+    } catch (error) {
+      console.error('Error creating catchall verification batch:', error);
+    }
+  }, [id, navigate]);
+
   // Infinite scroll detection
   const handleScroll = useCallback(() => {
     const scrollPosition = window.innerHeight + document.documentElement.scrollTop;
@@ -151,29 +172,11 @@ export default function EmailsBatchDetailsController({
         {/* Page header with title and export dropdown */}
         <div className={styles.detailsHeader}>
           <h1 className={styles.detailsTitle}>{details.title ?? "Details"}</h1>
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div className={styles.detailsActions}>
             {checkTyp === 'deliverable' && details.stats.catchall > 0 && (
               <button 
                 className={styles.verifyCatchallsBtn}
-                onClick={async () => {
-                  try {
-                    const response = await fetch(`/api/batches/deliverable/batch/${id}/verify-catchalls`, {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                    });
-                    
-                    if (response.ok) {
-                      const data = await response.json();
-                      navigate(`/validate/catchall/${data.newBatchId}`);
-                    } else {
-                      console.error('Failed to create catchall verification batch');
-                    }
-                  } catch (error) {
-                    console.error('Error creating catchall verification batch:', error);
-                  }
-                }}
+                onClick={handleVerifyCatchalls}
               >
                 Verify Catchalls
               </button>

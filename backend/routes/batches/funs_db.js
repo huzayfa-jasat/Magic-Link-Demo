@@ -1191,6 +1191,28 @@ async function db_deleteBatchCompletely(user_id, check_type, batch_id) {
     }
 }
 
+// Get count of catchall emails from deliverable batch
+async function db_getCatchallCountFromDeliverable(user_id, deliverable_batch_id) {
+	try {
+		const result = await knex('Batch_Emails_Deliverable as bed')
+			.join('Email_Deliverable_Results as edr', 'bed.email_global_id', 'edr.email_global_id')
+			.join('Batches_Deliverable as bd', 'bed.batch_id', 'bd.id')
+			.where({
+				'bed.batch_id': deliverable_batch_id,
+				'bd.user_id': user_id,
+				'bd.status': 'completed',
+				'edr.is_catchall': 1
+			})
+			.count('* as count')
+			.first();
+			
+		return result ? result.count : 0;
+	} catch (error) {
+		console.error('Error getting catchall count:', error);
+		return 0;
+	}
+}
+
 // Create catchall batch from deliverable batch catchall results
 async function db_createCatchallBatchFromDeliverable(user_id, deliverable_batch_id) {
 	const trx = await knex.transaction();
@@ -1324,5 +1346,6 @@ module.exports = {
 	db_sendBatchCompletionEmail,
 	db_checkDuplicateFilename,
 	db_deleteBatchCompletely,
+	db_getCatchallCountFromDeliverable,
 	db_createCatchallBatchFromDeliverable
 }
