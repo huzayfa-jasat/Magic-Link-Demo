@@ -99,6 +99,16 @@ export default function ReferralsController() {
         <ReferralEligibilityNotice purchases={userLifetimePurchases} onClose={()=>{setEligibilityNoticeOpen(false)}} />
       )}
       <div className={styles.container}>
+        {/* Referral Banner */}
+        <div className={styles.referralBanner}>
+          <div className={styles.bannerIcon}>
+            🎉
+          </div>
+          <div className={styles.bannerContent}>
+            <h3 className={styles.bannerTitle}>Refer friends and earn rewards!</h3>
+            <p className={styles.bannerSubtitle}>When you refer a friend, both you and your referral get 25,000 credits each.</p>
+          </div>
+        </div>
         {/* Referral Code */}
         <div className={styles.metricsContainer}>
           <div className={styles.referralCodeContainer}>
