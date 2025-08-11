@@ -8,11 +8,11 @@
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 18px;
   padding: 20px;
   margin-bottom: 30px;
-  background: linear-gradient(135deg, var(--brd-light-2) 0%, var(--result-valid-fade) 100%);
-  border: 1px solid var(--result-valid-fade);
+  background: linear-gradient(135deg, var(--brd-light-2) 0%, var(--main-hl-fade2) 100%);
+  border: 1px solid var(--main-hl-fade);
   border-radius: 10px;
 }
 
@@ -23,8 +23,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--body);
-  border: 1px solid var(--result-valid-fade);
+  background-color: var(--main-hl-fade3);
+  border: 1px solid var(--main-hl-fade);
   border-radius: 8px;
   font-size: 24px;
 }
@@ -32,7 +32,7 @@
 .bannerContent {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .bannerTitle {
@@ -340,6 +340,7 @@
   .metricsContainer > .referralCodeContainer:nth-child(3) {
     grid-column: auto;
     grid-row: auto;
+    min-width: unset !important;
   }
 
   .availableCredits.mini {
@@ -350,6 +351,21 @@
 
 
 /* Responsiveness */
+@media screen and (max-width: 675px) {
+  .referralBanner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 25px;
+  }
+  .bannerIcon {
+    width: fit-content;
+    height: fit-content;
+    background-color: transparent;
+    border: none;
+    font-size: 30px;
+  }
+}
 @media screen and (max-width: 700px) {
   .title {
     font-size: 25px;
