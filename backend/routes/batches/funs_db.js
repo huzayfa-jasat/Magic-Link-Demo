@@ -1217,11 +1217,13 @@ async function db_getCatchallCountFromDeliverable(user_id, deliverable_batch_id)
 			})
 			.count('* as count')
 			.first();
-			
-		return result ? result.count : 0;
+		
+		console.log("CATCHALL COUNT = ", result ? result.count : 0);
+		return [true, result ? result.count : 0];
+
 	} catch (error) {
 		console.error('Error getting catchall count:', error);
-		return 0;
+		return [false, 0];
 	}
 }
 
