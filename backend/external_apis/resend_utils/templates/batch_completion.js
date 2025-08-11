@@ -18,7 +18,7 @@ const resend_template_BatchCompletion = (batchTitle, checkType, batchId) => {
 			<body style='background-color:rgb(245,245,245);font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";padding-top:40px;padding-bottom:40px'>
 				<!--$-->
 				<div style="display:none;overflow:hidden;line-height:1px;opacity:0;max-height:0;max-width:0">
-					Your batch "${batchTitle}" has been completed
+					Your list "${batchTitle}" is ready
 				</div>
 				<table
 					align="center"
@@ -57,10 +57,10 @@ const resend_template_BatchCompletion = (batchTitle, checkType, batchId) => {
 														<tr>
 															<td>
 																<h1 style="font-size:24px;font-weight:700;color:rgb(0,0,0);text-align:center;margin:0px;margin-bottom:16px">
-																	Batch Completed
+																	List Completed
 																</h1>
 																<p style="font-size:16px;line-height:24px;color:rgb(0,0,0);margin-bottom:24px;margin-top:16px;text-align:center">
-																	Great news! Your ${checkTypeDisplay} batch "${batchTitle}" has been completed successfully. You can now view the detailed results and export your data.
+																	Great news! Your ${checkTypeDisplay} list "${batchTitle}" has been completed successfully. You can now view the detailed results and export your data.
 																</p>
 																<table
 																	align="center"
