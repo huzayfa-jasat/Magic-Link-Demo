@@ -1191,6 +1191,140 @@ async function db_deleteBatchCompletely(user_id, check_type, batch_id) {
     }
 }
 
+// Get count of catchall emails from deliverable batch
+async function db_getCatchallCountFromDeliverable(user_id, deliverable_batch_id) {
+	try {
+		const result = await knex('Batch_Emails_Deliverable as bed')
+			.join('Email_Deliverable_Results as edr', 'bed.email_global_id', 'edr.email_global_id')
+			.join('Batches_Deliverable as bd', 'bed.batch_id', 'bd.id')
+			.where({
+				'bed.batch_id': deliverable_batch_id,
+				'bd.user_id': user_id,
+				'bd.status': 'completed',
+				'edr.is_catchall': 1
+			})
+			.count('* as count')
+			.first();
+			
+		return result ? result.count : 0;
+	} catch (error) {
+		console.error('Error getting catchall count:', error);
+		return 0;
+	}
+}
+
+// Create catchall batch from deliverable batch catchall results
+async function db_createCatchallBatchFromDeliverable(user_id, deliverable_batch_id) {
+	const trx = await knex.transaction();
+	
+	try {
+		// 1. Get the original deliverable batch details
+		const original_batch = await trx('Batches_Deliverable')
+			.where({
+				'id': deliverable_batch_id,
+				'user_id': user_id,
+				'status': 'completed'
+			})
+			.first();
+			
+		if (!original_batch) {
+			await trx.rollback();
+			console.log('Original deliverable batch not found or not completed');
+			return null;
+		}
+		
+		// 2. Get all catchall emails from the deliverable batch
+		const catchall_emails = await trx('Batch_Emails_Deliverable as bed')
+			.join('Email_Deliverable_Results as edr', 'bed.email_global_id', 'edr.email_global_id')
+			.where({
+				'bed.batch_id': deliverable_batch_id,
+				'edr.is_catchall': 1
+			})
+			.select('bed.email_global_id', 'bed.email_nominal');
+			
+		if (catchall_emails.length === 0) {
+			await trx.rollback();
+			console.log('No catchall emails found in deliverable batch');
+			return null;
+		}
+		
+		// 3. Create new catchall batch
+		const [new_batch_id] = await trx('Batches_Catchall').insert({
+			'title': `${original_batch.title} - Catchall Verification`,
+			'user_id': user_id,
+			'status': 'queued',
+			'total_emails': catchall_emails.length,
+			'created_ts': knex.fn.now()
+		});
+		
+		// 4. Copy S3 metadata if exists (use catchall_only export as original file)
+		if (original_batch.s3_metadata) {
+			const metadata = JSON.parse(original_batch.s3_metadata);
+			
+			// Check if catchall_only export exists
+			if (metadata.exports && metadata.exports.catchall_only) {
+				const new_metadata = {
+					original: {
+						s3_key: metadata.exports.catchall_only.s3_key,
+						mime_type: 'text/csv',
+						column_mapping: { email: 0 },
+						source_batch_id: deliverable_batch_id
+					}
+				};
+				
+				await trx('Batches_Catchall')
+					.where('id', new_batch_id)
+					.update({
+						's3_metadata': JSON.stringify(new_metadata)
+					});
+			} else if (metadata.original) {
+				// Fallback to original file if no catchall export
+				const new_metadata = {
+					original: {
+						...metadata.original,
+						source_batch_id: deliverable_batch_id
+					}
+				};
+				
+				await trx('Batches_Catchall')
+					.where('id', new_batch_id)
+					.update({
+						's3_metadata': JSON.stringify(new_metadata)
+					});
+			}
+		}
+		
+		// 5. Add emails to the new catchall batch
+		const batch_emails = catchall_emails.map(email => ({
+			'batch_id': new_batch_id,
+			'email_global_id': email.email_global_id,
+			'email_nominal': email.email_nominal,
+			'used_cached': 0,
+			'did_complete': 0
+		}));
+		
+		await trx('Batch_Emails_Catchall').insert(batch_emails);
+		
+		// 6. Start processing the batch automatically
+		await trx('Batches_Catchall')
+			.where('id', new_batch_id)
+			.update({
+				'status': 'processing'
+			});
+		
+		// Commit transaction
+		await trx.commit();
+		
+		console.log(`Created catchall batch ${new_batch_id} with ${catchall_emails.length} emails from deliverable batch ${deliverable_batch_id}`);
+		return new_batch_id;
+		
+	} catch (error) {
+		await trx.rollback();
+		console.error('Error creating catchall batch from deliverable:', error);
+		return null;
+	}
+}
+
 // Exports
 module.exports = {
 	db_checkUserBatchAccess,
@@ -1211,5 +1345,7 @@ module.exports = {
 	db_createBatchWithEstimate,
 	db_sendBatchCompletionEmail,
 	db_checkDuplicateFilename,
-	db_deleteBatchCompletely
+	db_deleteBatchCompletely,
+	db_getCatchallCountFromDeliverable,
+	db_createCatchallBatchFromDeliverable
 }

@@ -18,7 +18,9 @@ const {
 	db_deductCreditsForActualBatch,
 	db_createBatchWithEstimate,
 	db_checkDuplicateFilename,
-	db_deleteBatchCompletely
+	db_deleteBatchCompletely,
+	db_createCatchallBatchFromDeliverable,
+	db_getCatchallCountFromDeliverable
 } = require('./funs_db.js');
 
 // S3 Function Imports
@@ -512,6 +514,53 @@ async function getEnrichmentProgress(req, res) {
 	}
 }
 
+async function verifyCatchalls(req, res) {
+	try {
+		const { batchId } = req.params;
+		const userId = req.user_id;
+		
+		// First check how many catchall emails we need to verify
+		const catchallCount = await db_getCatchallCountFromDeliverable(userId, batchId);
+		
+		if (!catchallCount || catchallCount === 0) {
+			return res.status(HttpStatus.BAD_REQUEST_STATUS).send('No catchall emails found in batch');
+		}
+		
+		// Check if user has enough credits
+		const hasCredits = await db_checkCreditsOnly(userId, 'catchall', catchallCount);
+		
+		if (!hasCredits) {
+			return res.status(HttpStatus.BAD_REQUEST_STATUS).send('Insufficient credits for catchall verification');
+		}
+		
+		// Create new catchall batch from deliverable batch catchall results
+		const newBatchId = await db_createCatchallBatchFromDeliverable(userId, batchId);
+		
+		if (!newBatchId) {
+			return res.status(HttpStatus.BAD_REQUEST_STATUS).send('Failed to create catchall verification batch');
+		}
+		
+		// Deduct credits immediately - using newBatchId for the actual batch
+		const [creditDeductSuccess] = await db_deductCreditsForActualBatch(userId, 'catchall', newBatchId);
+		
+		// If credit deduction fails, delete the batch we just created
+		if (!creditDeductSuccess) {
+			await db_deleteBatchCompletely(userId, 'catchall', newBatchId);
+			return res.status(HttpStatus.BAD_REQUEST_STATUS).send('Insufficient credits for catchall verification');
+		}
+		
+		// Return the new batch ID
+		return res.status(HttpStatus.SUCCESS_STATUS).json({
+			newBatchId: newBatchId,
+			message: 'Catchall verification batch created successfully'
+		});
+		
+	} catch (err) {
+		console.error("VERIFY CATCHALLS ERR = ", err);
+		return res.status(HttpStatus.MISC_ERROR_STATUS).send(HttpStatus.MISC_ERROR_MSG);
+	}
+}
+
 // Exports
 module.exports = {
 	getBatchesList,
@@ -529,4 +578,5 @@ module.exports = {
 	completeS3Upload,
 	getExportUrls,
 	getEnrichmentProgress,
+	verifyCatchalls,
 }

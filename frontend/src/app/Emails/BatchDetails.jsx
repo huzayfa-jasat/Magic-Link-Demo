@@ -56,6 +56,27 @@ export default function EmailsBatchDetailsController({
     }
   }, [details, navigate]);
 
+  // Verify catchalls handler
+  const handleVerifyCatchalls = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/batches/deliverable/batch/${id}/verify-catchalls`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        navigate(`/validate/catchall/${data.newBatchId}`);
+      } else {
+        console.error('Failed to create catchall verification batch');
+      }
+    } catch (error) {
+      console.error('Error creating catchall verification batch:', error);
+    }
+  }, [id, navigate]);
+
   // Infinite scroll detection
   const handleScroll = useCallback(() => {
     const scrollPosition = window.innerHeight + document.documentElement.scrollTop;
@@ -151,13 +172,23 @@ export default function EmailsBatchDetailsController({
         {/* Page header with title and export dropdown */}
         <div className={styles.detailsHeader}>
           <h1 className={styles.detailsTitle}>{details.title ?? "Details"}</h1>
-          <ExportPopupMenu
-            title={details.title}
-            checkTyp={checkTyp}
-            handleExport={handleExportFiltered}
-            showValid={details.stats.valid} showInvalid={details.stats.invalid} showCatchall={details.stats.catchall}
-            showGood={details.stats.good} showRisky={details.stats.risky} showBad={details.stats.bad}
-          />
+          <div className={styles.detailsActions}>
+            {checkTyp === 'deliverable' && details.stats.catchall > 0 && (
+              <button 
+                className={styles.verifyCatchallsBtn}
+                onClick={handleVerifyCatchalls}
+              >
+                Verify Catchalls
+              </button>
+            )}
+            <ExportPopupMenu
+              title={details.title}
+              checkTyp={checkTyp}
+              handleExport={handleExportFiltered}
+              showValid={details.stats.valid} showInvalid={details.stats.invalid} showCatchall={details.stats.catchall}
+              showGood={details.stats.good} showRisky={details.stats.risky} showBad={details.stats.bad}
+            />
+          </div>
         </div>
 
         <p className={styles.subtitle}>We automatically find & remove duplicates and non-email entries from your list.</p>
