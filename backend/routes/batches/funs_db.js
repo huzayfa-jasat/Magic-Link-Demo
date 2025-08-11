@@ -392,6 +392,9 @@ async function db_getBatchesList(user_id, page, limit, order, category, status) 
 				progress: 0,
 			};
 			formatted.progress = progress_dict.progress;
+
+			// Mask <=5 progress as queued
+			if (formatted.progress <= 5) formatted.status = 'queued';
 		}
 		return formatted;
 	}));
