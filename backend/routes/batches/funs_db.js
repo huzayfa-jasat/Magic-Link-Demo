@@ -1200,26 +1200,31 @@ async function db_deleteBatchCompletely(user_id, check_type, batch_id) {
 // Get count of catchall emails from deliverable batch
 async function db_getCatchallCountFromDeliverable(user_id, deliverable_batch_id) {
 	try {
-		const result = await knex('Batch_Emails_Deliverable as bed')
-			.join('Email_Deliverable_Results as edr', 'bed.email_global_id', 'edr.email_global_id')
-			.join('Batches_Deliverable as bd', 'bed.batch_id', 'bd.id')
+		// First verify the batch belongs to the user and is completed
+		const batch = await knex('Batches_Deliverable')
 			.where({
-				'bed.batch_id': deliverable_batch_id,
-				'bd.user_id': user_id,
-				'bd.status': 'completed'
+				'id': deliverable_batch_id,
+				'user_id': user_id,
+				'status': 'completed'
 			})
-			.where(function() {
-				this.where('edr.is_catchall', 1)
-					.orWhere(function() {
-						this.where('edr.status', 'risky')
-							.andWhere('edr.reason', 'low_deliverability');
-					});
-			})
-			.count('* as count')
 			.first();
 		
-		console.log("CATCHALL COUNT = ", result ? result.count : 0);
-		return [true, result ? result.count : 0];
+		if (!batch) {
+			console.log('Batch not found or not completed for user');
+			return [false, 0];
+		}
+		
+		// Now just call the existing stats function and return the catchall count
+		const [stats_ok, stats] = await db_getDeliverableBatchStats(deliverable_batch_id);
+		
+		if (!stats_ok) {
+			console.error('Failed to get batch stats');
+			return [false, 0];
+		}
+		
+		const catchall_count = stats.catchall || 0;
+		console.log("CATCHALL COUNT = ", catchall_count);
+		return [true, catchall_count];
 
 	} catch (error) {
 		console.error('Error getting catchall count:', error);
@@ -1234,11 +1239,9 @@ async function db_createCatchallBatchFromDeliverable(user_id, deliverable_batch_
 	try {
 		// 1. Get the original deliverable batch details
 		const original_batch = await trx('Batches_Deliverable')
-			.where({
-				'id': deliverable_batch_id,
-				'user_id': user_id,
-				'status': 'completed'
-			})
+			.where('id', deliverable_batch_id)
+			.where('user_id', user_id)
+			.where('status', 'completed')
 			.first();
 			
 		if (!original_batch) {
