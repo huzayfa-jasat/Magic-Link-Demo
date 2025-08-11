@@ -398,22 +398,23 @@ async function db_processBouncerResults(bouncer_batch_id, results_array, check_t
             });
         }
 
-        // 6. Check if user batches are complete (NEW LOGIC)
-        for (const user_batch_id of affected_user_batches) {
-            await checkAndCompleteUserBatch(trx, user_batch_id, check_type);
-        }
-
-        // 7. Clean up bouncer email association records (AFTER all processing is done)
+        // 6. Clean up bouncer email association records (BEFORE checking user batch completion)
         const cleanup_result = await trx(bouncer_email_table)
             .where('bouncer_batch_id', bouncer_batch_id)
             .del();
         
         console.log(`🧹 Cleaned up ${cleanup_result || 0} bouncer email association records for completed batch ${bouncer_batch_id}`);
 
-        // Commit transaction
+        // Commit transaction FIRST to ensure all results are visible in the database
         await trx.commit();
         
         console.log(`🎉 Successfully processed ${global_results_update_array.length} results for bouncer batch ${bouncer_batch_id}`);
+        
+        // 7. Check if user batches are complete (AFTER COMMIT - so S3 enrichment can see all results)
+        for (const user_batch_id of affected_user_batches) {
+            await checkAndCompleteUserBatch(null, user_batch_id, check_type);
+        }
+        
         return [true, global_results_update_array.length];
 
     } catch (error) {
@@ -425,16 +426,19 @@ async function db_processBouncerResults(bouncer_batch_id, results_array, check_t
 
 /**
  * Check if user batch is complete and update status accordingly - NEW HELPER FUNCTION
- * @param {Object} trx - Knex transaction
+ * @param {Object} trx - Knex transaction (or null to use regular connection)
  * @param {number} user_batch_id - User batch ID
  * @param {string} check_type - 'deliverable' or 'catchall'
  */
 async function checkAndCompleteUserBatch(trx, user_batch_id, check_type) {
     const batch_table = getBatchTableName(check_type);
     const batch_email_table = getEmailBatchAssociationTableName(check_type);
+    
+    // Use transaction if provided, otherwise use regular knex connection
+    const db = trx || knex;
 
     // Check if all emails in this user batch are complete
-    const incomplete_emails = await trx(batch_email_table)
+    const incomplete_emails = await db(batch_email_table)
         .where('batch_id', user_batch_id)
         .where('did_complete', 0)
         .count('* as count')
@@ -442,7 +446,7 @@ async function checkAndCompleteUserBatch(trx, user_batch_id, check_type) {
 
     if (incomplete_emails.count === 0) {
         // All emails are complete - mark user batch as completed
-        await trx(batch_table)
+        await db(batch_table)
             .where('id', user_batch_id)
             .update({
                 status: 'completed',
