@@ -1330,15 +1330,55 @@ async function db_createCatchallBatchFromDeliverable(user_id, deliverable_batch_
 		
 		await trx('Batch_Emails_Catchall').insert(batch_emails);
 		
-		// 6. Start processing the batch automatically
+		// 6. Check cached results for existing results
+		const existing_results = await trx('Email_Catchall_Results')
+			.whereIn('email_global_id', catchall_emails.map(email => email.email_global_id))
+			.pluck('email_global_id');
+		
+		// 7. Update batch emails association table entries with cached results
+		if (existing_results.length > 0) {
+			await trx('Batch_Emails_Catchall')
+				.whereIn('email_global_id', existing_results)
+				.where('batch_id', new_batch_id)
+				.update({
+					'used_cached': 1,
+					'did_complete': 1
+				});
+		}
+		
+		// 8. Check if all emails were cached - if so, mark batch as completed
+		let batch_status = 'queued';  // Start as queued, will be set to processing or completed
+		if (existing_results.length === catchall_emails.length) {
+			batch_status = 'completed';
+			console.log(`All ${catchall_emails.length} emails for catchall batch ${new_batch_id} were found in cache - marking as completed`);
+		} else {
+			console.log(`Found ${existing_results.length} cached results out of ${catchall_emails.length} emails for catchall batch ${new_batch_id}`);
+		}
+		
+		// 9. Update batch status (either queued or completed)
+		const status_update = batch_status === 'completed' 
+			? { 'status': 'completed', 'completed_ts': knex.fn.now() }
+			: { 'status': 'queued' };
+			
 		await trx('Batches_Catchall')
 			.where('id', new_batch_id)
-			.update({
-				'status': 'processing'
-			});
+			.update(status_update);
 		
 		// Commit transaction
 		await trx.commit();
+		
+		// 10. If batch is completed (all cached), send completion email and trigger S3 enrichment
+		if (batch_status === 'completed') {
+			await db_sendBatchCompletionEmail(user_id, 'catchall', new_batch_id);
+			// Don't await - let it run in background
+			s3_triggerS3Enrichment(new_batch_id, 'catchall', db_s3_funcs)
+				.then(() => {
+					console.log(`✅ S3 enrichment completed for catchall batch ${new_batch_id}`);
+				})
+				.catch((error) => {
+					console.error(`❌ S3 enrichment failed for catchall batch ${new_batch_id}:`, error);
+				});
+		}
 		
 		console.log(`Created catchall batch ${new_batch_id} with ${catchall_emails.length} emails from deliverable batch ${deliverable_batch_id}`);
 		return new_batch_id;
