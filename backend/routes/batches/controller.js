@@ -524,11 +524,11 @@ async function verifyCatchalls(req, res) {
 		const userId = req.user_id;
 
 		// First check how many catchall emails we need to verify
-		const catchallCount = await db_getCatchallCountFromDeliverable(userId, batchId);
-		if (!catchallCount || catchallCount === 0) return returnBadRequest(res, 'No catchall emails found in batch');
+		const [countOk, catchallCount] = await db_getCatchallCountFromDeliverable(userId, batchId);
+		if (!countOk || catchallCount === 0) return returnBadRequest(res, 'No catchall emails found in batch');
 		
 		// Check if user has enough credits
-		const hasCredits = await db_checkCreditsOnly(userId, 'catchall', catchallCount);
+		const [hasCredits] = await db_checkCreditsOnly(userId, 'catchall', catchallCount);
 		if (!hasCredits) return returnBadRequest(res, 'Insufficient credits', HttpStatus.PAYMENT_REQUIRED_STATUS);
 		
 		// Create new catchall batch from deliverable batch catchall results
