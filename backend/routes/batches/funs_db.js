@@ -1202,11 +1202,9 @@ async function db_getCatchallCountFromDeliverable(user_id, deliverable_batch_id)
 	try {
 		// First verify the batch belongs to the user and is completed
 		const batch = await knex('Batches_Deliverable')
-			.where({
-				'id': deliverable_batch_id,
-				'user_id': user_id,
-				'status': 'completed'
-			})
+			.where('id', deliverable_batch_id)
+			.where('user_id', user_id)
+			.where('status', 'completed')
 			.first();
 		
 		if (!batch) {
