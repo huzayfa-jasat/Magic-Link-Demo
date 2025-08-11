@@ -106,7 +106,7 @@ export default function ReferralsController() {
           </div>
           <div className={styles.bannerContent}>
             <h3 className={styles.bannerTitle}>Refer More = Earn More</h3>
-            <p className={styles.bannerSubtitle}>For every referral you make, you BOTH get 25,000 credits each.</p>
+            <p className={styles.bannerSubtitle}>For every referral you make, you BOTH get 25,000 credits each (worth $42).</p>
           </div>
         </div>
         {/* Referral Code */}
