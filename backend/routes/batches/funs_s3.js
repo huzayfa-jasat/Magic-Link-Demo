@@ -254,6 +254,10 @@ async function s3_enrichBatchExports(batchId, checkType, db_funcs) {
         // 7. Process the file
         let processedRows = 0;
         const updateInterval = 10000; // Update every 10k rows
+        const rowCounts = {}; // Track row counts for each export type
+        Object.keys(exportTypes).forEach(key => {
+            rowCounts[key] = 0;
+        });
         
         // Handle Excel files differently
         if (mimeType.includes('excel') || mimeType.includes('spreadsheet') || originalS3Key.endsWith('.xlsx') || originalS3Key.endsWith('.xls')) {
@@ -264,11 +268,11 @@ async function s3_enrichBatchExports(batchId, checkType, db_funcs) {
             const csvStream = new PassThrough();
             csvStream.end(csvData);
             
-            await processStream(csvStream, columnMapping, resultsMap, stringifiers, checkType, processedRows, updateInterval, batchId, db_funcs);
+            await processStream(csvStream, columnMapping, resultsMap, stringifiers, checkType, processedRows, updateInterval, batchId, db_funcs, rowCounts);
         } else {
             // Process CSV directly
             console.log('📄 Processing CSV file...');
-            await processStream(downloadResponse.Body, columnMapping, resultsMap, stringifiers, checkType, processedRows, updateInterval, batchId, db_funcs);
+            await processStream(downloadResponse.Body, columnMapping, resultsMap, stringifiers, checkType, processedRows, updateInterval, batchId, db_funcs, rowCounts);
         }
         
         // 8. Close all stringifiers
@@ -289,7 +293,7 @@ async function s3_enrichBatchExports(batchId, checkType, db_funcs) {
             exportMetadata[type] = {
                 s3_key: result.Key,
                 generated_at: new Date().toISOString(),
-                size: result.ContentLength || 0,
+                size: rowCounts[type] || 0,  // Use row count instead of file size
                 status: 'completed'
             };
         });
@@ -322,7 +326,7 @@ async function s3_enrichBatchExports(batchId, checkType, db_funcs) {
 /**
  * Process the stream and enrich data
  */
-async function processStream(inputStream, columnMapping, resultsMap, stringifiers, checkType, processedRows, updateInterval, batchId, db_funcs) {
+async function processStream(inputStream, columnMapping, resultsMap, stringifiers, checkType, processedRows, updateInterval, batchId, db_funcs, rowCounts) {
     return new Promise((resolve, reject) => {
         let isFirstRow = true;
         let headers = null;
@@ -382,20 +386,41 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
                 }
                 
                 // Write to all emails export
-                if (stringifiers.all_emails) stringifiers.all_emails.write(enrichedRow);
+                if (stringifiers.all_emails) {
+                    stringifiers.all_emails.write(enrichedRow);
+                    if (rowCounts) rowCounts.all_emails++;
+                }
                 
                 // Write to filtered exports based on status
                 const status = enrichedRow[status_col_header];
                 
                 if (checkType === 'deliverable') {
-                    if (status === 'Valid' && stringifiers.valid_only) stringifiers.valid_only.write(enrichedRow);
-                    else if (status === 'Invalid' && stringifiers.invalid_only) stringifiers.invalid_only.write(enrichedRow);
-                    else if (status === 'Catch-All' && stringifiers.catchall_only) stringifiers.catchall_only.write(enrichedRow);
+                    if (status === 'Valid' && stringifiers.valid_only) {
+                        stringifiers.valid_only.write(enrichedRow);
+                        if (rowCounts) rowCounts.valid_only++;
+                    }
+                    else if (status === 'Invalid' && stringifiers.invalid_only) {
+                        stringifiers.invalid_only.write(enrichedRow);
+                        if (rowCounts) rowCounts.invalid_only++;
+                    }
+                    else if (status === 'Catch-All' && stringifiers.catchall_only) {
+                        stringifiers.catchall_only.write(enrichedRow);
+                        if (rowCounts) rowCounts.catchall_only++;
+                    }
 
                 } else if (checkType === 'catchall') {
-                    if (status === 'Good' && stringifiers.good_only) stringifiers.good_only.write(enrichedRow);
-                    else if (status === 'Bad' && stringifiers.bad_only) stringifiers.bad_only.write(enrichedRow);
-                    else if (status === 'Risky' && stringifiers.risky_only) stringifiers.risky_only.write(enrichedRow);
+                    if (status === 'Good' && stringifiers.good_only) {
+                        stringifiers.good_only.write(enrichedRow);
+                        if (rowCounts) rowCounts.good_only++;
+                    }
+                    else if (status === 'Bad' && stringifiers.bad_only) {
+                        stringifiers.bad_only.write(enrichedRow);
+                        if (rowCounts) rowCounts.bad_only++;
+                    }
+                    else if (status === 'Risky' && stringifiers.risky_only) {
+                        stringifiers.risky_only.write(enrichedRow);
+                        if (rowCounts) rowCounts.risky_only++;
+                    }
                 }
             })
             .on('end', () => {
