@@ -1292,7 +1292,7 @@ async function db_createCatchallBatchFromDeliverable(user_id, deliverable_batch_
 					original: {
 						s3_key: metadata.exports.catchall_only.s3_key,
 						mime_type: 'text/csv',
-						column_mapping: { email: 0 },
+						column_mapping: metadata.original ? metadata.original.column_mapping : { email: 0 },
 						source_batch_id: deliverable_batch_id
 					}
 				};
