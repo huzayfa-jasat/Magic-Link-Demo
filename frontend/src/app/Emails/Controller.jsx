@@ -219,7 +219,7 @@ export default function HomeController() {
     // Set up interval for periodic updates
     const intervalId = setInterval(() => {
       updateBatchStatuses(requests);
-    }, 10000); // Update every 10 seconds
+    }, 2000); // Update every 2 seconds
     
     // Cleanup
     return () => clearInterval(intervalId);
