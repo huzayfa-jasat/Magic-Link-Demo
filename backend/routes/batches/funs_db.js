@@ -1278,7 +1278,10 @@ async function db_createCatchallBatchFromDeliverable(user_id, deliverable_batch_
 		
 		// 4. Copy S3 metadata if exists (use catchall_only export as original file)
 		if (original_batch.s3_metadata) {
-			const metadata = JSON.parse(original_batch.s3_metadata);
+			// Check if s3_metadata is already an object or needs parsing
+			const metadata = typeof original_batch.s3_metadata === 'string' 
+				? JSON.parse(original_batch.s3_metadata) 
+				: original_batch.s3_metadata;
 			
 			// Check if catchall_only export exists
 			if (metadata.exports && metadata.exports.catchall_only) {
