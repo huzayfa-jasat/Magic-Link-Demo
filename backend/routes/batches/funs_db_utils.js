@@ -74,7 +74,8 @@ const getEmailBatchAssociationTableName = (check_type) => {
 
 // Formatting Functions
 const formatResultsByCheckType = (results, check_type) => {
-	return results.map((result)=>{
+	const results_no_unknown = results.filter((result)=>result.status !== 'unknown');
+	return results_no_unknown.map((result)=>{
 		let check_type_specific_result = {};
 
 		// Handle check_type specific results
