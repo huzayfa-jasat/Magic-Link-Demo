@@ -296,7 +296,7 @@ async function db_getBatchesList(user_id, page, limit, order, category, status) 
 	let status_filter;
 	switch (status) {
 		case 'processing':
-			status_filter = ['processing', 'draft', 'pending'];
+			status_filter = ['processing', 'pending'];
 			break;
 		case 'queued':
 			status_filter = ['queued'];
@@ -311,7 +311,8 @@ async function db_getBatchesList(user_id, page, limit, order, category, status) 
 			status_filter = ['failed'];
 			break;
 		default:
-			status_filter = null;
+			// Everything except draft
+			status_filter = ['queued', 'processing', 'pending', 'paused', 'completed', 'failed'];
 			break;
 	}
 
