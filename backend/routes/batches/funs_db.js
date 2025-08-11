@@ -1206,8 +1206,14 @@ async function db_getCatchallCountFromDeliverable(user_id, deliverable_batch_id)
 			.where({
 				'bed.batch_id': deliverable_batch_id,
 				'bd.user_id': user_id,
-				'bd.status': 'completed',
-				'edr.is_catchall': 1
+				'bd.status': 'completed'
+			})
+			.where(function() {
+				this.where('edr.is_catchall', 1)
+					.orWhere(function() {
+						this.where('edr.status', 'risky')
+							.andWhere('edr.reason', 'low_deliverability');
+					});
 			})
 			.count('* as count')
 			.first();
