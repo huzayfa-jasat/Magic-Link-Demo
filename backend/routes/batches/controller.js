@@ -516,6 +516,10 @@ async function getEnrichmentProgress(req, res) {
 
 async function verifyCatchalls(req, res) {
 	try {
+		// Validate check type (for verifying catchalls directly, only supported from existing deliverable batches)
+		if (req.params.checkType !== 'deliverable') return returnBadRequest(res, 'Invalid check type');
+
+		// Extract params
 		const { batchId } = req.params;
 		const userId = req.user_id;
 

@@ -51,7 +51,7 @@ batchesRouter.get('/:checkType/batch/:batchId/details', checkValidCheckType, che
 batchesRouter.get('/:checkType/batch/:batchId/results', checkValidCheckType, checkUserBatchAccess, getBatchResults);
 batchesRouter.get('/:checkType/batch/:batchId/progress', checkValidCheckType, checkUserBatchAccess, getBatchProgress);
 batchesRouter.delete('/:checkType/batch/:batchId/rm', checkValidCheckType, checkUserBatchAccess, removeBatch);
-batchesRouter.post('/deliverable/batch/:batchId/verify-catchalls', checkUserBatchAccess, verifyCatchalls);
+batchesRouter.post('/:checkType/batch/:batchId/verify-catchalls', checkValidCheckType, checkUserBatchAccess, verifyCatchalls);
 
 // S3 Upload/Export Routes
 batchesRouter.post('/:checkType/batch/:batchId/upload-url', checkValidCheckType, checkUserBatchAccess, generateS3UploadUrl);
