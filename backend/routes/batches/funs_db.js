@@ -142,7 +142,7 @@ async function db_addToBatch(user_id, check_type, batch_id, emails) {
 		'batch_id': batch_id,
 		'email_global_id': email.global_id,
 		'email_nominal': email.email,
-	}))).catch((err)=>{if (err) err_code = err.code});
+	}))).onConflict().merge().catch((err)=>{if (err) err_code = err.code});
 	if (err_code) console.log("/add ERR 2 = ", err_code);
 	if (err_code) return [false, null];
 
