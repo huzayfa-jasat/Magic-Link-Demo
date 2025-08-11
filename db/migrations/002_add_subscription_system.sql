@@ -13,7 +13,6 @@ CREATE TABLE Subscription_Plans (
     billing_period ENUM('monthly', 'yearly') NOT NULL DEFAULT 'monthly',
     is_active BOOLEAN DEFAULT 1,
     is_live BOOLEAN DEFAULT 0,
-    display_order INT DEFAULT 0,
     features JSON,
     created_ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_active_live (is_active, is_live),
@@ -72,17 +71,17 @@ CREATE TABLE User_Catchall_Sub_Credits (
 
 -- Seed initial test subscription plans (separate for regular and catchall)
 -- Regular subscription plans
-INSERT INTO Subscription_Plans 
-(subscription_type, stripe_product_id, stripe_price_id, name, display_price, credits_per_period, billing_period, is_active, is_live, display_order)
-VALUES
-('regular', 'prod_test_regular_basic', 'price_test_regular_basic', 'Basic Email Monthly', '$29/month', 50000, 'monthly', 1, 0, 1),
-('regular', 'prod_test_regular_pro', 'price_test_regular_pro', 'Pro Email Monthly', '$99/month', 200000, 'monthly', 1, 0, 2),
-('regular', 'prod_test_regular_enterprise', 'price_test_regular_enterprise', 'Enterprise Email Monthly', '$299/month', 1000000, 'monthly', 1, 0, 3);
+-- INSERT INTO Subscription_Plans 
+-- (subscription_type, stripe_product_id, stripe_price_id, name, display_price, credits_per_period, billing_period, is_active, is_live, display_order)
+-- VALUES
+-- ('regular', 'prod_test_regular_basic', 'price_test_regular_basic', 'Basic Email Monthly', '$29/month', 50000, 'monthly', 1, 0, 1),
+-- ('regular', 'prod_test_regular_pro', 'price_test_regular_pro', 'Pro Email Monthly', '$99/month', 200000, 'monthly', 1, 0, 2),
+-- ('regular', 'prod_test_regular_enterprise', 'price_test_regular_enterprise', 'Enterprise Email Monthly', '$299/month', 1000000, 'monthly', 1, 0, 3);
 
--- Catchall subscription plans
-INSERT INTO Subscription_Plans 
-(subscription_type, stripe_product_id, stripe_price_id, name, display_price, credits_per_period, billing_period, is_active, is_live, display_order)
-VALUES
-('catchall', 'prod_test_catchall_basic', 'price_test_catchall_basic', 'Basic Catchall Monthly', '$19/month', 5000, 'monthly', 1, 0, 1),
-('catchall', 'prod_test_catchall_pro', 'price_test_catchall_pro', 'Pro Catchall Monthly', '$49/month', 20000, 'monthly', 1, 0, 2),
-('catchall', 'prod_test_catchall_enterprise', 'price_test_catchall_enterprise', 'Enterprise Catchall Monthly', '$149/month', 100000, 'monthly', 1, 0, 3);
+-- -- Catchall subscription plans
+-- INSERT INTO Subscription_Plans 
+-- (subscription_type, stripe_product_id, stripe_price_id, name, display_price, credits_per_period, billing_period, is_active, is_live, display_order)
+-- VALUES
+-- ('catchall', 'prod_test_catchall_basic', 'price_test_catchall_basic', 'Basic Catchall Monthly', '$19/month', 5000, 'monthly', 1, 0, 1),
+-- ('catchall', 'prod_test_catchall_pro', 'price_test_catchall_pro', 'Pro Catchall Monthly', '$49/month', 20000, 'monthly', 1, 0, 2),
+-- ('catchall', 'prod_test_catchall_enterprise', 'price_test_catchall_enterprise', 'Enterprise Catchall Monthly', '$149/month', 100000, 'monthly', 1, 0, 3);

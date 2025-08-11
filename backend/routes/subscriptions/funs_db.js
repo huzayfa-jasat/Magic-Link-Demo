@@ -22,7 +22,7 @@ async function db_getAvailablePlans(subscriptionType, isProduction = false) {
     .where('subscription_type', subscriptionType)
     .where('is_active', 1)
     .where('is_live', isProduction ? 1 : 0)
-    .orderBy('display_order', 'asc');
+    .orderBy('credits_per_period', 'asc');
 }
 
 // Get user's subscriptions (both regular and catchall)
