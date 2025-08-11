@@ -88,12 +88,17 @@ async function s3_generateExportUrls(batch, ttl_seconds=86400) {
 
 /**
  * Map verification status for exports based on check type
+ * Note: This function now only receives valid statuses (risky, deliverable, undeliverable)
+ * as filtering happens before this function is called
  */
 function mapStatus(status, isCatchall, reason, checkType) {
     if (checkType === 'deliverable') {
         if (status === 'deliverable' && !isCatchall) return 'Valid';
         else if (isCatchall || (status === 'risky' && reason === 'low_deliverability')) return 'Catch-All';
-        else return 'Invalid';
+        else if (status === 'undeliverable') return 'Invalid';
+        // For risky status without low_deliverability reason
+        else if (status === 'risky') return 'Invalid';
+        else return 'Invalid'; // Fallback for any edge cases
 
     } else if (checkType === 'catchall') {
         switch (status) {
@@ -101,11 +106,14 @@ function mapStatus(status, isCatchall, reason, checkType) {
                 return 'Good';
             case 'risky':
                 return 'Risky';
-            default:
+            case 'undeliverable':
                 return 'Bad';
+            default:
+                return 'Bad'; // Fallback for any edge cases
         }
     }
     
+    // This should never be reached now since we filter before calling mapStatus
     return 'Unknown';
 }
 
@@ -340,12 +348,25 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
                 const emailColumn = columnMapping.email;
                 const email = row[rowKeys[emailColumn]]?.toLowerCase() || '';
                 
+                // Skip if email is empty
+                if (!email) return;
+                
                 // Lookup result
                 const strippedEmail = stripEmailModifiers(email);
-                const result = resultsMap.get(strippedEmail) || {
-                    status: 'not_processed',
-                    reason: 'Email not found in batch'
-                };
+                const result = resultsMap.get(strippedEmail);
+                
+                // Skip if no result found or already processed (duplicate)
+                if (!result || result._processed) {
+                    return; // Skip: either not in our results or already exported
+                }
+                
+                // Filter out results that are not "risky", "deliverable", or "undeliverable"
+                if (!['risky', 'deliverable', 'undeliverable'].includes(result.status)) {
+                    return; // Skip this row entirely
+                }
+                
+                // Mark as processed to avoid duplicates (memory-efficient approach)
+                result._processed = true;
                 
                 // Create enriched row
                 const status_col_header = `OmniVerifier ${(checkType === 'deliverable') ? 'Status' : 'Catch-All Status'}`;
