@@ -323,7 +323,8 @@
   border: none;
 }
 
-.buttonPrimary {
+.buttonPrimary,
+.buttonCatchall {
   height: 40px;
   width: fit-content;
   padding: 0 18px;
@@ -339,17 +340,35 @@
   font-size: 15px;
   font-family: "Circular", "Geist", sans-serif;
   font-weight: 400;
-  transition: background-color 0.2s ease-in-out, opacity 0.2s ease-in-out, color 0.2s ease-in-out;
+  transition: background-color 0.2s ease-in-out, opacity 0.2s ease-in-out, color 0.2s ease-in-out, filter 0.2s ease-in-out;
   cursor: pointer;
 }
-
 .buttonPrimary:hover {
   background-color: #a1c2d4;
 }
-
 .buttonPrimary svg {
   height: 16px;
   width: auto;
+}
+
+.buttonCatchall {
+  background-color: var(--result-catchall-fade);
+  color: var(--result-catchall);
+}
+.buttonCatchall.mobile {
+  width: 100%;
+  margin-top: 10px;
+}
+.buttonCatchall:hover {
+  filter: brightness(1.2);
+}
+.buttonCatchall svg {
+  height: 18px;
+  width: auto;
+  color: var(--result-catchall);
+}
+.buttonCatchall svg path {
+  stroke: var(--result-catchall);
 }
 
 .buttonSecondary {
@@ -404,9 +423,18 @@
   line-break: anywhere;
 }
 
+.searchRow {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 30px;
+}
+
 .searchContainer {
   position: relative;
-  margin-bottom: 2rem;
   max-width: 400px;
 }
 
@@ -1228,6 +1256,18 @@
 
 
 /* Responsiveness */
+.mobile {
+  display: none !important;
+}
+@media screen and (max-width: 900px) {
+  .searchRow {
+    gap: 20px;
+  }
+  .searchContainer {
+    flex: 1 1;
+    max-width: unset;
+  }
+}
 @media screen and (max-width: 800px) {
   .columnSelectSubtitle {
     display: none;
@@ -1303,6 +1343,12 @@
   }
 }
 @media screen and (max-width: 500px) {
+  .noMobile {
+    display: none !important;
+  }
+  .mobile {
+    display: flex !important;
+  }
   .detailsTitle {
     font-size: 20px;
   }
@@ -1368,27 +1414,4 @@
   .columnSelectSubtitle {
     display: block;
   }
-}
-
-.verifyCatchallsBtn {
-  height: 40px;
-  width: fit-content;
-  padding: 0 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  border: 1px solid var(--main-hl);
-  border-radius: 50px;
-  background-color: transparent;
-  color: var(--main-hl);
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.verifyCatchallsBtn:hover {
-  background-color: var(--main-hl);
-  color: white;
 }

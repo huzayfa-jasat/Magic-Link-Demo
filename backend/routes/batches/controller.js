@@ -518,7 +518,7 @@ async function verifyCatchalls(req, res) {
 	try {
 		const { batchId } = req.params;
 		const userId = req.user_id;
-		
+
 		// First check how many catchall emails we need to verify
 		const catchallCount = await db_getCatchallCountFromDeliverable(userId, batchId);
 		

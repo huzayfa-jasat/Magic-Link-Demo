@@ -1,9 +1,15 @@
 // Dependencies
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useContext } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 
 // Utility Imports
 import { exportBatch } from "../../utils/exportBatchFuncs";
+
+// API Imports
+import { verifyDeliverableBatchCatchalls } from "../../api/batches";
+
+// Context Imports
+import { ErrorContext } from "../../ui/Context/ErrorContext";
 
 // Component Imports
 import { LoadingCircle } from "../../ui/components/LoadingCircle";
@@ -11,13 +17,14 @@ import DetailStats from "./components/DetailStats";
 import ResultsTable from "./components/ResultsTable";
 import ExportPopupMenu from "./components/ExportPopupMenu";
 import ExportLoadingModal from "./components/ExportLoadingModal";
+import CreditsModal from "../../ui/components/CreditsModal";
 
 // Hook Imports
 import useBatchData from "./hooks/useBatchData";
 
 // Icon Imports
 import {
-  BACK_ICON, SEARCH_ICON,
+  BACK_ICON, SEARCH_ICON, VERIFY_CATCHALL_ICON,
 } from "../../assets/icons";
 
 // Style Imports
@@ -29,9 +36,11 @@ export default function EmailsBatchDetailsController({
   checkTyp,
 }) {
   const { id } = useParams();
+  const errorContext = useContext(ErrorContext);
   const navigate = useNavigate();
-  
-  // Export loading state
+
+  // States
+  const [showCreditsModal, setShowCreditsModal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState({ current: 0, total: 0 });
 
@@ -59,19 +68,10 @@ export default function EmailsBatchDetailsController({
   // Verify catchalls handler
   const handleVerifyCatchalls = useCallback(async () => {
     try {
-      const response = await fetch(`/api/batches/deliverable/batch/${id}/verify-catchalls`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        navigate(`/validate/catchall/${data.newBatchId}`);
-      } else {
-        console.error('Failed to create catchall verification batch');
-      }
+      const response = await verifyDeliverableBatchCatchalls(id);
+      if (response.status === 200) navigate(`/validate`);
+      else if (response.status === 402) setShowCreditsModal(true);
+      else errorContext.showError();
     } catch (error) {
       console.error('Error creating catchall verification batch:', error);
     }
@@ -152,6 +152,9 @@ export default function EmailsBatchDetailsController({
     );
   }
 
+  console.log("CHECK TYP = ", checkTyp);
+  console.log("STATS = ", details.stats);
+
   // Main Render - batch details page
   return (
     <>
@@ -159,6 +162,13 @@ export default function EmailsBatchDetailsController({
       <ExportLoadingModal 
         isOpen={isExporting} 
         progress={exportProgress} 
+      />
+
+      {/* Credits Modal */}
+      <CreditsModal 
+        isOpen={showCreditsModal}
+        onClose={() => setShowCreditsModal(false)}
+        checkType={'catchall'}
       />
 
       {/* Details Container */}
@@ -173,14 +183,6 @@ export default function EmailsBatchDetailsController({
         <div className={styles.detailsHeader}>
           <h1 className={styles.detailsTitle}>{details.title ?? "Details"}</h1>
           <div className={styles.detailsActions}>
-            {checkTyp === 'deliverable' && details.stats.catchall > 0 && (
-              <button 
-                className={styles.verifyCatchallsBtn}
-                onClick={handleVerifyCatchalls}
-              >
-                Verify Catchalls
-              </button>
-            )}
             <ExportPopupMenu
               title={details.title}
               checkTyp={checkTyp}
@@ -194,15 +196,26 @@ export default function EmailsBatchDetailsController({
         <p className={styles.subtitle}>We automatically find & remove duplicates and non-email entries from your list.</p>
 
         {/* Search input for filtering results */}
-        <div className={styles.searchContainer}>
-          <input
-            type="text"
-            placeholder="Search emails..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className={styles.searchInput}
-          />
-          {SEARCH_ICON}
+        <div className={styles.searchRow}>
+          <div className={styles.searchContainer}>
+            <input
+              type="text"
+              placeholder="Search emails..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={styles.searchInput}
+            />
+            {SEARCH_ICON}
+          </div>
+          {((checkTyp === 'deliverable' || checkTyp === 'verify') && details.stats.catchall > 0) && (
+            <button 
+              className={`${styles.button} ${styles.buttonCatchall} ${styles.noMobile}`}
+              onClick={handleVerifyCatchalls}
+            >
+              {VERIFY_CATCHALL_ICON}
+              Verify all Catch-Alls
+            </button>
+          )}
         </div>
 
         {/* Statistics cards showing batch summary */}
@@ -210,6 +223,7 @@ export default function EmailsBatchDetailsController({
           checkTyp={checkTyp}
           valid={details.stats.valid} invalid={details.stats.invalid} catchall={details.stats.catchall}
           good={details.stats.good} risky={details.stats.risky} bad={details.stats.bad}
+          handleVerifyCatchalls={handleVerifyCatchalls}
         />
 
         {/* Results table */}

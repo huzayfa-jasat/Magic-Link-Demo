@@ -134,6 +134,7 @@ async function db_addToBatch(user_id, check_type, batch_id, emails) {
 		'user_id': user_id,
 		'status': 'draft' // Only allow adding to draft batches
 	}).select('id', 'total_emails').catch((err)=>{if (err) err_code = err.code});
+	if (err_code || existing_batch.length === 0) console.log("/add ERR 1 = ", err_code);
 	if (err_code || existing_batch.length === 0) return [false, null];
 
 	// Add batch emails association table entries
@@ -142,6 +143,7 @@ async function db_addToBatch(user_id, check_type, batch_id, emails) {
 		'email_global_id': email.global_id,
 		'email_nominal': email.email,
 	}))).catch((err)=>{if (err) err_code = err.code});
+	if (err_code) console.log("/add ERR 2 = ", err_code);
 	if (err_code) return [false, null];
 
 	// Update total email count
@@ -150,6 +152,7 @@ async function db_addToBatch(user_id, check_type, batch_id, emails) {
 	}).update({
 		'total_emails': existing_batch[0].total_emails + emails.length
 	}).catch((err)=>{if (err) err_code = err.code});
+	if (err_code) console.log("/add ERR 3 = ", err_code);
 	if (err_code) return [false, null];
 
 	// Check cached results for existing results
@@ -158,6 +161,7 @@ async function db_addToBatch(user_id, check_type, batch_id, emails) {
 	).pluck(
 		'email_global_id'
 	).catch((err)=>{if (err) err_code = err.code});
+	if (err_code) console.log("/add ERR 4 = ", err_code);
 	if (err_code) return [false, null];
 
 	// Update batch emails association table entries with cached results
@@ -167,6 +171,7 @@ async function db_addToBatch(user_id, check_type, batch_id, emails) {
 		'used_cached': 1,
 		'did_complete': 1,
 	}).catch((err)=>{if (err) err_code = err.code});
+	if (err_code) console.log("/add ERR 5 = ", err_code);
 	if (err_code) return [false, null];
 
 	return [true, batch_id];

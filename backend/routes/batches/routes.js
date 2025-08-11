@@ -51,15 +51,13 @@ batchesRouter.get('/:checkType/batch/:batchId/details', checkValidCheckType, che
 batchesRouter.get('/:checkType/batch/:batchId/results', checkValidCheckType, checkUserBatchAccess, getBatchResults);
 batchesRouter.get('/:checkType/batch/:batchId/progress', checkValidCheckType, checkUserBatchAccess, getBatchProgress);
 batchesRouter.delete('/:checkType/batch/:batchId/rm', checkValidCheckType, checkUserBatchAccess, removeBatch);
+batchesRouter.post('/deliverable/batch/:batchId/verify-catchalls', checkUserBatchAccess, verifyCatchalls);
 
 // S3 Upload/Export Routes
 batchesRouter.post('/:checkType/batch/:batchId/upload-url', checkValidCheckType, checkUserBatchAccess, generateS3UploadUrl);
 batchesRouter.post('/:checkType/batch/:batchId/file-key', checkValidCheckType, checkUserBatchAccess, completeS3Upload);
 batchesRouter.get('/:checkType/batch/:batchId/exports', checkValidCheckType, checkUserBatchAccess, getExportUrls);
 batchesRouter.get('/:checkType/batch/:batchId/export-progress', checkValidCheckType, checkUserBatchAccess, getEnrichmentProgress);
-
-// Verify Catchalls Route (only for deliverable batches)
-batchesRouter.post('/deliverable/batch/:batchId/verify-catchalls', checkUserBatchAccess, verifyCatchalls);
 
 // Export routes
 module.exports = batchesRouter; 

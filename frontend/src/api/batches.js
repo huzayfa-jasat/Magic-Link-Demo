@@ -116,6 +116,11 @@ export async function createNewVerifyBatch(emailCount, title) {
 export async function createNewCatchallBatch(emailCount, title) {
   return await handler_createNewBatch('catchall', emailCount, title);
 };
+export async function verifyDeliverableBatchCatchalls(batchId) {
+  return await http.post(`${MODULE_PREFIX}/deliverable/batch/${batchId}/verify-catchalls`, {}, {
+    withCredentials: true,
+  });
+};
 
 export async function pauseVerifyBatchProcessing(batchId) {
   return await handler_pauseBatchProcessing('deliverable', batchId);

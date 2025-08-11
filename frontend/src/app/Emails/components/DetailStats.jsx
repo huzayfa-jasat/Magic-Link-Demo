@@ -13,6 +13,7 @@ export default function DetailStats({
 	checkTyp,
 	valid, invalid, catchall,
 	good, risky, bad,
+	handleVerifyCatchalls,
 }) {
 	const valid_count = (checkTyp === 'verify') ? parseInt(valid) : parseInt(good);
 	const catchall_count = (checkTyp === 'verify') ? parseInt(catchall) : parseInt(risky);
@@ -36,6 +37,15 @@ export default function DetailStats({
 					{VERIFY_CATCHALL_ICON}
 					{catchall_count.toLocaleString()}
 				</div>
+				{((checkTyp === 'deliverable' || checkTyp === 'verify') && catchall_count > 0) && (
+					<button 
+						className={`${styles.button} ${styles.buttonCatchall} ${styles.mobile}`}
+						onClick={handleVerifyCatchalls}
+					>
+					{VERIFY_CATCHALL_ICON}
+					Verify Catch-Alls
+					</button>
+				)}
 			</div>
 			<div className={styles.metaCard}>
 				<div className={styles.metaLabel}>{(checkTyp === 'catchall') ? 'Bad' : 'Invalid'}</div>
