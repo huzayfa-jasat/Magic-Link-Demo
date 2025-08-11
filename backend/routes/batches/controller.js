@@ -540,8 +540,14 @@ async function verifyCatchalls(req, res) {
 			return res.status(HttpStatus.BAD_REQUEST_STATUS).send('Failed to create catchall verification batch');
 		}
 		
-		// Deduct credits immediately
-		await db_deductCreditsForActualBatch(userId, 'catchall', catchallCount);
+		// Deduct credits immediately - using newBatchId for the actual batch
+		const [creditDeductSuccess] = await db_deductCreditsForActualBatch(userId, 'catchall', newBatchId);
+		
+		// If credit deduction fails, delete the batch we just created
+		if (!creditDeductSuccess) {
+			await db_deleteBatchCompletely(userId, 'catchall', newBatchId);
+			return res.status(HttpStatus.BAD_REQUEST_STATUS).send('Insufficient credits for catchall verification');
+		}
 		
 		// Return the new batch ID
 		return res.status(HttpStatus.SUCCESS_STATUS).json({
