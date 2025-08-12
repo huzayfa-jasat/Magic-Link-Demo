@@ -50,7 +50,7 @@ const {
 } = require('../../utils/processEmails.js');
 
 // Constants
-const S3_EXPORT_TTL_SECONDS = 172800; // 48 hours
+const S3_EXPORT_TTL_SECONDS = 300; // 5 mins
 const VALID_BATCHLIST_ORDER_PARAMS = new Set([
 	'timehl', // Time High-Low (newest first)
 	'timelh', // Time Low-High (oldest first)
