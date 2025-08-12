@@ -261,9 +261,9 @@ async function db_getEmailGlobalIds(emails_dict) {
 		'email_stripped', Object.keys(emails_dict)
 	).select(
 		'global_id', 'email_stripped'
-	).catch((err)=>{if (err) err_code = err.code});
+	).catch((err)=>{if (err) err_code = err});
 	if (err_code || !global_emails) {
-		console.log("EMAIL GLOBAL IDS ERR = ", err_code);
+		console.log("EMAIL GLOBAL IDS ERR = ", err , " ... ", global_emails);
 		return [false, null];
 	}
 
