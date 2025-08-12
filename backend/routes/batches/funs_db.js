@@ -259,7 +259,10 @@ async function db_getEmailGlobalIds(emails_dict) {
 	).select(
 		'global_id', 'email_stripped'
 	).catch((err)=>{if (err) err_code = err.code});
-	if (err_code) return [false, null];
+	if (err_code || !global_emails) {
+		console.log("EMAIL GLOBAL IDS ERR = ", err_code);
+		return [false, null];
+	}
 
 	// Format result
 	const email_global_ids = global_emails.map((global_email)=>{
@@ -1011,7 +1014,10 @@ async function db_startBatchProcessing(user_id, check_type, batch_id) {
 	}).select(
 		'email_global_id'
 	).limit(1).catch((err)=>{if (err) err_code = err.code});
-	if (err_code) return false;
+	if (err_code) {
+		console.log("ERR CODE = ", err_code);
+		return false;
+	}
 
 	// Construct status update dict
 	let status_update_dict = { 'status': 'queued' };
