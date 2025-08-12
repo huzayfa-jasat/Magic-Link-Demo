@@ -36,25 +36,25 @@ publicRouter.use(checkApiKey);
 // General routes
 publicRouter.get('/credits', getCredits);
 
-//Batch Creation Routes
+//List Creation Routes
 publicRouter.post('/:checkType/draft', bridgeToUser, checkValidCheckType, createNewBatch);
 publicRouter.post('/:id/:checkType/add', bridgeToUser, checkValidCheckType, mapIdToBatchId, checkUserBatchAccess, validateEmailLimit, addToBatch);
 publicRouter.post('/:id/:checkType/start', bridgeToUser, checkValidCheckType, mapIdToBatchId, checkUserBatchAccess, startBatchProcessing);
 
-//Batch Status Routes
+//List Status Routes
 publicRouter.get('/:id/:checkType/status', bridgeToUser, checkValidCheckType, mapIdToBatchId, checkUserBatchAccess, getBatchProgress);
 publicRouter.get('/:id/:checkType/stats', bridgeToUser, checkValidCheckType, mapIdToBatchId, checkUserBatchAccess, getBatchDetails);
 publicRouter.get('/:id/:checkType/results', bridgeToUser, checkValidCheckType, mapIdToBatchId, checkUserBatchAccess, getBatchResults);
 
 // Deliverability/Verify routes
 publicRouter.post('/verify/bulk', validateEmails);
-publicRouter.get('/verify/batch/:batchId/status', getDeliverableBatchStatus);
-publicRouter.get('/verify/batch/:batchId/results', downloadDeliverableBatchResults);
+publicRouter.get('/verify/list/:batchId/status', getDeliverableBatchStatus);
+publicRouter.get('/verify/list/:batchId/results', downloadDeliverableBatchResults);
 
 // Catchall routes
 publicRouter.post('/catchall/bulk', validateCatchall);
-publicRouter.get('/catchall/batch/:batchId/status', getCatchallBatchStatus);
-publicRouter.get('/catchall/batch/:batchId/results', downloadCatchallBatchResults);
+publicRouter.get('/catchall/list/:batchId/status', getCatchallBatchStatus);
+publicRouter.get('/catchall/list/:batchId/results', downloadCatchallBatchResults);
 
 // Export
 module.exports = publicRouter; 
