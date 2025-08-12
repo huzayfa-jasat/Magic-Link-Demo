@@ -37,7 +37,7 @@ export default function Register() {
   async function onSubmit(data) {
     if (data.email === "" || data.password === "" /*|| data.invite_code === ""*/ || !didAgree) return;
     try {
-      await registerUser(data.email, data.password, "Name" /*, data.invite_code*/);
+      await registerUser(data.email, data.password /*, "Name", data.invite_code*/);
       const loginSuccess = await loginUser(data.email, data.password);
       if (!loginSuccess) navigate("/login", { replace: true });
       else window.location.reload();
