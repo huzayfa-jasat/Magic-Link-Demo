@@ -16,16 +16,8 @@ function generateCode() {
 // -------------------
 // CREATE Functions
 // -------------------
-async function db_createUser(email, pass /*, early_access_code*/) {
+async function db_createUser(email, pass) {
 	let err_code;
-	
-    // Validate early access code
-    // const code_result = await knex('Early_Access_Codes')
-    //     .where('txt_code', early_access_code)
-    //     .select('num_credits', 'num_catchall_credits')
-    //     .first()
-    //     .catch((err) => { if (err) err_code = err });
-    // if (err_code || !code_result) return [false, null];
 
     // Generate referral code
     const referral_code = crypto.randomBytes(10).toString('hex').toUpperCase().slice(0, 6);
@@ -37,47 +29,8 @@ async function db_createUser(email, pass /*, early_access_code*/) {
 	}).catch((err)=>{if (err) err_code = err});
 	if (err_code) return [false, null];
 
-	// Insert initial balance for new user with early access credits
+	// Get the user_id
 	const user_id = db_resp[0];
-    if (code_result.num_credits > 0) {
-        await knex('Users_Credit_Balance').insert({
-            'user_id': user_id,
-            'current_balance': code_result.num_credits
-        }).catch((err)=>{if (err) err_code = err});
-        if (err_code) return [false, null];
-    }
-    if (code_result.num_catchall_credits > 0) {
-        await knex('Users_Catchall_Credit_Balance').insert({
-            'user_id': user_id,
-            'current_balance': code_result.num_catchall_credits
-        }).catch((err)=>{if (err) err_code = err});
-        if (err_code) return [false, null];
-    }
-
-    // Record signup event
-    if (code_result.num_credits > 0) {
-        await knex('Users_Credit_Balance_History').insert({
-            'user_id': user_id,
-            'credits_used': code_result.num_credits,
-            'event_typ': 'signup'
-        }).catch((err)=>{if (err) err_code = err});
-        if (err_code) return false;
-    }
-    if (code_result.num_catchall_credits > 0) {
-        await knex('Users_Catchall_Credit_Balance_History').insert({
-            'user_id': user_id,
-            'credits_used': code_result.num_catchall_credits,
-            'event_typ': 'signup'
-        }).catch((err)=>{if (err) err_code = err});
-        if (err_code) return false;
-    }
-
-	// Delete used early access code
-	// await knex('Early_Access_Codes')
-	// 	.where('txt_code', early_access_code)
-	// 	.del()
-	// 	.catch((err)=>{if (err) err_code = err});
-	// if (err_code) return [false, null];
 
 	// Create password
     const create_pass = await new Promise((resolve, _) => {
