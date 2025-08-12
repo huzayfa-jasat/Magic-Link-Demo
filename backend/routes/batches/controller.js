@@ -221,7 +221,7 @@ async function addToBatch(req, res) {
 		const emails_valid = removeInvalidEmails(emails);
 		const emails_stripped = emails_valid.reduce((acc, email)=>{
 			const email_stripped = stripEmailModifiers(email);
-			if (!acc[email_stripped]) acc[email_stripped] = email;
+			if (!acc[email_stripped] && email_stripped !== null && email_stripped !== undefined && email_stripped !== '' && email_stripped !== 'null' && email_stripped !== 'undefined') acc[email_stripped] = email;
 			return acc;
 		}, {});
 
