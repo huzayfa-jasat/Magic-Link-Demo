@@ -253,6 +253,9 @@ async function db_checkUserBatchAccess(user_id, batch_id, check_type) {
 async function db_getEmailGlobalIds(emails_dict) {
 	let err_code;
 
+	// Log first 5 emails
+	console.log("EMAILS DICT = ", Object.keys(emails_dict).slice(0, 5));
+
 	// Retrieve emails
 	const global_emails = await knex('Emails_Global').whereIn(
 		'email_stripped', Object.keys(emails_dict)
