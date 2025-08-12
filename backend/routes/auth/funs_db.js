@@ -39,38 +39,38 @@ async function db_createUser(email, pass /*, early_access_code*/) {
 
 	// Insert initial balance for new user with early access credits
 	const user_id = db_resp[0];
-    if (code_result.num_credits > 0) {
+    // if (code_result.num_credits > 0) {
         await knex('Users_Credit_Balance').insert({
             'user_id': user_id,
-            'current_balance': code_result.num_credits
+            'current_balance': 0 // code_result.num_credits
         }).catch((err)=>{if (err) err_code = err});
         if (err_code) return [false, null];
-    }
-    if (code_result.num_catchall_credits > 0) {
+    // }
+    // if (code_result.num_catchall_credits > 0) {
         await knex('Users_Catchall_Credit_Balance').insert({
             'user_id': user_id,
-            'current_balance': code_result.num_catchall_credits
+            'current_balance': 0 // code_result.num_catchall_credits
         }).catch((err)=>{if (err) err_code = err});
         if (err_code) return [false, null];
-    }
+    // }
 
     // Record signup event
-    if (code_result.num_credits > 0) {
+    // if (code_result.num_credits > 0) {
         await knex('Users_Credit_Balance_History').insert({
             'user_id': user_id,
-            'credits_used': code_result.num_credits,
+            'credits_used': 0, // code_result.num_credits
             'event_typ': 'signup'
         }).catch((err)=>{if (err) err_code = err});
         if (err_code) return false;
-    }
-    if (code_result.num_catchall_credits > 0) {
+    // }
+    // if (code_result.num_catchall_credits > 0) {
         await knex('Users_Catchall_Credit_Balance_History').insert({
             'user_id': user_id,
-            'credits_used': code_result.num_catchall_credits,
+            'credits_used': 0, // code_result.num_catchall_credits
             'event_typ': 'signup'
         }).catch((err)=>{if (err) err_code = err});
         if (err_code) return false;
-    }
+    // }
 
 	// Delete used early access code
 	// await knex('Early_Access_Codes')
