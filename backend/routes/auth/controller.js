@@ -64,7 +64,7 @@ async function registerUser(req, res) {
         // }
 
         // Create user
-        const [ok, user_id] = await db_createUser(req.body.em, req.body.pw);
+        const [ok, user_id] = await db_createUser(req.body.em, req.body.pw /*, req.body.code*/);
         if (!ok) return res.status(HttpStatus.FAILED_STATUS).send("Failed to register");
 
 
