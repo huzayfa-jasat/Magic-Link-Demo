@@ -11,6 +11,7 @@ const {
 } = require('./funs_db_utils.js');
 const { s3_triggerS3Enrichment } = require('./funs_s3.js');
 const db_s3_funcs = require('./funs_db_s3.js');
+const { stripEmailInvalidChars } = require('../../utils/processEmails.js');
 
 
 // -------------------
@@ -269,13 +270,8 @@ async function db_getEmailGlobalIds(emails_dict) {
 
 	// Format result
 	const email_global_ids = global_emails.map((global_email)=>{
-		// Get the original email
-		let nominal_email = emails_dict[global_email.email_stripped];
-		
-		// Strip non-utf8mb3 characters (emojis and other 4-byte UTF-8 characters) from nominal email
-		// to prevent database insertion errors with utf8mb3 charset
-		nominal_email = nominal_email.replace(/[\u{10000}-\u{10FFFF}]/gu, '');
-		nominal_email = nominal_email.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200F\u2028-\u202F\uFEFF]/g, '');
+		// Get the original email and strip invalid chars for utf8mb3 compatibility
+		const nominal_email = stripEmailInvalidChars(emails_dict[global_email.email_stripped]);
 		
 		return {
 			'global_id': global_email.global_id,
