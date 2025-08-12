@@ -13,6 +13,10 @@ const AUTO_SIGNUP_BONUS = 50000;
 function generateCode() {
     return Math.floor(100000 + Math.random() * 900000).toString();
 }
+function calculateSignupBonus(user_id) {
+    if (user_id > 300) return 0;
+    return AUTO_SIGNUP_BONUS;
+}
 
 // -------------------
 // CREATE Functions
@@ -43,7 +47,7 @@ async function db_createUser(email, pass /*, early_access_code*/) {
     // if (code_result.num_credits > 0) {
         await knex('Users_Credit_Balance').insert({
             'user_id': user_id,
-            'current_balance': AUTO_SIGNUP_BONUS // code_result.num_credits
+            'current_balance': calculateSignupBonus(user_id) // code_result.num_credits
         }).catch((err)=>{if (err) err_code = err});
         if (err_code) return [false, null];
     // }
