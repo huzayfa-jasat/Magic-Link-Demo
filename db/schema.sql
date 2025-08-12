@@ -23,6 +23,7 @@ CREATE TABLE Users (
 	`referral_code` varchar(10) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
 	`api_key` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci UNIQUE,
     `stripe_id` TEXT CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci,
+	`is_banned` TINYINT(1) NOT NULL DEFAULT 0,
 	`created_ts` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (`id`),
 	UNIQUE KEY (`email`),
