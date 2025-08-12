@@ -59,12 +59,12 @@ async function getUserStatus(req, res) {
 async function registerUser(req, res) {
     try {
         // Validate early access code
-        if (!req.body.code) {
-            return res.status(HttpStatus.FAILED_STATUS).send("Early access code required");
-        }
+        // if (!req.body.code) {
+        //     return res.status(HttpStatus.FAILED_STATUS).send("Early access code required");
+        // }
 
         // Create user
-        const [ok, user_id] = await db_createUser(req.body.em, req.body.pw, req.body.code);
+        const [ok, user_id] = await db_createUser(req.body.em, req.body.pw /*, req.body.code*/);
         if (!ok) return res.status(HttpStatus.FAILED_STATUS).send("Failed to register");
 
 

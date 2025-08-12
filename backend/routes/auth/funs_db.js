@@ -16,16 +16,16 @@ function generateCode() {
 // -------------------
 // CREATE Functions
 // -------------------
-async function db_createUser(email, pass, early_access_code) {
+async function db_createUser(email, pass /*, early_access_code*/) {
 	let err_code;
 	
     // Validate early access code
-    const code_result = await knex('Early_Access_Codes')
-        .where('txt_code', early_access_code)
-        .select('num_credits', 'num_catchall_credits')
-        .first()
-        .catch((err) => { if (err) err_code = err });
-    if (err_code || !code_result) return [false, null];
+    // const code_result = await knex('Early_Access_Codes')
+    //     .where('txt_code', early_access_code)
+    //     .select('num_credits', 'num_catchall_credits')
+    //     .first()
+    //     .catch((err) => { if (err) err_code = err });
+    // if (err_code || !code_result) return [false, null];
 
     // Generate referral code
     const referral_code = crypto.randomBytes(10).toString('hex').toUpperCase().slice(0, 6);
@@ -73,11 +73,11 @@ async function db_createUser(email, pass, early_access_code) {
     }
 
 	// Delete used early access code
-	await knex('Early_Access_Codes')
-		.where('txt_code', early_access_code)
-		.del()
-		.catch((err)=>{if (err) err_code = err});
-	if (err_code) return [false, null];
+	// await knex('Early_Access_Codes')
+	// 	.where('txt_code', early_access_code)
+	// 	.del()
+	// 	.catch((err)=>{if (err) err_code = err});
+	// if (err_code) return [false, null];
 
 	// Create password
     const create_pass = await new Promise((resolve, _) => {
