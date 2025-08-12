@@ -7,6 +7,7 @@ const { createStripeCustomer } = require('../payment/funs_db.js');
 
 // Constants
 const HASH_ITERATIONS = parseInt(process.env.HASH_ITERATIONS);
+const AUTO_SIGNUP_BONUS = 50000;
 
 // Helper Functions
 function generateCode() {
@@ -42,7 +43,7 @@ async function db_createUser(email, pass /*, early_access_code*/) {
     // if (code_result.num_credits > 0) {
         await knex('Users_Credit_Balance').insert({
             'user_id': user_id,
-            'current_balance': 0 // code_result.num_credits
+            'current_balance': AUTO_SIGNUP_BONUS // code_result.num_credits
         }).catch((err)=>{if (err) err_code = err});
         if (err_code) return [false, null];
     // }
@@ -58,7 +59,7 @@ async function db_createUser(email, pass /*, early_access_code*/) {
     // if (code_result.num_credits > 0) {
         await knex('Users_Credit_Balance_History').insert({
             'user_id': user_id,
-            'credits_used': 0, // code_result.num_credits
+            'credits_used': AUTO_SIGNUP_BONUS, // code_result.num_credits
             'event_typ': 'signup'
         }).catch((err)=>{if (err) err_code = err});
         if (err_code) return false;
