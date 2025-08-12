@@ -103,9 +103,8 @@ async function createCheckout(req, res) {
     }
 
     // Create checkout session
-    const baseUrl = process.env.APP_URL || 'http://localhost:3000';
-    const successUrl = `${baseUrl}/packages?subscription=success&type=${plan.subscription_type}`;
-    const cancelUrl = `${baseUrl}/packages?p=${plan.subscription_type === 'catchall' ? 'catchall' : 'subscriptions'}`;
+    const successUrl = `${process.env.FRONTEND_URL_PREFIX}/packages?subscription=success&type=${plan.subscription_type}`;
+    const cancelUrl = `${process.env.FRONTEND_URL_PREFIX}/packages?p=${(plan.subscription_type === 'catchall') ? 'catchall' : 'verify'}`;
 
     // If user has existing subscription, create upgrade/downgrade session
     const session = existingSubscription && existingSubscription.status === 'active' ?

@@ -2,9 +2,6 @@
 const crypto = require('crypto');
 const knex = require('knex')(require('../../knexfile.js').development);
 
-// Function Imports
-const { createStripeCustomer } = require('../payment/funs_db.js');
-
 // Constants
 const HASH_ITERATIONS = parseInt(process.env.HASH_ITERATIONS);
 const AUTO_SIGNUP_BONUS = 50000;
@@ -93,15 +90,7 @@ async function db_createUser(email, pass /*, early_access_code*/) {
     });
     if (!create_pass) return [false, null];
 
-    // Create Stripe customer
-    try {
-        await createStripeCustomer(user_id, email);
-    } catch (error) {
-        console.error('Error creating Stripe customer:', error);
-        // Don't fail registration if Stripe customer creation fails
-        // The customer can be created later when they make their first purchase
-    }
-
+    // Return
     return [true, user_id];
 }
 

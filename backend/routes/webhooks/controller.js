@@ -39,22 +39,23 @@ async function handleStripeWebhook(req, res) {
                 // Verify the session is paid
                 if (session.payment_status !== 'paid') {
                     console.error('Session not paid:', session.payment_status);
-                    return res.status(HttpStatus.FAILED_STATUS).send('Session not paid');
+                    // return res.status(HttpStatus.FAILED_STATUS).send('Session not paid');
+                    return res.status(HttpStatus.SUCCESS_STATUS).json({ received: true });
                 }
                 
                 // Process the checkout session
-                const [success, result] = await db_processCheckoutSession(
-                    session.id,
-                    session.customer,
-                    session.metadata.product_id
-                );
+                if ('metadata' in session && 'product_id' in session.metadata) {
+                    const [success, result] = await db_processCheckoutSession(
+                        session.id,
+                        session.customer,
+                        session.metadata.product_id
+                    );
                 
-                if (!success) {
-                    console.error('Failed to process checkout session:', result);
-                    return res.status(HttpStatus.FAILED_STATUS).send(result);
+                    if (!success) {
+                        console.error('Failed to process checkout session:', result);
+                        return res.status(HttpStatus.FAILED_STATUS).send(result);
+                    }
                 }
-
-
                 return res.status(HttpStatus.SUCCESS_STATUS).json({ received: true });
 
             // Subscription events
