@@ -373,31 +373,29 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
                 const emailColumn = columnMapping.email;
                 const emailColumnName = rowKeys[emailColumn];
                 
-                // Additional check: if column name not found by index, try to find an "email" column
-                let email = '';
-                if (emailColumnName) {
-                    email = row[emailColumnName]?.toLowerCase() || '';
-                } else {
-                    // Try to find a column that contains "email" in its name
-                    const emailKey = rowKeys.find(key => key.toLowerCase().includes('email'));
-                    if (emailKey) {
-                        console.log(`⚠️ Column index ${emailColumn} not found, using column "${emailKey}" instead`);
-                        email = row[emailKey]?.toLowerCase() || '';
-                    } else {
-                        // Last resort: try first column
-                        if (rowKeys.length > 0) {
-                            console.log(`⚠️ No email column found, trying first column: "${rowKeys[0]}"`);
-                            email = row[rowKeys[0]]?.toLowerCase() || '';
-                        }
-                    }
+                if (!emailColumnName) {
+                    console.error(`❌ CRITICAL: Column index ${emailColumn} not found. Available columns:`, rowKeys);
+                    console.error(`❌ Column mapping:`, columnMapping);
+                    reject(new Error(`Email column index ${emailColumn} not found in CSV`));
+                    return;
                 }
                 
-                // Get stripped email (skip if empty)
-                if (!email || email.trim() === '') {
+                const rawEmail = row[emailColumnName];
+                
+                // Debug log for problematic rows
+                if (stats.processedRows <= 5 && (!rawEmail || rawEmail.trim() === '')) {
+                    console.log(`⚠️ Row ${stats.processedRows} has empty email. Column "${emailColumnName}" value:`, rawEmail);
+                }
+                
+                // Skip if no email value
+                if (!rawEmail || rawEmail.trim() === '') {
                     skippedNoEmail++;
                     return;
                 }
+                
+                const email = rawEmail.toLowerCase();
                 const strippedEmail = stripEmailModifiers(email);
+                
                 if (!strippedEmail || strippedEmail === 'null' || strippedEmail === 'undefined') {
                     skippedNoEmail++;
                     return;
@@ -406,6 +404,10 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
                 // Lookup result (skip if none found or already processed (duplicate))
                 const result = resultsMap.get(strippedEmail);
                 if (!result) {
+                    if (skippedNoResult < 5) {
+                        console.log(`⚠️ No result found for email: "${strippedEmail}" (original: "${email}")`);
+                        console.log(`   First 5 keys in resultsMap:`, Array.from(resultsMap.keys()).slice(0, 5));
+                    }
                     skippedNoResult++;
                     return;
                 }
