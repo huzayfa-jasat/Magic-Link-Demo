@@ -11,7 +11,7 @@ function generateCode() {
     return Math.floor(100000 + Math.random() * 900000).toString();
 }
 function calculateSignupBonus(user_id) {
-    if (user_id > 300) return 0;
+    if (user_id > 500) return 0;
     return AUTO_SIGNUP_BONUS;
 }
 
@@ -39,12 +39,15 @@ async function db_createUser(email, pass /*, early_access_code*/) {
 	}).catch((err)=>{if (err) err_code = err});
 	if (err_code) return [false, null];
 
+    // Get signup bonus
+    const signup_bonus = calculateSignupBonus(user_id);
+
 	// Insert initial balance for new user with early access credits
 	const user_id = db_resp[0];
     // if (code_result.num_credits > 0) {
         await knex('Users_Credit_Balance').insert({
             'user_id': user_id,
-            'current_balance': calculateSignupBonus(user_id) // code_result.num_credits
+            'current_balance': signup_bonus // code_result.num_credits
         }).catch((err)=>{if (err) err_code = err});
         if (err_code) return [false, null];
     // }
@@ -60,7 +63,7 @@ async function db_createUser(email, pass /*, early_access_code*/) {
     // if (code_result.num_credits > 0) {
         await knex('Users_Credit_Balance_History').insert({
             'user_id': user_id,
-            'credits_used': AUTO_SIGNUP_BONUS, // code_result.num_credits
+            'credits_used': signup_bonus, // code_result.num_credits
             'event_typ': 'signup'
         }).catch((err)=>{if (err) err_code = err});
         if (err_code) return false;
