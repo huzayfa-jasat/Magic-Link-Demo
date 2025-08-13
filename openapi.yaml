@@ -36,10 +36,6 @@ paths:
                     type: integer
                     description: Current credit balance
                     example: 1500
-                  user_id:
-                    type: integer
-                    description: User ID
-                    example: 2
         '400':
           description: Bad request - API key missing or invalid
           content:
@@ -53,11 +49,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /valid:
+  /verify/bulk:
     post:
-      summary: Validate emails
-      description: Validate a batch of emails for valid/invalid status. Costs 1 credit per email.
-      operationId: validateEmails
+      summary: Validate emails for deliverability
+      description: Validate a batch of emails for deliverability status. Costs 1 credit per email.
+      operationId: validateEmailsBulk
       tags:
         - Email Verification
       requestBody:
@@ -76,28 +72,28 @@ paths:
                     format: email
                   description: Array of email addresses to validate
                   minItems: 1
-                  maxItems: 1000
+                  maxItems: 10000
                   example: ["user@example.com", "test@domain.com", "catchall@domain.com"]
       responses:
         '200':
-          description: Successfully validated emails
+          description: Successfully created batch for email validation
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  results:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/EmailResult'
-                  processed:
+                  id:
                     type: integer
-                    description: Number of emails processed
-                    example: 3
-                  user_id:
+                    description: Batch ID
+                    example: 12345
+                  estimated_emails:
                     type: integer
-                    description: User ID
-                    example: 2
+                    description: Number of emails in the batch
+                    example: 1000
+                  current_balance:
+                    type: integer
+                    description: Remaining credit balance
+                    example: 500
         '400':
           description: Bad request - validation error or insufficient credits
           content:
@@ -111,11 +107,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /catchall:
+  /catchall/bulk:
     post:
       summary: Validate emails for catchall detection
       description: Validate a batch of emails for catchall detection. Costs 2 credits per email.
-      operationId: validateCatchall
+      operationId: validateCatchallBulk
       tags:
         - Email Verification
       requestBody:
@@ -134,11 +130,451 @@ paths:
                     format: email
                   description: Array of email addresses to validate for catchall
                   minItems: 1
-                  maxItems: 1000
+                  maxItems: 10000
                   example: ["user@example.com", "catchall@domain.com", "test@domain.com"]
       responses:
         '200':
-          description: Successfully validated emails for catchall
+          description: Successfully created batch for catchall validation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: Batch ID
+                    example: 12346
+                  estimated_emails:
+                    type: integer
+                    description: Number of emails in the batch
+                    example: 500
+                  current_balance:
+                    type: integer
+                    description: Remaining credit balance
+                    example: 1000
+        '400':
+          description: Bad request - validation error or insufficient credits
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /{checkType}/new:
+    post:
+      summary: Create new batch
+      description: Create a new batch for email verification
+      operationId: createNewBatch
+      tags:
+        - Batch Management
+      parameters:
+        - name: checkType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [deliverable, catchall]
+          description: Type of email verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - emails
+              properties:
+                emails:
+                  type: integer
+                  description: Number of emails to be processed
+                  minimum: 1
+                  example: 1000
+                title:
+                  type: string
+                  description: Optional batch title
+                  example: "My email verification batch"
+      responses:
+        '200':
+          description: Successfully created batch
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: Batch ID
+                    example: 12345
+                  estimated_emails:
+                    type: integer
+                    description: Number of emails in the batch
+                    example: 1000
+                  current_balance:
+                    type: integer
+                    description: Remaining credit balance
+                    example: 500
+        '400':
+          description: Bad request - validation error or insufficient credits
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Invalid check type
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /{id}/{checkType}/add:
+    post:
+      summary: Add emails to existing batch
+      description: Add emails to an existing batch
+      operationId: addToBatch
+      tags:
+        - Batch Management
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Batch ID
+        - name: checkType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [deliverable, catchall]
+          description: Type of email verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - emails
+              properties:
+                emails:
+                  type: array
+                  items:
+                    type: string
+                    format: email
+                  description: Array of email addresses to add
+                  minItems: 1
+                  maxItems: 10000
+                  example: ["user@example.com", "test@domain.com"]
+      responses:
+        '200':
+          description: Successfully added emails to batch
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Success message
+                    example: "Emails added successfully"
+        '400':
+          description: Bad request - validation error or insufficient credits
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Batch not found or invalid check type
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /{id}/{checkType}/start:
+    post:
+      summary: Start batch processing
+      description: Start processing an existing batch
+      operationId: startBatchProcessing
+      tags:
+        - Batch Management
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Batch ID
+        - name: checkType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [deliverable, catchall]
+          description: Type of email verification
+      responses:
+        '200':
+          description: Successfully started batch processing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Success message
+                    example: "Batch processing started"
+        '404':
+          description: Batch not found or invalid check type
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /{id}/{checkType}/status:
+    get:
+      summary: Get batch progress
+      description: Get the current progress of a batch
+      operationId: getBatchProgress
+      tags:
+        - Batch Management
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Batch ID
+        - name: checkType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [deliverable, catchall]
+          description: Type of email verification
+      responses:
+        '200':
+          description: Successfully retrieved batch progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchProgress'
+        '404':
+          description: Batch not found or invalid check type
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /{id}/{checkType}/stats:
+    get:
+      summary: Get batch details
+      description: Get detailed statistics for a batch
+      operationId: getBatchDetails
+      tags:
+        - Batch Management
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Batch ID
+        - name: checkType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [deliverable, catchall]
+          description: Type of email verification
+      responses:
+        '200':
+          description: Successfully retrieved batch details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchDetails'
+        '404':
+          description: Batch not found or invalid check type
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /{id}/{checkType}/results:
+    get:
+      summary: Get batch results
+      description: Get the results of a completed batch
+      operationId: getBatchResults
+      tags:
+        - Batch Management
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Batch ID
+        - name: checkType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [deliverable, catchall]
+          description: Type of email verification
+      responses:
+        '200':
+          description: Successfully retrieved batch results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EmailResult'
+        '404':
+          description: Batch not found or invalid check type
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /verify/list/{batchId}/status:
+    get:
+      summary: Get deliverable batch status
+      description: Get the status of a deliverable batch
+      operationId: getDeliverableBatchStatus
+      tags:
+        - Email Verification
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Batch ID
+      responses:
+        '200':
+          description: Successfully retrieved batch status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    $ref: '#/components/schemas/BatchStatus'
+        '404':
+          description: Batch not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /verify/list/{batchId}/results:
+    get:
+      summary: Download deliverable batch results
+      description: Download the results of a deliverable batch
+      operationId: downloadDeliverableBatchResults
+      tags:
+        - Email Verification
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Batch ID
+      responses:
+        '200':
+          description: Successfully retrieved batch results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EmailResult'
+        '404':
+          description: Batch not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /catchall/list/{batchId}/status:
+    get:
+      summary: Get catchall batch status
+      description: Get the status of a catchall batch
+      operationId: getCatchallBatchStatus
+      tags:
+        - Email Verification
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Batch ID
+      responses:
+        '200':
+          description: Successfully retrieved batch status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    $ref: '#/components/schemas/BatchStatus'
+        '404':
+          description: Batch not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /catchall/list/{batchId}/results:
+    get:
+      summary: Download catchall batch results
+      description: Download the results of a catchall batch
+      operationId: downloadCatchallBatchResults
+      tags:
+        - Email Verification
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Batch ID
+      responses:
+        '200':
+          description: Successfully retrieved batch results
           content:
             application/json:
               schema:
@@ -148,20 +584,8 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/CatchallResult'
-                  processed:
-                    type: integer
-                    description: Number of emails processed
-                    example: 3
-                  user_id:
-                    type: integer
-                    description: User ID
-                    example: 2
-        '400':
-          description: Bad request - validation error or insufficient credits
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+        '404':
+          description: Batch not found
         '500':
           description: Internal server error
           content:
@@ -217,6 +641,117 @@ components:
           type: boolean
           description: Whether the email is a catchall
           example: true
+
+    BatchStatus:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Batch ID
+          example: 12345
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+          description: Current batch status
+          example: "completed"
+        progress:
+          type: integer
+          description: Processing progress percentage
+          minimum: 0
+          maximum: 100
+          example: 75
+        total_emails:
+          type: integer
+          description: Total number of emails in batch
+          example: 1000
+        processed_emails:
+          type: integer
+          description: Number of emails processed
+          example: 750
+
+    BatchProgress:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Batch ID
+          example: 12345
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+          description: Current batch status
+          example: "processing"
+        progress:
+          type: integer
+          description: Processing progress percentage
+          minimum: 0
+          maximum: 100
+          example: 75
+        total_emails:
+          type: integer
+          description: Total number of emails in batch
+          example: 1000
+        processed_emails:
+          type: integer
+          description: Number of emails processed
+          example: 750
+        estimated_completion:
+          type: string
+          format: date-time
+          description: Estimated completion time
+          example: "2024-01-15T10:30:00Z"
+
+    BatchDetails:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Batch ID
+          example: 12345
+        title:
+          type: string
+          description: Batch title
+          example: "My email verification batch"
+        check_type:
+          type: string
+          enum: [deliverable, catchall]
+          description: Type of verification
+          example: "deliverable"
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+          description: Current batch status
+          example: "completed"
+        created_at:
+          type: string
+          format: date-time
+          description: Batch creation time
+          example: "2024-01-15T09:00:00Z"
+        completed_at:
+          type: string
+          format: date-time
+          description: Batch completion time
+          example: "2024-01-15T10:30:00Z"
+        total_emails:
+          type: integer
+          description: Total number of emails in batch
+          example: 1000
+        processed_emails:
+          type: integer
+          description: Number of emails processed
+          example: 1000
+        valid_count:
+          type: integer
+          description: Number of valid emails
+          example: 750
+        invalid_count:
+          type: integer
+          description: Number of invalid emails
+          example: 200
+        catchall_count:
+          type: integer
+          description: Number of catchall emails
+          example: 50
 
     Error:
       type: object
