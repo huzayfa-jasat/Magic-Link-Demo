@@ -340,7 +340,7 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
         
         inputStream
             .pipe(parse({ 
-                columns: true,  // Back to using column headers
+                columns: false,  // Use array format to preserve column order
                 skip_empty_lines: true,
                 skip_empty_columns: true,
                 relax_quotes: true,
@@ -351,16 +351,31 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
                 rtrim: true  // Trim trailing whitespace
             }))
             .on('data', (row) => {
+                // Handle header row
+                if (isFirstRow) {
+                    headers = row;
+                    isFirstRow = false;
+                    
+                    // Validate email column exists
+                    const emailColumn = columnMapping.email;
+                    if (emailColumn >= headers.length) {
+                        console.error(`❌ CRITICAL: Column index ${emailColumn} not found. Total columns: ${headers.length}`);
+                        console.error(`❌ Headers:`, headers);
+                        console.error(`❌ Column mapping:`, columnMapping);
+                        reject(new Error(`Email column index ${emailColumn} not found in CSV`));
+                        return;
+                    }
+                    
+                    console.log(`✅ Found email column at index ${emailColumn}: "${headers[emailColumn]}"`);
+                    return; // Skip header row for processing
+                }
+                
                 stats.processedRows++;
                 
-                // Log first few rows for debugging
+                // Log first few data rows for debugging
                 if (stats.processedRows <= 3) {
-                    console.log(`🔍 Row ${stats.processedRows} keys:`, Object.keys(row));
-                    console.log(`🔍 Row ${stats.processedRows} sample:`, JSON.stringify(row).substring(0, 500));
-                    if (stats.processedRows === 1) {
-                        console.log('🔍 Column mapping:', columnMapping);
-                        console.log('🔍 Looking for email in column index:', columnMapping.email);
-                    }
+                    console.log(`🔍 Row ${stats.processedRows} data:`, row);
+                    console.log(`🔍 Row ${stats.processedRows} email column value:`, row[columnMapping.email]);
                 }
                 
                 // Update progress periodically
@@ -369,23 +384,13 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
                         .catch(err => console.error('Failed to update progress:', err));
                 }
                 
-                // Get email from appropriate column
-                const rowKeys = Object.keys(row);
+                // Get email from appropriate column index
                 const emailColumn = columnMapping.email;
-                const emailColumnName = rowKeys[emailColumn];
-                
-                if (!emailColumnName) {
-                    console.error(`❌ CRITICAL: Column index ${emailColumn} not found. Available columns:`, rowKeys);
-                    console.error(`❌ Column mapping:`, columnMapping);
-                    reject(new Error(`Email column index ${emailColumn} not found in CSV`));
-                    return;
-                }
-                
-                const rawEmail = row[emailColumnName];
+                const rawEmail = row[emailColumn];
                 
                 // Debug log for problematic rows
                 if (stats.processedRows <= 5 && (!rawEmail || rawEmail.trim() === '')) {
-                    console.log(`⚠️ Row ${stats.processedRows} has empty email. Column "${emailColumnName}" value:`, rawEmail);
+                    console.log(`⚠️ Row ${stats.processedRows} has empty email at index ${emailColumn}. Value:`, rawEmail);
                 }
                 
                 // Skip if no email value
@@ -426,12 +431,15 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
                 // Mark as processed to avoid duplicates (memory-efficient approach)
                 result._processed = true;
                 
-                // Create enriched row
+                // Create enriched row as object using headers
+                const enrichedRow = {};
+                headers.forEach((header, index) => {
+                    enrichedRow[header] = row[index];
+                });
+                
+                // Add status column
                 const status_col_header = `OmniVerifier ${(checkType === 'deliverable') ? 'Status' : 'Catch-All Status'}`;
-                const enrichedRow = {
-                    ...row,
-                    [status_col_header]: mapStatus(result.status, result.is_catchall, result.reason, checkType),
-                };
+                enrichedRow[status_col_header] = mapStatus(result.status, result.is_catchall, result.reason, checkType);
                 
                 // Add additional fields based on check type
                 if (checkType === 'deliverable') {
