@@ -340,21 +340,26 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
         
         inputStream
             .pipe(parse({ 
-                columns: true,
+                columns: true,  // Back to using column headers
                 skip_empty_lines: true,
                 relax_quotes: true,
                 relax_column_count: true,
-                bom: true  // Handle BOM in input files
+                bom: true,  // Handle BOM in input files
+                trim: true,  // Trim whitespace from values
+                ltrim: true,  // Trim leading whitespace
+                rtrim: true  // Trim trailing whitespace
             }))
             .on('data', (row) => {
                 stats.processedRows++;
                 
-                // Log first row for debugging
-                if (!firstRowLogged) {
-                    console.log('🔍 First row keys:', Object.keys(row));
-                    console.log('🔍 Column mapping:', columnMapping);
-                    console.log('🔍 First row data sample:', JSON.stringify(row).substring(0, 300));
-                    firstRowLogged = true;
+                // Log first few rows for debugging
+                if (stats.processedRows <= 3) {
+                    console.log(`🔍 Row ${stats.processedRows} keys:`, Object.keys(row));
+                    console.log(`🔍 Row ${stats.processedRows} sample:`, JSON.stringify(row).substring(0, 500));
+                    if (stats.processedRows === 1) {
+                        console.log('🔍 Column mapping:', columnMapping);
+                        console.log('🔍 Looking for email in column index:', columnMapping.email);
+                    }
                 }
                 
                 // Update progress periodically
@@ -368,13 +373,24 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
                 const emailColumn = columnMapping.email;
                 const emailColumnName = rowKeys[emailColumn];
                 
-                if (!emailColumnName) {
-                    console.log(`⚠️ Column index ${emailColumn} not found. Available columns:`, rowKeys);
-                    skippedNoEmail++;
-                    return;
+                // Additional check: if column name not found by index, try to find an "email" column
+                let email = '';
+                if (emailColumnName) {
+                    email = row[emailColumnName]?.toLowerCase() || '';
+                } else {
+                    // Try to find a column that contains "email" in its name
+                    const emailKey = rowKeys.find(key => key.toLowerCase().includes('email'));
+                    if (emailKey) {
+                        console.log(`⚠️ Column index ${emailColumn} not found, using column "${emailKey}" instead`);
+                        email = row[emailKey]?.toLowerCase() || '';
+                    } else {
+                        // Last resort: try first column
+                        if (rowKeys.length > 0) {
+                            console.log(`⚠️ No email column found, trying first column: "${rowKeys[0]}"`);
+                            email = row[rowKeys[0]]?.toLowerCase() || '';
+                        }
+                    }
                 }
-                
-                const email = row[emailColumnName]?.toLowerCase() || '';
                 
                 // Get stripped email (skip if empty)
                 if (!email || email.trim() === '') {
