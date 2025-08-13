@@ -336,16 +336,26 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
         let skippedNoResult = 0;
         let skippedDuplicate = 0;
         let skippedInvalidStatus = 0;
+        let firstRowLogged = false;
         
         inputStream
             .pipe(parse({ 
                 columns: true,
                 skip_empty_lines: true,
                 relax_quotes: true,
-                relax_column_count: true
+                relax_column_count: true,
+                bom: true  // Handle BOM in input files
             }))
             .on('data', (row) => {
                 stats.processedRows++;
+                
+                // Log first row for debugging
+                if (!firstRowLogged) {
+                    console.log('🔍 First row keys:', Object.keys(row));
+                    console.log('🔍 Column mapping:', columnMapping);
+                    console.log('🔍 First row data sample:', JSON.stringify(row).substring(0, 300));
+                    firstRowLogged = true;
+                }
                 
                 // Update progress periodically
                 if (stats.processedRows % updateInterval === 0) {
@@ -356,15 +366,23 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
                 // Get email from appropriate column
                 const rowKeys = Object.keys(row);
                 const emailColumn = columnMapping.email;
-                const email = row[rowKeys[emailColumn]]?.toLowerCase() || '';
+                const emailColumnName = rowKeys[emailColumn];
+                
+                if (!emailColumnName) {
+                    console.log(`⚠️ Column index ${emailColumn} not found. Available columns:`, rowKeys);
+                    skippedNoEmail++;
+                    return;
+                }
+                
+                const email = row[emailColumnName]?.toLowerCase() || '';
                 
                 // Get stripped email (skip if empty)
-                if (!email) {
+                if (!email || email.trim() === '') {
                     skippedNoEmail++;
                     return;
                 }
                 const strippedEmail = stripEmailModifiers(email);
-                if (strippedEmail === null || strippedEmail === undefined || strippedEmail === '' || strippedEmail === 'null' || strippedEmail === 'undefined') {
+                if (!strippedEmail || strippedEmail === 'null' || strippedEmail === 'undefined') {
                     skippedNoEmail++;
                     return;
                 }
