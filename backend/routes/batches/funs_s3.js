@@ -336,17 +336,32 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
         let skippedNoResult = 0;
         let skippedDuplicate = 0;
         let skippedInvalidStatus = 0;
+        let firstRowLogged = false;
         
         inputStream
             .pipe(parse({ 
-                columns: true,
+                columns: true,  // Back to using column headers
                 skip_empty_lines: true,
                 skip_empty_columns: true,
                 relax_quotes: true,
-                relax_column_count: true
+                relax_column_count: true,
+                bom: true,  // Handle BOM in input files
+                trim: true,  // Trim whitespace from values
+                ltrim: true,  // Trim leading whitespace
+                rtrim: true  // Trim trailing whitespace
             }))
             .on('data', (row) => {
                 stats.processedRows++;
+                
+                // Log first few rows for debugging
+                if (stats.processedRows <= 3) {
+                    console.log(`🔍 Row ${stats.processedRows} keys:`, Object.keys(row));
+                    console.log(`🔍 Row ${stats.processedRows} sample:`, JSON.stringify(row).substring(0, 500));
+                    if (stats.processedRows === 1) {
+                        console.log('🔍 Column mapping:', columnMapping);
+                        console.log('🔍 Looking for email in column index:', columnMapping.email);
+                    }
+                }
                 
                 // Update progress periodically
                 if (stats.processedRows % updateInterval === 0) {
@@ -357,15 +372,32 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
                 // Get email from appropriate column
                 const rowKeys = Object.keys(row);
                 const emailColumn = columnMapping.email;
-                const email = row[rowKeys[emailColumn]]?.toLowerCase() || '';
+                const emailColumnName = rowKeys[emailColumn];
                 
-                // Get stripped email (skip if empty)
-                if (!email) {
+                if (!emailColumnName) {
+                    console.error(`❌ CRITICAL: Column index ${emailColumn} not found. Available columns:`, rowKeys);
+                    console.error(`❌ Column mapping:`, columnMapping);
+                    reject(new Error(`Email column index ${emailColumn} not found in CSV`));
+                    return;
+                }
+                
+                const rawEmail = row[emailColumnName];
+                
+                // Debug log for problematic rows
+                if (stats.processedRows <= 5 && (!rawEmail || rawEmail.trim() === '')) {
+                    console.log(`⚠️ Row ${stats.processedRows} has empty email. Column "${emailColumnName}" value:`, rawEmail);
+                }
+                
+                // Skip if no email value
+                if (!rawEmail || rawEmail.trim() === '') {
                     skippedNoEmail++;
                     return;
                 }
+                
+                const email = rawEmail.toLowerCase();
                 const strippedEmail = stripEmailModifiers(email);
-                if (strippedEmail === null || strippedEmail === undefined || strippedEmail === '' || strippedEmail === 'null' || strippedEmail === 'undefined') {
+                
+                if (!strippedEmail || strippedEmail === 'null' || strippedEmail === 'undefined') {
                     skippedNoEmail++;
                     return;
                 }
@@ -373,6 +405,10 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
                 // Lookup result (skip if none found or already processed (duplicate))
                 const result = resultsMap.get(strippedEmail);
                 if (!result) {
+                    if (skippedNoResult < 5) {
+                        console.log(`⚠️ No result found for email: "${strippedEmail}" (original: "${email}")`);
+                        console.log(`   First 5 keys in resultsMap:`, Array.from(resultsMap.keys()).slice(0, 5));
+                    }
                     skippedNoResult++;
                     return;
                 }
