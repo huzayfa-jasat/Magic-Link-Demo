@@ -189,8 +189,9 @@ async function s3_enrichBatchExports(batchId, checkType, db_funcs) {
         // 3. Load all results into memory for O(1) lookup
         console.log(`📊 Loading batch results for ${batchId}...`);
         const results = await db_funcs.db_s3_getAllBatchResults(batchId, checkType);
+        // IMPORTANT: r.email_stripped is already stripped in the database, don't strip again
         const resultsMap = new Map(
-            results.map(r => [stripEmailModifiers(r.email_stripped.toLowerCase()), r])
+            results.map(r => [r.email_stripped.toLowerCase(), r])
         );
         console.log(`✅ Loaded ${results.length} results`);
         
@@ -243,16 +244,17 @@ async function s3_enrichBatchExports(batchId, checkType, db_funcs) {
         
         // 6. Set up CSV stringifiers for each output
         const stringifiers = {};
+        const bomWritten = {}; // Track if BOM has been written for each stream
         Object.keys(outputStreams).forEach(key => {
-            // Write UTF-8 BOM to help Excel recognize the encoding
-            outputStreams[key].write(Buffer.from('\ufeff'));
+            // Don't write BOM yet - will write it when first data row is written
+            bomWritten[key] = false;
             
             stringifiers[key] = stringify({ header: true });
             stringifiers[key].pipe(outputStreams[key]);
         });
         
         // 7. Process the file
-        let processedRows = 0;
+        const stats = { processedRows: 0 }; // Use object to pass by reference
         const updateInterval = 10000; // Update every 10k rows
         const rowCounts = {}; // Track row counts for each export type
         Object.keys(exportTypes).forEach(key => {
@@ -268,11 +270,11 @@ async function s3_enrichBatchExports(batchId, checkType, db_funcs) {
             const csvStream = new PassThrough();
             csvStream.end(csvData);
             
-            await processStream(csvStream, columnMapping, resultsMap, stringifiers, checkType, processedRows, updateInterval, batchId, db_funcs, rowCounts);
+            await processStream(csvStream, columnMapping, resultsMap, stringifiers, checkType, stats, updateInterval, batchId, db_funcs, rowCounts, outputStreams, bomWritten);
         } else {
             // Process CSV directly
             console.log('📄 Processing CSV file...');
-            await processStream(downloadResponse.Body, columnMapping, resultsMap, stringifiers, checkType, processedRows, updateInterval, batchId, db_funcs, rowCounts);
+            await processStream(downloadResponse.Body, columnMapping, resultsMap, stringifiers, checkType, stats, updateInterval, batchId, db_funcs, rowCounts, outputStreams, bomWritten);
         }
         
         // 8. Close all stringifiers
@@ -301,9 +303,9 @@ async function s3_enrichBatchExports(batchId, checkType, db_funcs) {
         await db_funcs.db_s3_updateBatchExportMetadata(batchId, checkType, exportMetadata);
         
         // 11. Mark enrichment as completed
-        await db_funcs.db_s3_completeEnrichmentProgress(batchId, checkType, processedRows);
+        await db_funcs.db_s3_completeEnrichmentProgress(batchId, checkType, stats.processedRows);
         
-        console.log(`✅ S3 enrichment completed for batch ${batchId}. Processed ${processedRows} rows.`);
+        console.log(`✅ S3 enrichment completed for batch ${batchId}. Processed ${stats.processedRows} rows.`);
         
     } catch (error) {
         console.error(`❌ Enrichment failed for batch ${batchId}:`, error);
@@ -326,10 +328,14 @@ async function s3_enrichBatchExports(batchId, checkType, db_funcs) {
 /**
  * Process the stream and enrich data
  */
-async function processStream(inputStream, columnMapping, resultsMap, stringifiers, checkType, processedRows, updateInterval, batchId, db_funcs, rowCounts) {
+async function processStream(inputStream, columnMapping, resultsMap, stringifiers, checkType, stats, updateInterval, batchId, db_funcs, rowCounts, outputStreams, bomWritten) {
     return new Promise((resolve, reject) => {
         let isFirstRow = true;
         let headers = null;
+        let skippedNoEmail = 0;
+        let skippedNoResult = 0;
+        let skippedDuplicate = 0;
+        let skippedInvalidStatus = 0;
         
         inputStream
             .pipe(parse({ 
@@ -339,11 +345,11 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
                 relax_column_count: true
             }))
             .on('data', (row) => {
-                processedRows++;
+                stats.processedRows++;
                 
                 // Update progress periodically
-                if (processedRows % updateInterval === 0) {
-                    db_funcs.db_s3_updateEnrichmentProgress(batchId, checkType, processedRows)
+                if (stats.processedRows % updateInterval === 0) {
+                    db_funcs.db_s3_updateEnrichmentProgress(batchId, checkType, stats.processedRows)
                         .catch(err => console.error('Failed to update progress:', err));
                 }
                 
@@ -353,16 +359,30 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
                 const email = row[rowKeys[emailColumn]]?.toLowerCase() || '';
                 
                 // Get stripped email (skip if empty)
-                if (!email) return;
+                if (!email) {
+                    skippedNoEmail++;
+                    return;
+                }
                 const strippedEmail = stripEmailModifiers(email);
-                if (strippedEmail === null || strippedEmail === undefined || strippedEmail === '' || strippedEmail === 'null' || strippedEmail === 'undefined') return;
+                if (strippedEmail === null || strippedEmail === undefined || strippedEmail === '' || strippedEmail === 'null' || strippedEmail === 'undefined') {
+                    skippedNoEmail++;
+                    return;
+                }
 
                 // Lookup result (skip if none found or already processed (duplicate))
                 const result = resultsMap.get(strippedEmail);
-                if (!result || result._processed) return;
+                if (!result) {
+                    skippedNoResult++;
+                    return;
+                }
+                if (result._processed) {
+                    skippedDuplicate++;
+                    return;
+                }
                 
                 // Filter out results that are not "risky", "deliverable", or "undeliverable"
                 if (!['risky', 'deliverable', 'undeliverable'].includes(result.status)) {
+                    skippedInvalidStatus++;
                     return; // Skip this row entirely
                 }
                 
@@ -384,6 +404,11 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
                 
                 // Write to all emails export
                 if (stringifiers.all_emails) {
+                    // Write BOM on first data write
+                    if (!bomWritten.all_emails) {
+                        outputStreams.all_emails.write(Buffer.from('\ufeff'));
+                        bomWritten.all_emails = true;
+                    }
                     stringifiers.all_emails.write(enrichedRow);
                     if (rowCounts) rowCounts.all_emails++;
                 }
@@ -393,35 +418,65 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
                 
                 if (checkType === 'deliverable') {
                     if (status === 'Valid' && stringifiers.valid_only) {
+                        if (!bomWritten.valid_only) {
+                            outputStreams.valid_only.write(Buffer.from('\ufeff'));
+                            bomWritten.valid_only = true;
+                        }
                         stringifiers.valid_only.write(enrichedRow);
                         if (rowCounts) rowCounts.valid_only++;
                     }
                     else if (status === 'Invalid' && stringifiers.invalid_only) {
+                        if (!bomWritten.invalid_only) {
+                            outputStreams.invalid_only.write(Buffer.from('\ufeff'));
+                            bomWritten.invalid_only = true;
+                        }
                         stringifiers.invalid_only.write(enrichedRow);
                         if (rowCounts) rowCounts.invalid_only++;
                     }
                     else if (status === 'Catch-All' && stringifiers.catchall_only) {
+                        if (!bomWritten.catchall_only) {
+                            outputStreams.catchall_only.write(Buffer.from('\ufeff'));
+                            bomWritten.catchall_only = true;
+                        }
                         stringifiers.catchall_only.write(enrichedRow);
                         if (rowCounts) rowCounts.catchall_only++;
                     }
 
                 } else if (checkType === 'catchall') {
                     if (status === 'Good' && stringifiers.good_only) {
+                        if (!bomWritten.good_only) {
+                            outputStreams.good_only.write(Buffer.from('\ufeff'));
+                            bomWritten.good_only = true;
+                        }
                         stringifiers.good_only.write(enrichedRow);
                         if (rowCounts) rowCounts.good_only++;
                     }
                     else if (status === 'Bad' && stringifiers.bad_only) {
+                        if (!bomWritten.bad_only) {
+                            outputStreams.bad_only.write(Buffer.from('\ufeff'));
+                            bomWritten.bad_only = true;
+                        }
                         stringifiers.bad_only.write(enrichedRow);
                         if (rowCounts) rowCounts.bad_only++;
                     }
                     else if (status === 'Risky' && stringifiers.risky_only) {
+                        if (!bomWritten.risky_only) {
+                            outputStreams.risky_only.write(Buffer.from('\ufeff'));
+                            bomWritten.risky_only = true;
+                        }
                         stringifiers.risky_only.write(enrichedRow);
                         if (rowCounts) rowCounts.risky_only++;
                     }
                 }
             })
             .on('end', () => {
-                console.log(`✅ Finished processing ${processedRows} rows`);
+                console.log(`✅ Finished processing ${stats.processedRows} rows`);
+                console.log(`📊 Processing statistics:`);
+                console.log(`  - Rows with no email: ${skippedNoEmail}`);
+                console.log(`  - Rows with no matching result: ${skippedNoResult}`);
+                console.log(`  - Duplicate rows: ${skippedDuplicate}`);
+                console.log(`  - Rows with invalid status: ${skippedInvalidStatus}`);
+                console.log(`  - Rows written to exports: ${Object.values(rowCounts).reduce((a, b) => a + b, 0)}`);
                 resolve();
             })
             .on('error', (error) => {
