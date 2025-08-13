@@ -26,20 +26,9 @@ async function checkApiKey(req, res, next) {
     if (!ok) return sendApiKeyError(res);
 
     // Attach user info to request
-    req.apiUser = { user_id };
+    req.user = { id: user_id };
 
     // Continue
-    return next();
-}
-
-/**
- * Bridge to user middleware
- * Bridges the API user to the user object
- */
-async function bridgeToUser(req, res, next) {
-    if (req.apiUser && req.apiUser.user_id) {
-        req.user = { id: req.apiUser.user_id };
-    }
     return next();
 }
 
@@ -72,7 +61,6 @@ function validateEmailLimit(req, res, next) {
 // Exports
 module.exports = {
     checkApiKey,
-    bridgeToUser,
     mapIdToBatchId,
     validateEmailLimit
 };

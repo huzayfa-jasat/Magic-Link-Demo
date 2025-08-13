@@ -3,7 +3,7 @@ const express = require('express');
 const publicRouter = express.Router();
 
 // Middleware
-const { checkApiKey, bridgeToUser, validateEmailLimit, mapIdToBatchId } = require('./middleware.js');
+const { checkApiKey, validateEmailLimit, mapIdToBatchId } = require('./middleware.js');
 const { checkValidCheckType, checkUserBatchAccess } = require('../batches/middleware.js');
 
 // Controller Imports
@@ -37,14 +37,14 @@ publicRouter.use(checkApiKey);
 publicRouter.get('/credits', getCredits);
 
 //List Creation Routes
-publicRouter.post('/:checkType/draft', bridgeToUser, checkValidCheckType, createNewBatch);
-publicRouter.post('/:id/:checkType/add', bridgeToUser, checkValidCheckType, mapIdToBatchId, checkUserBatchAccess, validateEmailLimit, addToBatch);
-publicRouter.post('/:id/:checkType/start', bridgeToUser, checkValidCheckType, mapIdToBatchId, checkUserBatchAccess, startBatchProcessing);
+publicRouter.post('/:checkType/new', checkValidCheckType, createNewBatch);
+publicRouter.post('/:id/:checkType/add', checkValidCheckType, mapIdToBatchId, checkUserBatchAccess, validateEmailLimit, addToBatch);
+publicRouter.post('/:id/:checkType/start', checkValidCheckType, mapIdToBatchId, checkUserBatchAccess, startBatchProcessing);
 
 //List Status Routes
-publicRouter.get('/:id/:checkType/status', bridgeToUser, checkValidCheckType, mapIdToBatchId, checkUserBatchAccess, getBatchProgress);
-publicRouter.get('/:id/:checkType/stats', bridgeToUser, checkValidCheckType, mapIdToBatchId, checkUserBatchAccess, getBatchDetails);
-publicRouter.get('/:id/:checkType/results', bridgeToUser, checkValidCheckType, mapIdToBatchId, checkUserBatchAccess, getBatchResults);
+publicRouter.get('/:id/:checkType/status', checkValidCheckType, mapIdToBatchId, checkUserBatchAccess, getBatchProgress);
+publicRouter.get('/:id/:checkType/stats', checkValidCheckType, mapIdToBatchId, checkUserBatchAccess, getBatchDetails);
+publicRouter.get('/:id/:checkType/results', checkValidCheckType, mapIdToBatchId, checkUserBatchAccess, getBatchResults);
 
 // Deliverability/Verify routes
 publicRouter.post('/verify/bulk', validateEmails);
