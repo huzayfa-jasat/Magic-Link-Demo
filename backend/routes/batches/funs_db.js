@@ -269,15 +269,17 @@ async function db_getEmailGlobalIds(emails_dict) {
 	}
 
 	// Format result
-	const email_global_ids = global_emails.map((global_email)=>{
+	const email_global_ids = global_emails.reduce((acc, global_email)=>{
 		// Get the original email and strip invalid chars for utf8mb3 compatibility
-		const nominal_email = stripEmailInvalidChars(emails_dict[global_email.email_stripped]);
-		
-		return {
-			'global_id': global_email.global_id,
-			'email': nominal_email,
+		if (global_email.email_stripped && emails_dict[global_email.email_stripped]) {
+			const nominal_email = stripEmailInvalidChars(emails_dict[global_email.email_stripped]);
+			acc.push({
+				'global_id': global_email.global_id,
+				'email': nominal_email,
+			});
 		}
-	});
+		return acc;
+	}, []);
 
 	// Return result
 	return [true, email_global_ids];
