@@ -33,16 +33,6 @@ async function checkApiKey(req, res, next) {
 }
 
 /**
- * Map 'id' parameter to 'batchId' for middleware compatibility
- */
-async function mapIdToBatchId(req, res, next) {
-    if (req.params.id) {
-        req.params.batchId = req.params.id;
-    }
-    next();
-}
-
-/**
  * Validate email limit middleware
  * Ensures no more than 10,000 emails per request
  */
@@ -61,6 +51,5 @@ function validateEmailLimit(req, res, next) {
 // Exports
 module.exports = {
     checkApiKey,
-    mapIdToBatchId,
     validateEmailLimit
 };

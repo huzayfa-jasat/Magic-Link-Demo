@@ -3,18 +3,12 @@ const express = require('express');
 const publicRouter = express.Router();
 
 // Middleware
-const { checkApiKey, validateEmailLimit, mapIdToBatchId } = require('./middleware.js');
+const { checkApiKey, validateEmailLimit } = require('./middleware.js');
 const { checkValidCheckType, checkUserBatchAccess } = require('../batches/middleware.js');
 
 // Controller Imports
 const {
-    getCredits,
-    validateEmails,
-    validateCatchall,
-    getDeliverableBatchStatus,
-    getCatchallBatchStatus,
-    downloadDeliverableBatchResults,
-    downloadCatchallBatchResults
+    getCredits
 } = require('./controller.js');
 
 const {
@@ -36,25 +30,15 @@ publicRouter.use(checkApiKey);
 // General routes
 publicRouter.get('/credits', getCredits);
 
-//List Creation Routes
+// Batch Management Routes
 publicRouter.post('/:checkType/new', checkValidCheckType, createNewBatch);
-publicRouter.post('/:id/:checkType/add', checkValidCheckType, mapIdToBatchId, checkUserBatchAccess, validateEmailLimit, addToBatch);
-publicRouter.post('/:id/:checkType/start', checkValidCheckType, mapIdToBatchId, checkUserBatchAccess, startBatchProcessing);
+publicRouter.post('/:batchId/:checkType/add', checkValidCheckType, checkUserBatchAccess, validateEmailLimit, addToBatch);
+publicRouter.post('/:batchId/:checkType/start', checkValidCheckType, checkUserBatchAccess, startBatchProcessing);
 
-//List Status Routes
-publicRouter.get('/:id/:checkType/status', checkValidCheckType, mapIdToBatchId, checkUserBatchAccess, getBatchProgress);
-publicRouter.get('/:id/:checkType/stats', checkValidCheckType, mapIdToBatchId, checkUserBatchAccess, getBatchDetails);
-publicRouter.get('/:id/:checkType/results', checkValidCheckType, mapIdToBatchId, checkUserBatchAccess, getBatchResults);
-
-// Deliverability/Verify routes
-publicRouter.post('/verify/bulk', validateEmails);
-publicRouter.get('/verify/list/:batchId/status', getDeliverableBatchStatus);
-publicRouter.get('/verify/list/:batchId/results', downloadDeliverableBatchResults);
-
-// Catchall routes
-publicRouter.post('/catchall/bulk', validateCatchall);
-publicRouter.get('/catchall/list/:batchId/status', getCatchallBatchStatus);
-publicRouter.get('/catchall/list/:batchId/results', downloadCatchallBatchResults);
+// Batch Status Routes
+publicRouter.get('/:batchId/:checkType/status', checkValidCheckType, checkUserBatchAccess, getBatchProgress);
+publicRouter.get('/:batchId/:checkType/stats', checkValidCheckType, checkUserBatchAccess, getBatchDetails);
+publicRouter.get('/:batchId/:checkType/results', checkValidCheckType, checkUserBatchAccess, getBatchResults);
 
 // Export
 module.exports = publicRouter; 
