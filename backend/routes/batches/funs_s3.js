@@ -341,6 +341,7 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
             .pipe(parse({ 
                 columns: true,
                 skip_empty_lines: true,
+                skip_empty_columns: true,
                 relax_quotes: true,
                 relax_column_count: true
             }))
