@@ -51,21 +51,13 @@ paths:
 
 
 
-  /{checkType}/new:
+  /deliverable/new:
     post:
-      summary: Create new batch
-      description: Create a new batch for email verification
-      operationId: createNewBatch
+      summary: Create new deliverable batch
+      description: Create a new batch for email deliverability verification
+      operationId: createDeliverableBatch
       tags:
-        - Batch Management
-      parameters:
-        - name: checkType
-          in: path
-          required: true
-          schema:
-            type: string
-            enum: [deliverable, catchall]
-          description: Type of email verification
+        - Deliverable Verification
       requestBody:
         required: true
         content:
@@ -83,7 +75,7 @@ paths:
                 title:
                   type: string
                   description: Optional batch title
-                  example: "My email verification batch"
+                  example: "My deliverable verification batch"
       responses:
         '200':
           description: Successfully created batch
@@ -110,8 +102,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        '404':
-          description: Invalid check type
         '500':
           description: Internal server error
           content:
@@ -119,27 +109,78 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /{id}/{checkType}/add:
+  /catchall/new:
     post:
-      summary: Add emails to existing batch
-      description: Add emails to an existing batch
-      operationId: addToBatch
+      summary: Create new catchall batch
+      description: Create a new batch for email catchall detection
+      operationId: createCatchallBatch
       tags:
-        - Batch Management
+        - Catchall Detection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - emails
+              properties:
+                emails:
+                  type: integer
+                  description: Number of emails to be processed
+                  minimum: 1
+                  example: 1000
+                title:
+                  type: string
+                  description: Optional batch title
+                  example: "My catchall detection batch"
+      responses:
+        '200':
+          description: Successfully created batch
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: Batch ID
+                    example: 12346
+                  estimated_emails:
+                    type: integer
+                    description: Number of emails in the batch
+                    example: 1000
+                  current_balance:
+                    type: integer
+                    description: Remaining credit balance
+                    example: 500
+        '400':
+          description: Bad request - validation error or insufficient credits
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /deliverable/{batchId}/add:
+    post:
+      summary: Add emails to deliverable batch
+      description: Add emails to an existing deliverable batch
+      operationId: addToDeliverableBatch
+      tags:
+        - Deliverable Verification
       parameters:
-        - name: id
+        - name: batchId
           in: path
           required: true
           schema:
             type: string
           description: Batch ID
-        - name: checkType
-          in: path
-          required: true
-          schema:
-            type: string
-            enum: [deliverable, catchall]
-          description: Type of email verification
       requestBody:
         required: true
         content:
@@ -181,7 +222,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '404':
-          description: Batch not found or invalid check type
+          description: Batch not found
         '500':
           description: Internal server error
           content:
@@ -189,27 +230,83 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /{id}/{checkType}/start:
+  /catchall/{batchId}/add:
     post:
-      summary: Start batch processing
-      description: Start processing an existing batch
-      operationId: startBatchProcessing
+      summary: Add emails to catchall batch
+      description: Add emails to an existing catchall batch
+      operationId: addToCatchallBatch
       tags:
-        - Batch Management
+        - Catchall Detection
       parameters:
-        - name: id
+        - name: batchId
           in: path
           required: true
           schema:
             type: string
           description: Batch ID
-        - name: checkType
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - emails
+              properties:
+                emails:
+                  type: array
+                  items:
+                    type: string
+                    format: email
+                  description: Array of email addresses to add
+                  minItems: 1
+                  maxItems: 10000
+                  example: ["user@example.com", "test@domain.com"]
+      responses:
+        '200':
+          description: Successfully added emails to batch
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: Batch ID
+                    example: 12346
+                  count:
+                    type: integer
+                    description: Number of emails added
+                    example: 100
+        '400':
+          description: Bad request - validation error or insufficient credits
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Batch not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /deliverable/{batchId}/start:
+    post:
+      summary: Start deliverable batch processing
+      description: Start processing an existing deliverable batch
+      operationId: startDeliverableBatch
+      tags:
+        - Deliverable Verification
+      parameters:
+        - name: batchId
           in: path
           required: true
           schema:
             type: string
-            enum: [deliverable, catchall]
-          description: Type of email verification
+          description: Batch ID
       responses:
         '200':
           description: Successfully started batch processing
@@ -227,7 +324,7 @@ paths:
                     description: Remaining credit balance
                     example: 1400
         '404':
-          description: Batch not found or invalid check type
+          description: Batch not found
         '500':
           description: Internal server error
           content:
@@ -235,27 +332,59 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /{id}/{checkType}/status:
-    get:
-      summary: Get batch progress
-      description: Get the current progress of a batch
-      operationId: getBatchProgress
+  /catchall/{batchId}/start:
+    post:
+      summary: Start catchall batch processing
+      description: Start processing an existing catchall batch
+      operationId: startCatchallBatch
       tags:
-        - Batch Management
+        - Catchall Detection
       parameters:
-        - name: id
+        - name: batchId
           in: path
           required: true
           schema:
             type: string
           description: Batch ID
-        - name: checkType
+      responses:
+        '200':
+          description: Successfully started batch processing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  credits_deducted:
+                    type: integer
+                    description: Number of credits deducted
+                    example: 200
+                  remaining_balance:
+                    type: integer
+                    description: Remaining credit balance
+                    example: 1300
+        '404':
+          description: Batch not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /deliverable/{batchId}/status:
+    get:
+      summary: Get deliverable batch progress
+      description: Get the current progress of a deliverable batch
+      operationId: getDeliverableBatchProgress
+      tags:
+        - Deliverable Verification
+      parameters:
+        - name: batchId
           in: path
           required: true
           schema:
             type: string
-            enum: [deliverable, catchall]
-          description: Type of email verification
+          description: Batch ID
       responses:
         '200':
           description: Successfully retrieved batch progress
@@ -264,7 +393,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/BatchProgress'
         '404':
-          description: Batch not found or invalid check type
+          description: Batch not found
         '500':
           description: Internal server error
           content:
@@ -272,27 +401,50 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /{id}/{checkType}/stats:
+  /catchall/{batchId}/status:
     get:
-      summary: Get batch details
-      description: Get detailed statistics for a batch
-      operationId: getBatchDetails
+      summary: Get catchall batch progress
+      description: Get the current progress of a catchall batch
+      operationId: getCatchallBatchProgress
       tags:
-        - Batch Management
+        - Catchall Detection
       parameters:
-        - name: id
+        - name: batchId
           in: path
           required: true
           schema:
             type: string
           description: Batch ID
-        - name: checkType
+      responses:
+        '200':
+          description: Successfully retrieved batch progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchProgress'
+        '404':
+          description: Batch not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /deliverable/{batchId}/stats:
+    get:
+      summary: Get deliverable batch details
+      description: Get detailed statistics for a deliverable batch
+      operationId: getDeliverableBatchDetails
+      tags:
+        - Deliverable Verification
+      parameters:
+        - name: batchId
           in: path
           required: true
           schema:
             type: string
-            enum: [deliverable, catchall]
-          description: Type of email verification
+          description: Batch ID
       responses:
         '200':
           description: Successfully retrieved batch details
@@ -301,7 +453,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/BatchDetails'
         '404':
-          description: Batch not found or invalid check type
+          description: Batch not found
         '500':
           description: Internal server error
           content:
@@ -309,27 +461,50 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /{id}/{checkType}/results:
+  /catchall/{batchId}/stats:
     get:
-      summary: Get batch results
-      description: Get the results of a completed batch
-      operationId: getBatchResults
+      summary: Get catchall batch details
+      description: Get detailed statistics for a catchall batch
+      operationId: getCatchallBatchDetails
       tags:
-        - Batch Management
+        - Catchall Detection
       parameters:
-        - name: id
+        - name: batchId
           in: path
           required: true
           schema:
             type: string
           description: Batch ID
-        - name: checkType
+      responses:
+        '200':
+          description: Successfully retrieved batch details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchDetails'
+        '404':
+          description: Batch not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /deliverable/{batchId}/results:
+    get:
+      summary: Get deliverable batch results
+      description: Get the results of a completed deliverable batch
+      operationId: getDeliverableBatchResults
+      tags:
+        - Deliverable Verification
+      parameters:
+        - name: batchId
           in: path
           required: true
           schema:
             type: string
-            enum: [deliverable, catchall]
-          description: Type of email verification
+          description: Batch ID
       responses:
         '200':
           description: Successfully retrieved batch results
@@ -343,7 +518,42 @@ paths:
                     items:
                       $ref: '#/components/schemas/EmailResult'
         '404':
-          description: Batch not found or invalid check type
+          description: Batch not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /catchall/{batchId}/results:
+    get:
+      summary: Get catchall batch results
+      description: Get the results of a completed catchall batch
+      operationId: getCatchallBatchResults
+      tags:
+        - Catchall Detection
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Batch ID
+      responses:
+        '200':
+          description: Successfully retrieved batch results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CatchallResult'
+        '404':
+          description: Batch not found
         '500':
           description: Internal server error
           content:
