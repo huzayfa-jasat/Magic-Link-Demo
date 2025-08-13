@@ -352,17 +352,14 @@ async function processStream(inputStream, columnMapping, resultsMap, stringifier
                 const emailColumn = columnMapping.email;
                 const email = row[rowKeys[emailColumn]]?.toLowerCase() || '';
                 
-                // Skip if email is empty
+                // Get stripped email (skip if empty)
                 if (!email) return;
-                
-                // Lookup result
                 const strippedEmail = stripEmailModifiers(email);
+                if (strippedEmail === null || strippedEmail === undefined || strippedEmail === '' || strippedEmail === 'null' || strippedEmail === 'undefined') return;
+
+                // Lookup result (skip if none found or already processed (duplicate))
                 const result = resultsMap.get(strippedEmail);
-                
-                // Skip if no result found or already processed (duplicate)
-                if (!result || result._processed) {
-                    return; // Skip: either not in our results or already exported
-                }
+                if (!result || result._processed) return;
                 
                 // Filter out results that are not "risky", "deliverable", or "undeliverable"
                 if (!['risky', 'deliverable', 'undeliverable'].includes(result.status)) {
