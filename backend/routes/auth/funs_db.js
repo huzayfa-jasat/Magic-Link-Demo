@@ -39,9 +39,6 @@ async function db_createUser(email, pass /*, early_access_code*/) {
 	}).catch((err)=>{if (err) err_code = err});
 	if (err_code) return [false, null];
 
-    // Get signup bonus
-    const signup_bonus = calculateSignupBonus(user_id);
-
 	// Insert initial balance for new user with early access credits
 	const user_id = db_resp[0];
     // if (code_result.num_credits > 0) {
@@ -58,6 +55,9 @@ async function db_createUser(email, pass /*, early_access_code*/) {
         }).catch((err)=>{if (err) err_code = err});
         if (err_code) return [false, null];
     // }
+
+    // Get signup bonus
+    const signup_bonus = calculateSignupBonus(user_id);
 
     // Record signup event
     // if (code_result.num_credits > 0) {
