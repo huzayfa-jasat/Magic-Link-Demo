@@ -41,6 +41,11 @@ async function db_createUser(email, pass /*, early_access_code*/) {
 
 	// Insert initial balance for new user with early access credits
 	const user_id = db_resp[0];
+
+    // Get signup bonus
+    const signup_bonus = calculateSignupBonus(user_id);
+
+    
     // if (code_result.num_credits > 0) {
         await knex('Users_Credit_Balance').insert({
             'user_id': user_id,
@@ -55,9 +60,6 @@ async function db_createUser(email, pass /*, early_access_code*/) {
         }).catch((err)=>{if (err) err_code = err});
         if (err_code) return [false, null];
     // }
-
-    // Get signup bonus
-    const signup_bonus = calculateSignupBonus(user_id);
 
     // Record signup event
     // if (code_result.num_credits > 0) {
