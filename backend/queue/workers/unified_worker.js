@@ -2,6 +2,7 @@
 const BatchCreatorWorker = require('./batch_creator_worker');
 const StatusCheckerWorker = require('./status_checker_worker');
 const IndividualStatusCheckerWorker = require('./individual_status_checker_worker');
+const StuckBatchCleanupWorker = require('./stuck_batch_cleanup_worker');
 
 /**
  * Unified worker that routes jobs to appropriate handlers
@@ -26,6 +27,12 @@ class UnifiedWorker {
         if (job.name.startsWith('individual_status_check_')) {
             console.log(`➡️  Routing to IndividualStatusCheckerWorker`);
             const worker = new IndividualStatusCheckerWorker();
+            return await worker.processJob(job);
+        }
+        
+        if (job.name === 'stuck_batch_cleanup') {
+            console.log(`➡️  Routing to StuckBatchCleanupWorker`);
+            const worker = new StuckBatchCleanupWorker();
             return await worker.processJob(job);
         }
         

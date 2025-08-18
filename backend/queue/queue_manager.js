@@ -133,7 +133,16 @@ class QueueManager {
             }
         );
 
-        console.log('Batch creation jobs scheduled successfully');
+        // Stuck Batch Cleanup - runs every minute
+        await this.queue.add('stuck_batch_cleanup',
+            {},
+            {
+                repeat: { every: 60000 }, // 60 seconds
+                jobId: 'stuck_batch_cleanup_job' // Prevent duplicates
+            }
+        );
+
+        console.log('Batch creation and cleanup jobs scheduled successfully');
     }
 
 
