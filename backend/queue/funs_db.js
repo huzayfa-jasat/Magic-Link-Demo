@@ -614,4 +614,7 @@ module.exports = {
     // Rate Limiting
     db_checkRateLimit,
     db_recordRateLimit,
+    
+    // Batch Completion Helper
+    checkAndCompleteUserBatch,
 };

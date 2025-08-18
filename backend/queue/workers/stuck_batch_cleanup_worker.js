@@ -1,5 +1,5 @@
 // Import cleanup functions
-const { cleanupAllStuckBatches } = require('../funs_stuck_batch_cleanup');
+const { db_cleanupAllStuckBatches } = require('../funs_db_cleanup');
 
 /**
  * Worker for cleaning up stuck batches
@@ -21,7 +21,7 @@ class StuckBatchCleanupWorker {
         
         try {
             // Clean up stuck batches for both deliverable and catchall
-            const [success, results] = await cleanupAllStuckBatches();
+            const [success, results] = await db_cleanupAllStuckBatches();
             
             if (!success) {
                 throw new Error('Failed to clean up stuck batches');
