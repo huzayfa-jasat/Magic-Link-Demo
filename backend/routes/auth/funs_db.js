@@ -11,7 +11,7 @@ function generateCode() {
     return Math.floor(100000 + Math.random() * 900000).toString();
 }
 function calculateSignupBonus(user_id) {
-    if (user_id > 500) return 0;
+    if (user_id > 1500) return 0;
     return AUTO_SIGNUP_BONUS;
 }
 
