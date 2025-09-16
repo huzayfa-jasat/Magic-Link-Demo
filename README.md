@@ -1,6 +1,8 @@
 # Magic Link Authentication Demo
 
 A production-ready magic link authentication system with comprehensive security, monitoring, and observability features.
+https://github.com/huzayfa-jasat/Magic-Link-Demo
+https://www.loom.com/share/b324328bb8914b4dbda3eb5b97ec4d08
 
 ## 🚀 Quick Start
 
