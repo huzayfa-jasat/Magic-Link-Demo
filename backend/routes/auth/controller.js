@@ -138,6 +138,12 @@ async function requestMagicLink(req, res) {
         );
         const tokenId = tokenResult.rows[0].id;
 
+        // Debug logging
+        if (process.env.NODE_ENV !== 'production') {
+            console.log('Generated tokenId:', tokenId);
+            console.log('Generated token:', token);
+        }
+
         // Create signed magic link with token_id
         const baseUrl = `${FRONTEND_URL}/index.html?token_id=${tokenId}&token=${token}`;
         const signedMagicLink = tokenService.signUrl(baseUrl);
@@ -178,6 +184,16 @@ async function requestMagicLink(req, res) {
 async function verifyMagicLink(req, res) {
     try {
         const { token_id, token, signature, url } = req.body;
+        
+        // Debug logging
+        if (process.env.NODE_ENV !== 'production') {
+            console.log('Verification request received:');
+            console.log('  token_id:', token_id);
+            console.log('  token:', token);
+            console.log('  signature:', signature);
+            console.log('  url:', url);
+        }
+        
         metrics.magicLinkVerificationAttemptsTotal.inc();
         metrics.magicLinkClickedTotal.inc();
 
@@ -279,13 +295,20 @@ async function verifyMagicLink(req, res) {
             );
         }
 
-        // Replay protection: Check device fingerprint
+        // Replay protection: Only check for actual replay attacks
+        // Allow different devices to use the same magic link (this is normal behavior)
+        // Only prevent if the same device tries to use the same token multiple times
         const currentFingerprint = tokenService.generateDeviceFingerprint(req);
-        if (tokenData.device_fingerprint && tokenData.device_fingerprint !== currentFingerprint) {
+        
+        // Check if this specific device has already used this token
+        const replayCheck = await db.query(
+            'SELECT COUNT(*) as count FROM audit_logs WHERE user_id = $1 AND event_type = $2 AND metadata->>\'token_id\' = $3 AND metadata->>\'device_fingerprint\' = $4',
+            [tokenData.user_id, 'magic_link_used', token_id, currentFingerprint]
+        );
+        
+        if (replayCheck.rows[0].count > 0) {
             if (process.env.NODE_ENV !== 'production') {
-                console.log('Replay attack detected: Device fingerprint mismatch');
-                console.log('Stored fingerprint:', tokenData.device_fingerprint);
-                console.log('Current fingerprint:', currentFingerprint);
+                console.log('Replay attack detected: Same device trying to reuse token');
             }
             
             // Log security event
@@ -293,9 +316,9 @@ async function verifyMagicLink(req, res) {
                 'INSERT INTO audit_logs (user_id, event_type, ip_address, user_agent, metadata) VALUES ($1, $2, $3, $4, $5)',
                 [tokenData.user_id, 'replay_attack_detected', req.ip, req.headers['user-agent'], 
                  JSON.stringify({ 
-                     stored_fingerprint: tokenData.device_fingerprint,
-                     current_fingerprint: currentFingerprint,
-                     token_id: token_id
+                     device_fingerprint: currentFingerprint,
+                     token_id: token_id,
+                     reason: 'same_device_reuse'
                  })]
             );
             
@@ -303,13 +326,12 @@ async function verifyMagicLink(req, res) {
             return sendErrorResponse(
                 res,
                 HttpStatus.UNAUTHORIZED_STATUS,
-                'Invalid token',
-                'Replay attack detected: Device fingerprint mismatch',
+                'Token already used from this device',
+                'Replay attack detected: Same device trying to reuse token',
                 { 
                     token_id, 
                     user_id: tokenData.user_id,
-                    stored_fingerprint: tokenData.device_fingerprint,
-                    current_fingerprint: currentFingerprint
+                    device_fingerprint: currentFingerprint
                 }
             );
         }
@@ -321,6 +343,16 @@ async function verifyMagicLink(req, res) {
 
         // Mark token as used
         await db.query('UPDATE magic_tokens SET used = true WHERE id = $1', [token_id]);
+        
+        // Log successful magic link usage for replay protection
+        await db.query(
+            'INSERT INTO audit_logs (user_id, event_type, ip_address, user_agent, metadata) VALUES ($1, $2, $3, $4, $5)',
+            [user.id, 'magic_link_used', req.ip, req.headers['user-agent'], 
+             JSON.stringify({ 
+                 token_id: token_id,
+                 device_fingerprint: currentFingerprint
+             })]
+        );
 
         // Generate token pair
         const tokens = await tokenService.generateTokenPair(user);
