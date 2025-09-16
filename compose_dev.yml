@@ -1,98 +1,96 @@
-x-common-variables: &common-variables
-  MYSQL_DATABASE: $MYSQL_DATABASE
-  MYSQL_USER: $MYSQL_USER
-  MYSQL_PASSWORD: $MYSQL_PASSWORD
-
 services:
-  dbserver:
-    image: mysql:8.3.0
+  db:
+    image: postgres:14-alpine
     restart: always
-    cap_add:
-      - SYS_NICE
     volumes:
-      - omniverifier_db_volume:/var/lib/mysql
-      - ./db/schema.sql:/docker-entrypoint-initdb.d/setup.sql
+      - magic_link_db_volume:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
     ports:
-      - "9306:9906"
+      - "5432:5432"
     environment:
-      <<: *common-variables
-      MYSQL_ROOT_PASSWORD: $MYSQL_ROOT_PASSWORD
-      MYSQL_HOST: $MYSQL_HOST
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_ROOT_PASSWORD: ${POSTGRES_ROOT_PASSWORD}
     networks:
-      - omniverifier_internal
+      - magic_link_internal
 
-  cacheserver:
-    image: redis:alpine
+  redis:
+    image: redis:7-alpine
     volumes:
-      - omniverifier_redis_volume:/data
-    command:
-      [
-        "redis-server",
-        "--appendonly",
-        "yes",
-        "--bind",
-        "cacheserver",
-        "--port",
-        "18747",
-      ]
-    expose:
-      - "18747"
+      - magic_link_redis_volume:/data
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
     networks:
-      - omniverifier_internal
+      - magic_link_internal
 
-  apiserver:
+  app:
     build:
       context: ./backend
       target: dev
     depends_on:
-      - dbserver
-      - cacheserver
+      - db
+      - redis
     volumes:
-      - ./backend:/src
-      - /src/node_modules
+      - ./backend:/app
+      - /app/node_modules
     environment:
-      <<: *common-variables
-      PORT: $API_V1_PORT
+      NODE_ENV: development
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      PORT: ${PORT}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      HMAC_SECRET: ${HMAC_SECRET}
+      SESSION_SECRET: ${SESSION_SECRET}
+      RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS}
     ports:
-      - $API_V1_PORT:$API_V1_PORT
+      - "${PORT}:${PORT}"
+      - "9090:9090"
     networks:
-      - omniverifier_internal
+      - magic_link_internal
 
-  webserver:
-    stdin_open: true
-    environment:
-      - CHOKIDAR_USEPOLLING=true
-      - PORT=$WEB_PORT
-      - REACT_APP_ENV_MODE=development
-      - REACT_APP_API_URL_DEV=$API_DEV_URL
-      - REACT_APP_API_URL_PROD=$API_DEV_URL
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile.dev
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9091:9090"
     volumes:
-      - ./frontend:/src
-      - /src/node_modules
-    ports:
-      - $WEB_PORT:$WEB_PORT
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./alert.rules.yml:/etc/prometheus/alert.rules.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
     networks:
-      - omniverifier_internal
+      - magic_link_internal
 
-  adminerserver:
-    image: adminer:latest
-    restart: unless-stopped
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "admin@magic-link-demo.com"
+      PGADMIN_DEFAULT_PASSWORD: "admin"
     ports:
-      - 8080:8080
+      - "8080:80"
     depends_on:
-      - dbserver
-    environment:
-      ADMINER_DEFAULT_SERVER: dbserver
+      - db
     networks:
-      - omniverifier_internal
+      - magic_link_internal
 
 volumes:
-  omniverifier_db_volume:
-  omniverifier_redis_volume:
+  magic_link_db_volume:
+  magic_link_redis_volume:
+  prometheus_data:
 
 networks:
-  omniverifier_internal:
+  magic_link_internal:
     driver: bridge

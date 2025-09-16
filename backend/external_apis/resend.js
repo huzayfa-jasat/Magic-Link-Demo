@@ -1,52 +1,38 @@
 // Dependencies
 const { Resend } = require('resend');
+console.log('🔑 Resend API Key:', process.env.RESEND_API_KEY ? '✅ Present' : '❌ Missing');
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Template Imports
 const {
-  resend_template_Welcome,
   resend_template_OtpLogin,
-  resend_template_PasswordReset,
-  resend_template_PasswordResetFromSettings,
-  resend_template_LowCredits,
-  resend_template_BatchCompletion,
 } = require('./resend_utils/templates/index');
 
 // Sender Constants
-const FROM_EMAIL = 'OmniVerifier <help@updates.omniverifier.com>';
-const REPLY_TO_EMAIL = 'OmniVerifier <help@updates.omniverifier.com>';
+const FROM_EMAIL = 'Magic Link Demo <onboarding@resend.dev>';
+const REPLY_TO_EMAIL = 'Magic Link Demo <onboarding@resend.dev>';
 
 // Helper Functions
 async function resend_sendEmail(recipient_email, subject, html) {
     try {
-        const { data } = await resend.emails.send({
+        console.log('📧 Attempting to send email to:', recipient_email);
+        const { data, error } = await resend.emails.send({
             from: FROM_EMAIL,
             replyTo: REPLY_TO_EMAIL,
             to: recipient_email,
             subject,
             html,
         });
+        if (error) {
+            console.error('❌ Email send error:', error);
+            return { error };
+        }
+        console.log('✅ Email sent successfully:', data);
         return data;
     } catch (error) {
+        console.error('❌ Email send exception:', error);
         return { error };
     }
-}
-
-
-// Main Functions
-
-/**
- * Send welcome email
- * @param {string} recipient_email - The email address of the recipient
- * @returns {Promise<object>}
-*/
-async function resend_sendWelcomeEmail(recipient_email) {
-  try {
-    const html = resend_template_Welcome();
-    return await resend_sendEmail(recipient_email, 'Welcome to OmniVerifier', html);
-  } catch (error) {
-    return { error };
-  }
 }
 
 /**
@@ -57,81 +43,16 @@ async function resend_sendWelcomeEmail(recipient_email) {
 */
 async function resend_sendOtpEmail(recipient_email, otp_link) {
   try {
+    console.log('🔗 Generating OTP email with link:', otp_link);
     const html = resend_template_OtpLogin(otp_link);
-    return await resend_sendEmail(recipient_email, 'Sign In to OmniVerifier', html);
+    return await resend_sendEmail(recipient_email, 'Sign In to Magic Link Demo', html);
   } catch (error) {
-    return { error };
-  }
-}
-
-/**
- * Send password reset email
- * @param {string} recipient_email - The email address of the recipient
- * @param {string} resetLink - The link to reset the password
- * @returns {Promise<object>}
-*/
-async function resend_sendPasswordResetEmail(recipient_email, resetLink) {
-  try {
-    const html = resend_template_PasswordReset(resetLink);
-    return await resend_sendEmail(recipient_email, 'Reset Your OmniVerifier Password', html);
-  } catch (error) {
-    return { error };
-  }
-}
-
-/**
- * Send password reset email from settings
- * @param {string} recipient_email - The email address of the recipient
- * @param {string} resetLink - The link to reset the password
- * @returns {Promise<object>}
-*/
-async function resend_sendPasswordResetEmailFromSettings(recipient_email, resetLink) {
-  try {
-    const html = resend_template_PasswordResetFromSettings(resetLink);
-    return await resend_sendEmail(recipient_email, 'Reset Your OmniVerifier Password', html);
-  } catch (error) {
-    return { error };
-  }
-}
-
-/**
- * Send low credits warning email
- * @param {string} recipient_email - The email address of the recipient
- * @param {number} balance - The balance of the user
- * @returns {Promise<object>}
-*/
-async function resend_sendLowCreditsEmail(recipient_email, checkType, balance) {
-  try {
-    const html = resend_template_LowCredits(checkType, balance);
-    return await resend_sendEmail(recipient_email, 'Your OmniVerifier credits are running low', html);
-  } catch (error) {
-    return { error };
-  }
-}
-
-/**
- * Send batch completion notification email
- * @param {string} recipient_email - The email address of the recipient
- * @param {string} batchTitle - The title of the completed batch
- * @param {string} checkType - The type of check (deliverable or catchall)
- * @param {number} batchId - The ID of the completed batch
- * @returns {Promise<object>}
-*/
-async function resend_sendBatchCompletionEmail(recipient_email, batchTitle, checkType, batchId) {
-  try {
-    const html = resend_template_BatchCompletion(batchTitle, checkType, batchId);
-    return await resend_sendEmail(recipient_email, `Your batch "${batchTitle}" has been completed`, html);
-  } catch (error) {
+    console.error('❌ OTP email error:', error);
     return { error };
   }
 }
 
 // Export
 module.exports = {
-    resend_sendWelcomeEmail,
     resend_sendOtpEmail,
-    resend_sendPasswordResetEmail,
-    resend_sendPasswordResetEmailFromSettings,
-    resend_sendLowCreditsEmail,
-    resend_sendBatchCompletionEmail,
 };

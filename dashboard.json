@@ -1,0 +1,91 @@
+{
+  "dashboard": {
+    "title": "Magic Link Authentication Dashboard",
+    "panels": [
+      {
+        "title": "Magic Link Success Rate",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "magic_link_success_rate * 100",
+            "legendFormat": "Success Rate %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 95},
+                {"color": "green", "value": 100}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "Magic Link Request Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(magic_link_requests_total[5m])",
+            "legendFormat": "Requests/sec"
+          }
+        ]
+      },
+      {
+        "title": "Magic Link Verification Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(magic_link_verification_attempts_total[5m])",
+            "legendFormat": "Verification Attempts/sec"
+          },
+          {
+            "expr": "rate(magic_link_verified_total[5m])",
+            "legendFormat": "Successful Verifications/sec"
+          }
+        ]
+      },
+      {
+        "title": "Email Delivery Latency (p95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(email_delivery_latency_seconds_bucket[5m]))",
+            "legendFormat": "95th Percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(email_delivery_latency_seconds_bucket[5m]))",
+            "legendFormat": "50th Percentile"
+          }
+        ]
+      },
+      {
+        "title": "HTTP Request Latency (p95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th Percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "50th Percentile"
+          }
+        ]
+      },
+      {
+        "title": "Error Rate by Endpoint",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(http_request_duration_seconds_count{status_code=~\"4..|5..\"}[5m])",
+            "legendFormat": "{{route}} - {{status_code}}"
+          }
+        ]
+      }
+    ]
+  }
+}

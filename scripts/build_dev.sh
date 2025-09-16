@@ -1,19 +1,11 @@
 #!/bin/bash
 
-# Move to root folder
-cd ../
-
-# Create docker compose file
-cp compose_dev.yml docker-compose.yml
-
-# Stop running containers
+# Stop any running containers
 docker compose down --remove-orphans
 
-# Build the services
-COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose build
+# Build and start the services
+COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose -f compose_dev.yml up --build -d
 
-# Start the services in detached mode
-docker compose up -d
-
-# Remove temp compose file
-rm docker-compose.yml
+echo "Magic Link Demo is running!"
+echo "API: http://localhost:11793"
+echo "Prometheus: http://localhost:9091"

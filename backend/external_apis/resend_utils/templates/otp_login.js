@@ -1,139 +1,88 @@
-// Constant Imports
-const {
-	// No constants needed for this template
-} = require('../constants');
-
-// Password Reset Template
-const resend_template_OtpLogin = (otp_link) => {
-	return (`
-		<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-		<html dir="ltr" lang="en">
-			<head>
-				<meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
-				<meta name="x-apple-disable-message-reformatting" />
-			</head>
-			<body style='background-color:rgb(245,245,245);font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";padding-top:40px;padding-bottom:40px'>
-				<!--$-->
-				<div style="display:none;overflow:hidden;line-height:1px;opacity:0;max-height:0;max-width:0">
-					Sign in to OmniVerifier
-				</div>
-				<table
-					align="center"
-					width="100%"
-					border="0"
-					cellpadding="0"
-					cellspacing="0"
-					role="presentation"
-					style="max-width:600px;margin-left:auto;margin-right:auto"
-				>
-					<tbody>
-						<tr style="width:100%">
-							<td>
-								<table
-									align="center"
-									width="100%"
-									border="0"
-									cellpadding="0"
-									cellspacing="0"
-									role="presentation"
-									style="border-width:1px;border-style:solid;border-color:rgb(221,221,221);border-radius:5px;overflow:hidden;background-color:rgb(255,255,255)"
-								>
-									<tbody>
-										<tr>
-											<td>
-												<table
-													align="center"
-													width="100%"
-													border="0"
-													cellpadding="0"
-													cellspacing="0"
-													role="presentation"
-													style="padding-left:32px;padding-right:32px;padding-top:80px;padding-bottom:80px"
-												>
-													<tbody>
-														<tr>
-															<td>
-																<h1 style="font-size:24px;font-weight:700;color:rgb(0,0,0);text-align:center;margin:0px;margin-bottom:16px">
-																	Sign In to OmniVerifier
-																</h1>
-																<p style="font-size:16px;line-height:24px;color:rgb(0,0,0);margin-bottom:24px;margin-top:16px;text-align:center">
-																	We received a request to sign in to your OmniVerifier account. If you made this request, click the button below to sign in.
-																</p>
-																<table
-																	align="center"
-																	width="100%"
-																	border="0"
-																	cellpadding="0"
-																	cellspacing="0"
-																	role="presentation"
-																	style="margin-bottom:0px;text-align:center"
-																>
-																	<tbody>
-																		<tr>
-																			<td>
-																				<a
-																					href="${otp_link}"
-																					target="_blank"
-																					style="background-color:#BBE8FF;border-radius:4px;color:rgb(0,0,0);font-weight:700;font-size:16px;padding-left:24px;padding-right:24px;padding-top:12px;padding-bottom:12px;text-decoration-line:none;text-align:center;display:inline-block;box-sizing:border-box;line-height:100%;text-decoration:none;max-width:100%;mso-padding-alt:0px;padding:12px 24px 12px 24px"
-																				>
-																					<span>
-																						<!--[if mso]>
-																						<i style="mso-font-width:400%;mso-text-raise:18" hidden>&#8202;&#8202;&#8202;</i>
-																						<![endif]-->
-																					</span>
-																					<span style="max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:9px">
-																						Sign In
-																					</span>
-																					<span>
-																						<!--[if mso]>
-																						<i style="mso-font-width:400%" hidden>&#8202;&#8202;&#8202;&#8203;</i>
-																						<![endif]-->
-																					</span>
-																				</a>
-																			</td>
-																		</tr>
-																	</tbody>
-																</table>
-																<p style="font-size:14px;line-height:20px;color:rgb(0,0,0);margin-bottom:0px;margin-top:16px;margin-left:0px;margin-right:0px;text-align:center">
-																	If you didn't request this sign-in link, you can safely ignore this email.
-																</p>
-															</td>
-														</tr>
-													</tbody>
-												</table>
-											</td>
-										</tr>
-									</tbody>
-								</table>
-								<table
-									align="center"
-									width="100%"
-									border="0"
-									cellpadding="0"
-									cellspacing="0"
-									role="presentation"
-									style="margin-top:32px;text-align:center"
-								>
-									<tbody>
-										<tr>
-											<td>
-												<p style="font-size:14px;line-height:24px;color:rgb(0,0,0);margin:0px;margin-bottom:0px;margin-top:0px;margin-left:0px;margin-right:0px">
-													© OmniVerifier. All Rights Reserved.
-												</p>
-											</td>
-										</tr>
-									</tbody>
-								</table>
-							</td>
-						</tr>
-					</tbody>
-				</table>
-				<!--7--><!--/$-->
-			</body>
-		</html>
-	`)
+function resend_template_OtpLogin(otp_link) {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Magic Link Sign In</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+            .container {
+                background-color: #ffffff;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                padding: 30px;
+                margin-top: 20px;
+            }
+            .header {
+                text-align: center;
+                margin-bottom: 30px;
+            }
+            .title {
+                color: #1a73e8;
+                font-size: 24px;
+                font-weight: bold;
+                margin: 0;
+            }
+            .button {
+                display: inline-block;
+                background-color: #1a73e8;
+                color: white;
+                text-decoration: none;
+                padding: 12px 24px;
+                border-radius: 4px;
+                font-weight: 500;
+                margin: 20px 0;
+                text-align: center;
+            }
+            .button:hover {
+                background-color: #1557b0;
+            }
+            .footer {
+                text-align: center;
+                font-size: 14px;
+                color: #666;
+                margin-top: 30px;
+            }
+            .note {
+                font-size: 14px;
+                color: #666;
+                margin-top: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1 class="title">Magic Link Sign In</h1>
+            </div>
+            
+            <p>Hello!</p>
+            
+            <p>Click the button below to sign in to your account. This link will expire in 15 minutes for security.</p>
+            
+            <div style="text-align: center;">
+                <a href="${otp_link}" class="button">Sign In to Your Account</a>
+            </div>
+            
+            <p class="note">If you didn't request this sign-in link, you can safely ignore this email.</p>
+            
+            <div class="footer">
+                <p>This is an automated message, please do not reply to this email.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
 }
 
 module.exports = {
-	resend_template_OtpLogin,
-}
+    resend_template_OtpLogin,
+};

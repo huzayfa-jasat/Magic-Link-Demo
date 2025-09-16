@@ -1,0 +1,88 @@
+groups:
+  - name: magic_link_alerts
+    rules:
+      # Alert if magic link verification success rate drops below 95%
+      - alert: MagicLinkLowSuccessRate
+        expr: magic_link_success_rate < 0.95
+        for: 5m
+        labels:
+          severity: warning
+          service: magic-link-auth
+        annotations:
+          summary: "Magic Link verification success rate is below 95%"
+          description: "Magic link verification success rate is {{ $value | humanizePercentage }} for the last 5 minutes. This indicates potential issues with the authentication flow."
+          runbook_url: "https://docs.example.com/runbooks/magic-link-low-success-rate"
+
+      # Alert if email delivery failures are high
+      - alert: HighEmailDeliveryFailures
+        expr: rate(magic_link_delivery_failures_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          service: magic-link-auth
+        annotations:
+          summary: "High rate of email delivery failures"
+          description: "Email delivery failure rate is {{ $value | humanize }} failures per second over the last 5 minutes."
+          runbook_url: "https://docs.example.com/runbooks/email-delivery-failures"
+
+      # Alert if email delivery latency is high
+      - alert: HighEmailDeliveryLatency
+        expr: histogram_quantile(0.95, rate(email_delivery_latency_seconds_bucket[5m])) > 10
+        for: 3m
+        labels:
+          severity: warning
+          service: magic-link-auth
+        annotations:
+          summary: "High email delivery latency"
+          description: "95th percentile email delivery latency is {{ $value }}s, which is above the 10s threshold."
+          runbook_url: "https://docs.example.com/runbooks/email-delivery-latency"
+
+      # Alert if magic link request rate is unusually high (potential attack)
+      - alert: HighMagicLinkRequestRate
+        expr: rate(magic_link_requests_total[5m]) > 10
+        for: 1m
+        labels:
+          severity: warning
+          service: magic-link-auth
+        annotations:
+          summary: "Unusually high magic link request rate"
+          description: "Magic link request rate is {{ $value | humanize }} requests per second, which may indicate an attack or system issue."
+          runbook_url: "https://docs.example.com/runbooks/high-request-rate"
+
+      # Alert if verification failure rate spikes
+      - alert: HighVerificationFailureRate
+        expr: rate(magic_link_verification_failures_total[5m]) > 1
+        for: 2m
+        labels:
+          severity: critical
+          service: magic-link-auth
+        annotations:
+          summary: "High magic link verification failure rate"
+          description: "Magic link verification failure rate is {{ $value | humanize }} failures per second over the last 5 minutes."
+          runbook_url: "https://docs.example.com/runbooks/verification-failures"
+
+  - name: system_alerts
+    rules:
+      # Alert if HTTP request latency is high
+      - alert: HighHTTPLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 3m
+        labels:
+          severity: warning
+          service: magic-link-auth
+        annotations:
+          summary: "High HTTP request latency"
+          description: "95th percentile HTTP request latency is {{ $value }}s, which is above the 2s threshold."
+          runbook_url: "https://docs.example.com/runbooks/high-http-latency"
+
+      # Alert if error rate is high
+      - alert: HighErrorRate
+        expr: rate(http_request_duration_seconds_count{status_code=~"5.."}[5m]) / rate(http_request_duration_seconds_count[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          service: magic-link-auth
+        annotations:
+          summary: "High HTTP error rate"
+          description: "HTTP error rate is {{ $value | humanizePercentage }}, which is above the 5% threshold."
+          runbook_url: "https://docs.example.com/runbooks/high-error-rate"

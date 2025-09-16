@@ -1,0 +1,223 @@
+{
+	"info": {
+		"_postman_id": "b5f7b3e2-1b2c-4d5e-8f9a-0c1d2e3f4a5b",
+		"name": "Magic Link Demo",
+		"description": "Collection for testing magic link authentication flow",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Register User",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"{{test_email}}\",\n    \"password\": \"{{test_password}}\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/auth/register",
+					"host": ["{{base_url}}"],
+					"path": ["auth", "register"]
+				},
+				"description": "Register a new user"
+			}
+		},
+		{
+			"name": "2. Request Magic Link",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"{{test_email}}\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/auth/magic-link",
+					"host": ["{{base_url}}"],
+					"path": ["auth", "magic-link"]
+				},
+				"description": "Request a magic link to be sent to email"
+			}
+		},
+		{
+			"name": "3. Verify Magic Link",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var jsonData = pm.response.json();",
+							"if (jsonData.accessToken) {",
+							"    pm.environment.set(\"access_token\", jsonData.accessToken);",
+							"}",
+							"if (jsonData.refreshToken) {",
+							"    pm.environment.set(\"refresh_token\", jsonData.refreshToken);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"token\": \"{{magic_token}}\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/auth/verify",
+					"host": ["{{base_url}}"],
+					"path": ["auth", "verify"]
+				},
+				"description": "Verify magic link token and get access/refresh tokens"
+			}
+		},
+		{
+			"name": "4. Refresh Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var jsonData = pm.response.json();",
+							"if (jsonData.accessToken) {",
+							"    pm.environment.set(\"access_token\", jsonData.accessToken);",
+							"}",
+							"if (jsonData.refreshToken) {",
+							"    pm.environment.set(\"refresh_token\", jsonData.refreshToken);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"refreshToken\": \"{{refresh_token}}\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/auth/refresh",
+					"host": ["{{base_url}}"],
+					"path": ["auth", "refresh"]
+				},
+				"description": "Get new access/refresh tokens using refresh token"
+			}
+		},
+		{
+			"name": "5. Logout",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"refreshToken\": \"{{refresh_token}}\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/auth/logout",
+					"host": ["{{base_url}}"],
+					"path": ["auth", "logout"]
+				},
+				"description": "Logout and invalidate tokens"
+			}
+		},
+		{
+			"name": "6. Check Metrics",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/metrics",
+					"host": ["{{base_url}}"],
+					"path": ["metrics"]
+				},
+				"description": "Get Prometheus metrics"
+			}
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://127.0.0.1:11793/api",
+			"type": "string"
+		},
+		{
+			"key": "test_email",
+			"value": "your.email@example.com",
+			"type": "string"
+		},
+		{
+			"key": "test_password",
+			"value": "your_secure_password",
+			"type": "string"
+		},
+		{
+			"key": "magic_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refresh_token",
+			"value": "",
+			"type": "string"
+		}
+	]
+} 

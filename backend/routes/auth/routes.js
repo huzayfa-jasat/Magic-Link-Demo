@@ -7,39 +7,36 @@ const { checkUserAuth } = require('./funs_perms.js');
 
 // Controller Imports
 const {
-    authPass,
-    loginSuccess, loginFailure,
-    getUserStatus,
     registerUser,
-    sendOtpCode,
-    verifyOtpCode,
-    changePassword,
+    requestMagicLink,
+    verifyMagicLink,
+    refreshToken,
     logoutUser,
-    requestPasswordReset,
-    validatePasswordReset,
-    requestPasswordResetFromSettings,
-    validatePasswordResetFromSettings,
 } = require('./controller.js');
+
+// Async handler wrapper
+const asyncHandler = fn => (req, res, next) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+};
 
 // ------------
 // Auth Routes
 // ------------
 
-authRouter.post('/login', authPass.authenticate('local', {failureMessage: true, failWithError: true}),
-    loginSuccess,
-    loginFailure
-);
+// Registration
+authRouter.post('/register', asyncHandler(registerUser));
 
-authRouter.get('/status', checkUserAuth, getUserStatus);
-authRouter.post('/register', registerUser);
-authRouter.post('/otp/send', sendOtpCode);
-authRouter.post('/otp/verify', verifyOtpCode);
-authRouter.patch('/pw/touch', checkUserAuth, changePassword);
-authRouter.get('/logout', checkUserAuth, logoutUser);
-authRouter.post('/forgot-password/send', requestPasswordReset);
-authRouter.post('/forgot-password/validate', validatePasswordReset);
-authRouter.post('/reset-password/send', checkUserAuth, requestPasswordResetFromSettings);
-authRouter.post('/reset-password/validate', validatePasswordResetFromSettings);
+// Magic Link Request
+authRouter.post('/magic-link/request', asyncHandler(requestMagicLink));
+
+// Magic Link Verification
+authRouter.post('/magic-link/verify', asyncHandler(verifyMagicLink));
+
+// Token Refresh
+authRouter.post('/refresh', asyncHandler(refreshToken));
+
+// Logout
+authRouter.post('/logout', checkUserAuth, asyncHandler(logoutUser));
 
 // Export routes
-module.exports = authRouter; 
+module.exports = authRouter;
